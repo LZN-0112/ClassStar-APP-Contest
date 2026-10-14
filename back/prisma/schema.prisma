@@ -1,0 +1,843 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model activities {
+  id                     String                   @id @db.Char(36)
+  class_id               String                   @db.Char(36)
+  publisher_id           String                   @db.Char(36)
+  title                  String                   @db.VarChar(200)
+  event_date             DateTime                 @db.Date
+  event_time             DateTime?                @db.Time(0)
+  location               String?                  @db.VarChar(255)
+  capacity               Int?
+  cover_url              String?                  @db.VarChar(500)
+  deadline               DateTime?
+  status                 String                   @default("registering") @db.VarChar(20)
+  created_at             DateTime                 @default(now())
+  updated_at             DateTime                 @default(now())
+  classes                classes                  @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_act_class")
+  users                  users                    @relation(fields: [publisher_id], references: [id], onUpdate: NoAction, map: "fk_act_publisher")
+  activity_registrations activity_registrations[]
+
+  @@index([class_id, status], map: "idx_class_status")
+  @@index([publisher_id], map: "idx_publisher")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model activity_registrations {
+  id            String     @id @db.Char(36)
+  activity_id   String     @db.Char(36)
+  student_id    String     @db.Char(36)
+  status        String     @default("pending") @db.VarChar(20)
+  registered_at DateTime   @default(now())
+  updated_at    DateTime   @default(now())
+  activities    activities @relation(fields: [activity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ar_act")
+  users         users      @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ar_student2")
+
+  @@unique([activity_id, student_id], map: "uk_activity_student")
+  @@index([student_id], map: "idx_student")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model archive_files {
+  id             String    @id @db.Char(36)
+  archive_id     String    @db.Char(36)
+  file_name      String    @db.VarChar(255)
+  file_url       String    @db.VarChar(500)
+  file_size      Int?
+  folder_name    String?   @db.VarChar(50)
+  uploader_id    String?   @db.Char(36)
+  download_count Int       @default(0)
+  created_at     DateTime  @default(now())
+  archives       archives  @relation(fields: [archive_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_af_archive")
+  uploader       users?    @relation("archive_files_uploader", fields: [uploader_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_af_uploader")
+
+  @@index([archive_id], map: "idx_archive")
+  @@index([uploader_id], map: "idx_uploader")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model archives {
+  id            String          @id @db.Char(36)
+  class_id      String          @db.Char(36)
+  title         String          @db.VarChar(200)
+  archive_year  String          @db.VarChar(20)
+  archive_type  String          @db.VarChar(50)
+  created_by    String          @db.Char(36)
+  status        String          @default("active") @db.VarChar(20)
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @default(now())
+  archive_files archive_files[]
+  classes       classes         @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_arch_class")
+  users         users           @relation(fields: [created_by], references: [id], onUpdate: NoAction, map: "fk_arch_creator")
+
+  @@index([class_id, archive_year], map: "idx_class_year")
+  @@index([created_by], map: "idx_created_by")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model attendance_records {
+  id              String      @id @db.Char(36)
+  attendance_id   String      @db.Char(36)
+  student_id      String      @db.Char(36)
+  status          String      @default("present") @db.VarChar(20)
+  check_in_at     DateTime?
+  check_in_method String?     @db.VarChar(20)
+  latitude        Decimal?    @db.Decimal(10, 8)
+  longitude       Decimal?    @db.Decimal(11, 8)
+  selfie_url      String?     @db.VarChar(500)
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @default(now())
+  attendances     attendances @relation(fields: [attendance_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ar_attendance")
+  users           users       @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ar_student")
+
+  @@unique([attendance_id, student_id], map: "uk_attendance_student")
+  @@index([student_id], map: "idx_student")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model attendances {
+  id                 String               @id @db.Char(36)
+  class_id           String               @db.Char(36)
+  publisher_id       String               @db.Char(36)
+  title              String               @db.VarChar(200)
+  type               String?              @db.VarChar(50)
+  start_time         DateTime
+  end_time           DateTime
+  method             String               @default("qr") @db.VarChar(20)
+  location           String?              @db.VarChar(255)
+  latitude           Decimal?             @db.Decimal(10, 8)
+  longitude          Decimal?             @db.Decimal(11, 8)
+  check_radius       Int?
+  code               String?              @db.VarChar(50)
+  status             String               @default("open") @db.VarChar(20)
+  created_at         DateTime             @default(now())
+  updated_at         DateTime             @default(now())
+  attendance_records attendance_records[]
+  classes            classes              @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_atd_class")
+  users              users                @relation(fields: [publisher_id], references: [id], onUpdate: NoAction, map: "fk_atd_publisher")
+  leave_applications leave_applications[]
+
+  @@index([class_id, start_time], map: "idx_class_time")
+  @@index([publisher_id], map: "idx_publisher")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model audit_logs {
+  id            String   @id @db.Char(36)
+  user_id       String?  @db.Char(36)
+  class_id      String?  @db.Char(36)
+  action        String   @db.VarChar(100)
+  resource_type String?  @db.VarChar(50)
+  resource_id   String?  @db.Char(36)
+  ip_address    String?  @db.VarChar(45)
+  user_agent    String?  @db.VarChar(500)
+  detail        Json?
+  created_at    DateTime @default(now())
+
+  @@index([class_id, action], map: "idx_class_action")
+  @@index([created_at], map: "idx_created")
+  @@index([user_id], map: "idx_user")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+enum ClassMemberRoleLevel {
+  owner
+  admin
+  member
+}
+
+model class_members {
+  id           String               @id @db.Char(36)
+  class_id     String               @db.Char(36)
+  user_id      String               @db.Char(36)
+  role         String               @default("学生") @db.VarChar(50)
+  role_level   ClassMemberRoleLevel @default(member)
+  is_committee Boolean              @default(false)
+  joined_at    DateTime             @default(now())
+  created_at   DateTime             @default(now())
+  updated_at   DateTime             @updatedAt
+  classes      classes              @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cm_class")
+  users        users                @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cm_user")
+
+  @@unique([class_id, user_id], map: "uk_class_user")
+  @@index([class_id, role_level], map: "idx_class_role_level")
+  @@index([class_id, role], map: "idx_class_role")
+  @@index([user_id, class_id], map: "idx_user_class")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model class_roles {
+  id          String   @id @db.Char(36)
+  class_id    String?  @db.Char(36)
+  role_name   String   @db.VarChar(50)
+  role_type   String   @default("custom") @db.VarChar(20)
+  permissions Json?
+  description String?  @db.VarChar(255)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+  classes     classes? @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cr_class")
+
+  @@index([class_id, role_name], map: "idx_class_role")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model classes {
+  id                  String                @id @db.Char(36)
+  name                String                @db.VarChar(100)
+  code                String                @unique(map: "code") @db.VarChar(20)
+    grade               String?               @db.VarChar(20)
+  major               String?               @db.VarChar(100)
+qr_code_url         String?               @db.Text
+  creator_id          String                @db.Char(36)
+  announcement        String?               @db.Text
+  status              Boolean               @default(true)
+  org_type            String                @default("class") @db.VarChar(20)
+  category            String?               @db.VarChar(50)
+  logo_url            String?               @db.VarChar(500)
+  description         String?               @db.Text
+  max_members         Int?
+  created_at          DateTime              @default(now())
+  updated_at          DateTime              @default(now())
+  activities          activities[]
+  archives            archives[]
+  attendances         attendances[]
+  class_members       class_members[]
+  class_roles         class_roles[]
+  users               users                 @relation(fields: [creator_id], references: [id], onUpdate: NoAction, map: "fk_classes_creator")
+  committee_handovers committee_handovers[]
+  finance_payments    finance_payments[]
+  finance_records     finance_records[]
+  homeworks           homeworks[]
+  materials           materials[]
+  messages            messages[]
+  pomodoro_sessions   pomodoro_sessions[]
+  random_draw_records random_draw_records[]
+  tasks               tasks[]
+  votes               votes[]
+
+  @@index([code], map: "idx_code")
+  @@index([creator_id], map: "idx_creator")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model committee_handovers {
+  id                                            String    @id @db.Char(36)
+  class_id                                      String    @db.Char(36)
+  role                                          String    @db.VarChar(50)
+  from_user_id                                  String    @db.Char(36)
+  to_user_id                                    String    @db.Char(36)
+  status                                        String    @default("pending") @db.VarChar(20)
+  handed_over_at                                DateTime?
+  created_at                                    DateTime  @default(now())
+  classes                                       classes   @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ch_class")
+  users_committee_handovers_from_user_idTousers users     @relation("committee_handovers_from_user_idTousers", fields: [from_user_id], references: [id], onUpdate: NoAction, map: "fk_ch_from")
+  users_committee_handovers_to_user_idTousers   users     @relation("committee_handovers_to_user_idTousers", fields: [to_user_id], references: [id], onUpdate: NoAction, map: "fk_ch_to")
+
+  @@index([from_user_id], map: "fk_ch_from")
+  @@index([to_user_id], map: "fk_ch_to")
+  @@index([class_id], map: "idx_class")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model feedback {
+  id         String   @id @db.Char(36)
+  user_id    String?  @db.Char(36)
+  content    String   @db.Text
+  contact    String?  @db.VarChar(100)
+  images     Json?
+  status     String   @default("pending") @db.VarChar(20)
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+  users      users?   @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "fk_fb_user")
+
+  @@index([user_id], map: "idx_user")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model finance_payments {
+  id                                          String    @id @db.Char(36)
+  class_id                                    String    @db.Char(36)
+  record_type                                 String    @db.VarChar(20)
+  student_id                                  String    @db.Char(36)
+  amount                                      Decimal?  @db.Decimal(10, 2)
+  paid                                        Boolean   @default(false)
+  paid_at                                     DateTime?
+  registered_by                               String?   @db.Char(36)
+  created_at                                  DateTime  @default(now())
+  updated_at                                  DateTime  @default(now())
+  classes                                     classes   @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_fp_class")
+  users_finance_payments_registered_byTousers users?    @relation("finance_payments_registered_byTousers", fields: [registered_by], references: [id], onUpdate: NoAction, map: "fk_fp_register")
+  users_finance_payments_student_idTousers    users     @relation("finance_payments_student_idTousers", fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_fp_student")
+
+  @@unique([class_id, record_type, student_id], map: "uk_class_type_student")
+  @@index([registered_by], map: "fk_fp_register")
+  @@index([student_id], map: "idx_student")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model finance_records {
+  id           String   @id @db.Char(36)
+  class_id     String   @db.Char(36)
+  recorder_id  String   @db.Char(36)
+  record_type  String   @db.VarChar(20)
+  fee_category String?  @db.VarChar(50)
+  title        String   @db.VarChar(200)
+  amount       Decimal  @db.Decimal(10, 2)
+  direction    String   @db.VarChar(10)
+  record_date  DateTime @db.Date
+  attachments  Json?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @default(now())
+  classes      classes  @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_fr_class")
+  users        users    @relation(fields: [recorder_id], references: [id], onUpdate: NoAction, map: "fk_fr_recorder")
+
+  @@index([class_id, record_type, record_date], map: "idx_class_type_date")
+  @@index([recorder_id], map: "idx_recorder")
+}
+
+enum fee_type {
+  income
+  expense
+}
+
+model class_fee {
+  id          BigInt   @id @default(autoincrement()) @db.BigInt
+  class_id    String   @db.VarChar(36)
+  user_id     String   @db.VarChar(36)
+  type        fee_type
+  amount      Decimal  @db.Decimal(10, 2)
+  remark      String?  @db.VarChar(500)
+  bill_url    String?  @db.VarChar(500)
+  create_time DateTime @default(now()) @db.DateTime(0)
+  update_time DateTime @updatedAt @db.DateTime(0)
+
+  @@index([class_id, create_time], map: "idx_class_fee_class_create_time")
+  @@map("class_fee")
+}
+
+model class_group_fee {
+  id          BigInt   @id @default(autoincrement()) @db.BigInt
+  class_id    String   @db.VarChar(36)
+  user_id     String   @db.VarChar(36)
+  type        fee_type
+  amount      Decimal  @db.Decimal(10, 2)
+  remark      String?  @db.VarChar(500)
+  bill_url    String?  @db.VarChar(500)
+  create_time DateTime @default(now()) @db.DateTime(0)
+  update_time DateTime @updatedAt @db.DateTime(0)
+
+  @@index([class_id, create_time], map: "idx_class_group_fee_class_create_time")
+  @@map("class_group_fee")
+}
+
+model fee_budgets {
+  id            BigInt   @id @default(autoincrement()) @db.BigInt
+  class_id      String   @db.VarChar(36)
+  fee_type      String   @db.VarChar(20)
+  academic_year String   @db.VarChar(20)
+  semester      String   @db.VarChar(20)
+  amount        Decimal  @db.Decimal(10, 2)
+  remark        String?  @db.VarChar(500)
+  created_by    String   @db.VarChar(36)
+  create_time   DateTime @default(now()) @db.DateTime(0)
+  update_time   DateTime @updatedAt @db.DateTime(0)
+
+  @@unique([class_id, fee_type, academic_year, semester], map: "uk_class_fee_type_year_semester")
+  @@index([class_id, fee_type, academic_year, semester], map: "idx_budget_class")
+  @@map("fee_budgets")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model homework_delay_applications {
+  id                                                   String    @id @db.Char(36)
+  homework_id                                          String    @db.Char(36)
+  student_id                                           String    @db.Char(36)
+  reason                                               String    @db.Text
+  expected_deadline                                    DateTime
+  status                                               String    @default("pending") @db.VarChar(20)
+  reviewed_by                                          String?   @db.Char(36)
+  reviewed_at                                          DateTime?
+  created_at                                           DateTime  @default(now())
+  homeworks                                            homeworks @relation(fields: [homework_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_hda_homework")
+  users_homework_delay_applications_reviewed_byTousers users?    @relation("homework_delay_applications_reviewed_byTousers", fields: [reviewed_by], references: [id], onUpdate: NoAction, map: "fk_hda_reviewer")
+  users_homework_delay_applications_student_idTousers  users     @relation("homework_delay_applications_student_idTousers", fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_hda_student")
+
+  @@index([reviewed_by], map: "fk_hda_reviewer")
+  @@index([homework_id], map: "idx_homework")
+  @@index([student_id], map: "idx_student")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model homework_offline_check_details {
+  id                                                                         String                  @id @db.Char(36)
+  check_id                                                                   String                  @db.Char(36)
+  student_id                                                                 String                  @db.Char(36)
+  user_id                                                                    String?                 @db.Char(36)
+  status                                                                     String                  @default("submitted") @db.VarChar(20)
+  homework_offline_checks                                                    homework_offline_checks @relation(fields: [check_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_hod_check")
+  users_homework_offline_check_details_student_idTousers                     users                   @relation("homework_offline_check_details_student_idTousers", fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_hod_student")
+  users_homework_offline_check_details_user_idTousers                        users?                  @relation("homework_offline_check_details_user_idTousers", fields: [user_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_hod_user")
+
+  @@unique([check_id, student_id], map: "uk_check_student")
+  @@index([student_id], map: "idx_student")
+  @@index([user_id], map: "idx_hod_user")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model homework_offline_checks {
+  id                             String                           @id @db.Char(36)
+  homework_id                    String                           @db.Char(36)
+  checked_by                     String                           @db.Char(36)
+  submitted_count                Int                              @default(0)
+  total_count                    Int                              @default(0)
+  check_type                     String?                          @db.VarChar(20)
+  checked_at                     DateTime                         @default(now())
+  homework_offline_check_details homework_offline_check_details[]
+  users                          users                            @relation(fields: [checked_by], references: [id], onUpdate: NoAction, map: "fk_hoc_checker")
+  homeworks                      homeworks                        @relation(fields: [homework_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_hoc_homework")
+
+  @@index([checked_by], map: "fk_hoc_checker")
+  @@index([homework_id], map: "idx_homework")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model homework_submissions {
+  id           String    @id @db.Char(36)
+  homework_id  String    @db.Char(36)
+  student_id   String    @db.Char(36)
+  content      String?   @db.Text
+  attachments  Json?
+  status       String    @default("submitted") @db.VarChar(20)
+  submitted_at DateTime  @default(now())
+  updated_at   DateTime  @default(now())
+  homeworks    homeworks @relation(fields: [homework_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_hs_homework")
+  users        users     @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_hs_student")
+
+  @@unique([homework_id, student_id], map: "uk_homework_student")
+  @@index([student_id], map: "idx_student")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model homeworks {
+  id                          String                        @id @db.Char(36)
+  class_id                    String                        @db.Char(36)
+  publisher_id                String                        @db.Char(36)
+  title                       String                        @db.VarChar(200)
+  subject                     String?                       @db.VarChar(100)
+  content                     String?                       @db.Text
+  deadline                    DateTime
+  attachments                 Json?
+  status                      String                        @default("published") @db.VarChar(20)
+  created_at                  DateTime                      @default(now())
+  updated_at                  DateTime                      @default(now())
+  homework_delay_applications homework_delay_applications[]
+  homework_offline_checks     homework_offline_checks[]
+  homework_submissions        homework_submissions[]
+  classes                     classes                       @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_hw_class")
+  users                       users                         @relation(fields: [publisher_id], references: [id], onUpdate: NoAction, map: "fk_hw_publisher")
+
+  @@index([class_id, deadline], map: "idx_class_deadline")
+  @@index([publisher_id], map: "idx_publisher")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model leave_applications {
+  id                                          String      @id @db.Char(36)
+  attendance_id                               String      @db.Char(36)
+  student_id                                  String      @db.Char(36)
+  reason                                      String      @db.Text
+  status                                      String      @default("pending") @db.VarChar(20)
+  reviewed_by                                 String?     @db.Char(36)
+  reviewed_at                                 DateTime?
+  created_at                                  DateTime    @default(now())
+  attendances                                 attendances @relation(fields: [attendance_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_la_attendance")
+  users_leave_applications_reviewed_byTousers users?      @relation("leave_applications_reviewed_byTousers", fields: [reviewed_by], references: [id], onUpdate: NoAction, map: "fk_la_reviewer")
+  users_leave_applications_student_idTousers  users       @relation("leave_applications_student_idTousers", fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_la_student")
+
+  @@index([reviewed_by], map: "fk_la_reviewer")
+  @@index([attendance_id], map: "idx_attendance")
+  @@index([student_id], map: "idx_student")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model material_downloads {
+  id            String    @id @db.Char(36)
+  material_id   String    @db.Char(36)
+  user_id       String    @db.Char(36)
+  downloaded_at DateTime  @default(now())
+  materials     materials @relation(fields: [material_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_md_material")
+  users         users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_md_user")
+
+  @@index([material_id], map: "idx_material")
+  @@index([user_id], map: "idx_user")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model materials {
+  id                 String               @id @db.Char(36)
+  class_id           String               @db.Char(36)
+  uploader_id        String               @db.Char(36)
+  title              String               @db.VarChar(200)
+  category           String?              @db.VarChar(50)
+  description        String?              @db.Text
+  file_url           String               @db.VarChar(500)
+  file_size          Int?
+  mime_type          String?              @db.VarChar(100)
+  download_count     Int                  @default(0)
+  status             Boolean              @default(true)
+  created_at         DateTime             @default(now())
+  updated_at         DateTime             @default(now())
+  material_downloads material_downloads[]
+  classes            classes              @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_mat_class")
+  users              users                @relation(fields: [uploader_id], references: [id], onUpdate: NoAction, map: "fk_mat_uploader")
+
+  @@index([class_id, category], map: "idx_class_category")
+  @@index([uploader_id], map: "idx_uploader")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model message_acks {
+  id         String   @id @db.Char(36)
+  message_id String   @db.Char(36)
+  user_id    String   @db.Char(36)
+  acked_at   DateTime @default(now())
+  messages   messages @relation(fields: [message_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ma_message")
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ma_user")
+
+  @@unique([message_id, user_id], map: "uk_ack_message_user")
+  @@index([user_id], map: "idx_user")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model message_attachments {
+  id         String   @id @db.Char(36)
+  message_id String   @db.Char(36)
+  file_name  String   @db.VarChar(255)
+  file_url   String   @db.VarChar(500)
+  file_size  Int?
+  mime_type  String?  @db.VarChar(100)
+  created_at DateTime @default(now())
+  messages   messages @relation(fields: [message_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_mat_message")
+
+  @@index([message_id], map: "idx_message")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model message_reads {
+  id         String   @id @db.Char(36)
+  message_id String   @db.Char(36)
+  user_id    String   @db.Char(36)
+  read_at    DateTime @default(now())
+  messages   messages @relation(fields: [message_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_mr_message")
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_mr_user")
+
+  @@unique([message_id, user_id], map: "uk_message_user")
+  @@index([user_id], map: "idx_user")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model message_reminders {
+  id         String   @id @db.Char(36)
+  message_id String   @db.Char(36)
+  remind_at  DateTime
+  status     String   @default("pending") @db.VarChar(20)
+  created_at DateTime @default(now())
+  messages   messages @relation(fields: [message_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_mrem_message")
+
+  @@index([message_id, remind_at], map: "idx_msg_time")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model messages {
+  id                  String                @id @db.Char(36)
+  class_id            String                @db.Char(36)
+  publisher_id        String                @db.Char(36)
+  type                String                @db.VarChar(20)
+  title               String                @db.VarChar(200)
+  content             String                @db.Text
+  location            String?               @db.VarChar(200)
+  event_time          DateTime?
+  require_ack         Boolean               @default(false)
+  reminder_interval   Int?
+  ack_deadline        DateTime?             @db.DateTime(0)
+  status              String                @default("published") @db.VarChar(20)
+  created_at          DateTime              @default(now())
+  updated_at          DateTime              @default(now())
+  message_acks        message_acks[]
+  message_attachments message_attachments[]
+  message_reads       message_reads[]
+  message_reminders   message_reminders[]
+  classes             classes               @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_msg_class")
+  users               users                 @relation(fields: [publisher_id], references: [id], onUpdate: NoAction, map: "fk_msg_publisher")
+
+  @@index([class_id, created_at], map: "idx_class_created")
+  @@index([class_id, type], map: "idx_class_type")
+  @@index([publisher_id], map: "idx_publisher")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model random_draw_members {
+  id                  String              @id @db.Char(36)
+  draw_id             String              @db.Char(36)
+  student_id          String              @db.Char(36)
+  draw_type           String              @default("main") @db.VarChar(20)
+  created_at          DateTime            @default(now())
+  random_draw_records random_draw_records @relation(fields: [draw_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_rdm_draw")
+  users               users               @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_rdm_student")
+
+  @@unique([draw_id, student_id], map: "uk_draw_student")
+  @@index([student_id], map: "idx_student")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model random_draw_records {
+  id                  String                @id @db.Char(36)
+  class_id            String                @db.Char(36)
+  title               String                @db.VarChar(200)
+  main_count          Int                   @default(0)
+  backup_count        Int                   @default(0)
+  status              String                @default("confirmed") @db.VarChar(20)
+  created_by          String                @db.Char(36)
+  created_at          DateTime              @default(now())
+  random_draw_members random_draw_members[]
+  classes             classes               @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_rdr_class")
+  users               users                 @relation(fields: [created_by], references: [id], onUpdate: NoAction, map: "fk_rdr_creator")
+
+  @@index([class_id], map: "idx_class")
+  @@index([created_by], map: "idx_created_by")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model refresh_tokens {
+  id          String    @id @db.Char(36)
+  user_id     String    @db.Char(36)
+  token_hash  String    @unique(map: "token_hash") @db.VarChar(255)
+  device_info String?   @db.VarChar(255)
+  ip_address  String?   @db.VarChar(45)
+  expires_at  DateTime
+  revoked_at  DateTime?
+  created_at  DateTime  @default(now())
+  users       users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_rt_user")
+
+  @@index([user_id, token_hash], map: "idx_user_token")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model tasks {
+  id         String    @id @db.Char(36)
+  class_id   String    @db.Char(36)
+  title      String    @db.VarChar(200)
+  owner_id   String    @db.Char(36)
+  deadline   DateTime?
+  progress   Int       @default(0)
+  status     String    @default("todo") @db.VarChar(20)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  classes    classes   @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_task_class")
+  users      users     @relation(fields: [owner_id], references: [id], onUpdate: NoAction, map: "fk_task_owner")
+
+  @@index([class_id, status], map: "idx_class_status")
+  @@index([owner_id], map: "idx_owner")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model pomodoro_sessions {
+  id               String    @id @db.Char(36)
+  class_id         String    @db.Char(36)
+  user_id          String    @db.Char(36)
+  task_title       String    @db.VarChar(200)
+  duration_minutes Int       @default(25)
+  actual_minutes   Int       @default(0)
+  status           String    @default("in_progress") @db.VarChar(20)
+  started_at       DateTime  @default(now())
+  completed_at     DateTime?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @default(now())
+  classes          classes   @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ps_class")
+  users            users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ps_user")
+
+  @@index([class_id, status], map: "idx_ps_class_status")
+  @@index([user_id, started_at], map: "idx_ps_user_started")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model user_auths {
+  id         String   @id @db.Char(36)
+  user_id    String   @db.Char(36)
+  auth_type  String   @db.VarChar(20)
+  identifier String   @db.VarChar(100)
+  credential String?  @db.VarChar(255)
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ua_user")
+
+  @@unique([auth_type, identifier], map: "uk_auth")
+  @@index([user_id], map: "idx_user_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model user_settings {
+  id                    String   @id @db.Char(36)
+  user_id               String   @unique(map: "user_id") @db.Char(36)
+  notification_settings Json?
+  privacy_settings      Json?
+  general_settings      Json?
+  created_at            DateTime @default(now())
+  updated_at            DateTime @default(now())
+  users                 users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_us_user")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model users {
+  id                                                                         String                           @id @db.Char(36)
+  name                                                                       String                           @db.VarChar(50)
+  phone                                                                      String                           @unique(map: "phone") @db.VarChar(20)
+  student_id                                                                 String?                          @db.VarChar(30)
+  avatar                                                                     String?                          @db.LongText
+  background_image                                                           String?                          @db.LongText
+  bio                                                                        String?                          @db.VarChar(200)
+  password_hash                                                              String                           @db.VarChar(255)
+  status                                                                     Boolean                          @default(true)
+  created_at                                                                 DateTime                         @default(now())
+  updated_at                                                                 DateTime                         @default(now())
+  activities                                                                 activities[]
+  activity_registrations                                                     activity_registrations[]
+  archive_files_uploader                                                     archive_files[]                @relation("archive_files_uploader")
+  archives                                                                   archives[]
+  attendance_records                                                         attendance_records[]
+  attendances                                                                attendances[]
+  class_members                                                              class_members[]
+  classes                                                                    classes[]
+  committee_handovers_committee_handovers_from_user_idTousers                committee_handovers[]            @relation("committee_handovers_from_user_idTousers")
+  committee_handovers_committee_handovers_to_user_idTousers                  committee_handovers[]            @relation("committee_handovers_to_user_idTousers")
+  feedback                                                                   feedback[]
+  finance_payments_finance_payments_registered_byTousers                     finance_payments[]               @relation("finance_payments_registered_byTousers")
+  finance_payments_finance_payments_student_idTousers                        finance_payments[]               @relation("finance_payments_student_idTousers")
+  finance_records                                                            finance_records[]
+  homework_delay_applications_homework_delay_applications_reviewed_byTousers homework_delay_applications[]    @relation("homework_delay_applications_reviewed_byTousers")
+  homework_delay_applications_homework_delay_applications_student_idTousers  homework_delay_applications[]    @relation("homework_delay_applications_student_idTousers")
+  homework_offline_check_details_homework_offline_check_details_student_idTousers  homework_offline_check_details[] @relation("homework_offline_check_details_student_idTousers")
+  homework_offline_check_details_homework_offline_check_details_user_idTousers     homework_offline_check_details[] @relation("homework_offline_check_details_user_idTousers")
+  homework_offline_checks                                                    homework_offline_checks[]
+  homework_submissions                                                       homework_submissions[]
+  homeworks                                                                  homeworks[]
+  leave_applications_leave_applications_reviewed_byTousers                   leave_applications[]             @relation("leave_applications_reviewed_byTousers")
+  leave_applications_leave_applications_student_idTousers                    leave_applications[]             @relation("leave_applications_student_idTousers")
+  material_downloads                                                         material_downloads[]
+  materials                                                                  materials[]
+  message_acks                                                               message_acks[]
+  message_reads                                                              message_reads[]
+  messages                                                                   messages[]
+  pomodoro_sessions                                                          pomodoro_sessions[]
+  random_draw_members                                                        random_draw_members[]
+  random_draw_records                                                        random_draw_records[]
+  refresh_tokens                                                             refresh_tokens[]
+  tasks                                                                      tasks[]
+  user_auths                                                                 user_auths[]
+  user_settings                                                              user_settings?
+  vote_records                                                               vote_records[]
+  votes                                                                      votes[]
+
+  @@index([phone], map: "idx_phone")
+  @@index([student_id], map: "idx_student_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model error_logs {
+  id              String   @id @db.Char(36)
+  error_type      String   @db.VarChar(100)
+  severity        String   @default("minor") @db.VarChar(20)
+  message         String   @db.Text
+  stack_trace     String?  @db.Text
+  user_id         String?  @db.Char(36)
+  class_id        String?  @db.Char(36)
+  page_path       String?  @db.VarChar(500)
+  device_info     String?  @db.VarChar(500)
+  browser_info    String?  @db.VarChar(500)
+  ip_address      String?  @db.VarChar(45)
+  user_feedback   String?  @db.Text
+  solution_id     String?  @db.Char(36)
+  status          String   @default("new") @db.VarChar(20)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now())
+  error_solutions error_solutions? @relation(fields: [solution_id], references: [id], onUpdate: NoAction, map: "fk_el_solution")
+
+  @@index([severity], map: "idx_severity")
+  @@index([error_type], map: "idx_error_type")
+  @@index([status], map: "idx_status")
+  @@index([created_at], map: "idx_created_at")
+  @@index([user_id], map: "idx_user_id")
+  @@index([class_id], map: "idx_class_id")
+}
+
+model error_solutions {
+  id          String     @id @db.Char(36)
+  error_type  String     @db.VarChar(100)
+  title       String     @db.VarChar(200)
+  description String     @db.Text
+  steps       String     @db.Text
+  is_active   Boolean    @default(true)
+  hit_count   Int        @default(0)
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @default(now())
+  error_logs  error_logs[]
+
+  @@index([error_type], map: "idx_es_error_type")
+  @@index([is_active], map: "idx_es_is_active")
+}
+
+model vote_options {
+  id           String         @id @db.Char(36)
+  vote_id      String         @db.Char(36)
+  label        String         @db.VarChar(200)
+  sort_order   Int            @default(0)
+  created_at   DateTime       @default(now())
+  votes        votes          @relation(fields: [vote_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_vo_vote")
+  vote_records vote_records[]
+
+  @@index([vote_id], map: "idx_vote")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model vote_records {
+  id           String       @id @db.Char(36)
+  vote_id      String       @db.Char(36)
+  option_id    String       @db.Char(36)
+  student_id   String       @db.Char(36)
+  created_at   DateTime     @default(now())
+  vote_options vote_options @relation(fields: [option_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_vr_option")
+  users        users        @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_vr_student")
+  votes        votes        @relation(fields: [vote_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_vr_vote")
+
+  @@unique([vote_id, option_id, student_id], map: "uk_vote_option_student")
+  @@index([option_id], map: "idx_option")
+  @@index([student_id], map: "idx_student")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model votes {
+  id           String         @id @db.Char(36)
+  class_id     String         @db.Char(36)
+  publisher_id String         @db.Char(36)
+  title        String         @db.VarChar(200)
+  vote_type    String         @default("single") @db.VarChar(20)
+  deadline     DateTime
+  status       String         @default("published") @db.VarChar(20)
+  created_at   DateTime       @default(now())
+  updated_at   DateTime       @default(now())
+  vote_options vote_options[]
+  vote_records vote_records[]
+  classes      classes        @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_vote_class")
+  users        users          @relation(fields: [publisher_id], references: [id], onUpdate: NoAction, map: "fk_vote_publisher")
+
+  @@index([class_id, deadline], map: "idx_class_deadline")
+  @@index([publisher_id], map: "idx_publisher")
+}
