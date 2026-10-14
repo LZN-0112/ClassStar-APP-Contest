@@ -1,0 +1,216 @@
+@import url('https://fonts.googleapis.com/css2?family=Funnel+Sans:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Geist:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Pencil 设计稿颜色体系 */
+  --accent: #0062FF;
+  --accent-100: #0062FF1A;
+  --accent-200: #0062FF33;
+  --accent-50: #0062FF0D;
+  --accent-glow: #0062FF33;
+  --accent-secondary: #0062FF66;
+  --accent-tertiary: #0062FF99;
+  --bg: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-elevated: #FFFFFF;
+  --border: #E5E7EB;
+  --border-subtle: #F3F4F6;
+  --text-primary: #1A1A1A;
+  --text-secondary: #4B5563;
+  --text-muted: #4B5563;
+  --text-inverse: #FFFFFF;
+  --icon-bg: #EBF4FF;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+
+  /* 渐变 */
+  --gradient-a: linear-gradient(180deg, #076CAB 0%, #32C9FD 55%, #DEFCFF 100%);
+  --gradient-b: linear-gradient(180deg, #1986E6 0%, #8ACAE5 55%, #DEFCFF 100%);
+
+  /* 阴影 */
+  --shadow-soft: 0px 2px 8px 0px #0000000D;
+  --shadow-card: 0px 2px 8px 0px #0000000D;
+  --shadow-lift: 0px 4px 12px 0px #00000014;
+  --shadow-icon: 0px 2px 6px 0px #0000000D;
+
+  /* 字体体系 */
+  --font-heading: "Funnel Sans", system-ui, sans-serif;
+  --font-body: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-caption: Geist, system-ui, sans-serif;
+  --font-data: "Geist Mono", system-ui, monospace;
+
+  font-family: var(--font-body);
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  body {
+    background-color: #E5E7EB;
+    color: var(--text-primary);
+  }
+
+  * {
+    box-sizing: border-box;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* modern-mobile-menu 组件全局样式扩展 */
+:root {
+  --component-inactive-color: var(--muted-foreground, #6B7280);
+  --component-bg: #FFFFFF;
+  --component-shadow: var(--border, #E5E7EB);
+  --component-active-bg: var(--secondary, #F3F4F6);
+  --component-line-inactive-color: var(--border, #E5E7EB);
+  --component-active-color-default: var(--accent-foreground, #0062FF);
+  --chart-2: #4B83FF;
+  --chart-3: #22C55E;
+  --chart-4: #F59E0B;
+  --chart-5: #EF4444;
+}
+
+.dark {
+  --component-inactive-color: var(--muted-foreground, #9CA3AF);
+  --component-bg: #FFFFFF;
+  --component-shadow: var(--border, #374151);
+  --component-active-bg: var(--secondary, #374151);
+  --component-line-inactive-color: var(--muted-foreground, #9CA3AF);
+  --component-active-color-default: var(--accent-foreground, #60A5FA);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes iconBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  20% {
+    transform: translateY(-0.3em);
+  }
+  40% {
+    transform: translateY(0);
+  }
+  60% {
+    transform: translateY(-0.1em);
+  }
+  80% {
+    transform: translateY(0);
+  }
+}
+
+/* 底部导航栏：类微信 TabBar 风格，固定于手机弧形底部区域 */
+.menu {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  width: 100%;
+  padding: 0.375rem 0 calc(0.375rem + env(safe-area-inset-bottom));
+  background-color: #FFFFFF;
+  border-top: 1px solid var(--component-shadow);
+}
+
+.menu__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border: none;
+  background: transparent;
+  color: var(--component-inactive-color);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  border-radius: 0.5rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.menu__item:active {
+  opacity: 0.7;
+}
+
+.menu__item.active {
+  color: var(--component-active-color);
+}
+
+.menu__item.active .menu__icon .icon {
+  animation: iconBounce 0.45s ease;
+}
+
+.menu__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.menu__icon .icon {
+  width: 100%;
+  height: 100%;
+}
+
+.menu__text {
+  position: relative;
+  font-size: 0.65rem;
+  font-weight: 500;
+  line-height: 1;
+  text-transform: capitalize;
+}
+
+/* 真机 App：把各页面顶部内联的模拟状态栏(9:41/100%) 变成一个高度=状态栏高度(--safe-top)的透明安全占位，
+   并将其下的 header/返回按钮/标题推到系统状态栏之下，避免与状态栏重叠（统一避让）。
+   注意：占位背景要透明，才能透出页面顶部真实背景，避免与下方内容产生色差。 */
+html.is-native [data-pencil-name="Status Bar"],
+html.is-native div[class*="h-[62px]"][class*="justify-between"][class*="items-center"] {
+  height: var(--safe-top, 0px) !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background: transparent !important;
+}
+html.is-native [data-pencil-name="Status Bar"] > *,
+html.is-native div[class*="h-[62px]"][class*="justify-between"][class*="items-center"] > * {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

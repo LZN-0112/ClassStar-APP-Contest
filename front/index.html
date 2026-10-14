@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>校园班级事务智能管理助手</title>
+    <script type="module">
+      if (import.meta.hot?.on) {
+        import.meta.hot.on('vite:error', (error) => {
+          if (error.err) {
+            console.error(
+              [error.err.message, error.err.frame].filter(Boolean).join('\n'),
+            )
+          }
+        })
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      window.addEventListener('error', function(e) {
+        var root = document.getElementById('root');
+        if (root) {
+          root.innerHTML = '<div style="padding:20px;color:red;font-size:14px;word-break:break-all;">JS Error: ' + (e.message || 'unknown') + '<br>File: ' + (e.filename || '') + '<br>Line: ' + (e.lineno || '') + '</div>';
+        }
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        var root = document.getElementById('root');
+        if (root) {
+          root.innerHTML = '<div style="padding:20px;color:red;font-size:14px;word-break:break-all;">Promise Error: ' + (e.reason || 'unknown') + '</div>';
+        }
+      });
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

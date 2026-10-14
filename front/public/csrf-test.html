@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSRF API Test</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 20px; line-height: 1.6; }
+    pre { background: #f3f4f6; padding: 10px; border-radius: 6px; overflow-x: auto; }
+    .success { color: #16a34a; }
+    .error { color: #dc2626; }
+    button { padding: 10px 20px; margin: 10px 0; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>CSRF API 调试页面</h1>
+  <button id="run">运行测试</button>
+  <button id="clear">清除 Token</button>
+  <div id="output"></div>
+
+  <script>
+    const output = document.getElementById('output');
+
+    function log(msg, type = 'info') {
+      const el = document.createElement('pre');
+      el.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+      el.className = type;
+      output.appendChild(el);
+    }
+
+    document.getElementById('clear').addEventListener('click', () => {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      log('已清除 localStorage');
+    });
+
+    document.getElementById('run').addEventListener('click', async () => {
+      output.innerHTML = '';
+      log('开始测试...');
+
+      const api = axios.create({
+        baseURL: '/api/v1',
+        timeout: 15000,
+        withCredentials: true,
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      let csrfToken = null;
+
+      api.interceptors.request.use(async (config) => {
+        const token = localStorage.getItem('accessToken');
+        if (token) config.headers.Authorization = `Bearer ${token}`;
+
+        const method = config.method?.toLowerCase() || '';
+        const isSafe = ['get', 'head', 'options'].includes(method);
+        const isCsrf = config.url === '/auth/csrf-token';
+
+        if (!isSafe && !isCsrf) {
+          if (!csrfToken) {
+            log('正在获取 CSRF token...');
+            const { data } = await api.get('/auth/csrf-token');
+            csrfToken = data.token || data.data?.token;
+            log('CSRF token: ' + csrfToken);
+          }
+          config.headers['X-CSRF-Token'] = csrfToken;
+        }
+
+        log(`请求: ${config.method?.toUpperCase()} ${config.url}\nHeaders: ${JSON.stringify(config.headers, null, 2)}`);
+        return config;
+      });
+
+      try {
+        const login = await api.post('/auth/login', {
+          phone: '13800138001',
+          loginType: 'password',
+          password: 'test1234'
+        });
+        log(`登录成功: ${login.status}\n${JSON.stringify(login.data, null, 2)}`, 'success');
+        localStorage.setItem('accessToken', login.data.data.accessToken);
+
+        const cls = await api.post('/classes', { name: '浏览器测试班级' });
+        log(`创建班级成功: ${cls.status}\n${JSON.stringify(cls.data, null, 2)}`, 'success');
+      } catch (err) {
+        log(`错误: ${err.response?.status}\n${JSON.stringify(err.response?.data, null, 2)}\n${err.message}`, 'error');
+      }
+    });
+  </script>
+</body>
+</html>

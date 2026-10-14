@@ -1,0 +1,11 @@
+{
+  "appId": "com.banwuxing.app",
+  "appName": "班务星",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "http"
+  },
+  "android": {
+    "adjustMarginsForEdgeToEdge": "disable"
+  }
+}
