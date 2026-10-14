@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>班务星 APP - 项目进度看板</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: #F0F2F5;
+    color: #1A1A1A;
+    padding: 24px;
+    min-height: 100vh;
+  }
+  .header {
+    background: linear-gradient(135deg, #0062FF 0%, #004ECC 100%);
+    border-radius: 16px;
+    padding: 32px;
+    color: #fff;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 20px rgba(0,98,255,0.3);
+  }
+  .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .header p { font-size: 14px; opacity: 0.85; }
+  .header .date { font-size: 12px; opacity: 0.6; margin-top: 12px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .stat-card .label { font-size: 13px; color: #6B7280; margin-bottom: 8px; }
+  .stat-card .value { font-size: 32px; font-weight: 700; color: #0062FF; }
+  .stat-card .value.green { color: #22C55E; }
+  .stat-card .value.gray { color: #9CA3AF; }
+  .stat-card .sub { font-size: 12px; color: #9CA3AF; margin-top: 4px; }
+
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin-bottom: 24px;
+  }
+  .panel-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    background: #0062FF;
+    border-radius: 2px;
+  }
+
+  /* 阶段进度条 */
+  .phase-list { display: flex; flex-direction: column; gap: 16px; }
+  .phase-item {
+    display: grid;
+    grid-template-columns: 120px 1fr 80px;
+    align-items: center;
+    gap: 16px;
+  }
+  .phase-name { font-size: 14px; font-weight: 500; }
+  .phase-name .tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  .tag.done { background: #DCFCE7; color: #16A34A; }
+  .tag.doing { background: #DBEAFE; color: #2563EB; }
+  .tag.todo { background: #F3F4F6; color: #6B7280; }
+  .phase-bar {
+    height: 12px;
+    background: #F3F4F6;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+  }
+  .phase-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.8s ease;
+  }
+  .phase-fill.done { background: linear-gradient(90deg, #22C55E, #16A34A); }
+  .phase-fill.doing { background: linear-gradient(90deg, #0062FF, #3B82F6); }
+  .phase-fill.todo { background: #E5E7EB; }
+  .phase-pct { font-size: 14px; font-weight: 600; text-align: right; }
+  .phase-pct.done { color: #16A34A; }
+  .phase-pct.doing { color: #0062FF; }
+  .phase-pct.todo { color: #9CA3AF; }
+  .phase-desc {
+    grid-column: 2 / 3;
+    font-size: 12px;
+    color: #6B7280;
+    margin-top: -8px;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .chart-box { width: 100%; height: 320px; }
+
+  /* 页面清单 */
+  .page-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .page-item {
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .page-item.done { background: #F0FDF4; color: #16A34A; border: 1px solid #BBF7D0; }
+  .page-item.todo { background: #F9FAFB; color: #9CA3AF; border: 1px solid #E5E7EB; }
+  .page-item .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .page-item.done .dot { background: #22C55E; }
+  .page-item.todo .dot { background: #D1D5DB; }
+
+  .legend {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: #6B7280;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+  .footer {
+    text-align: center;
+    font-size: 12px;
+    color: #9CA3AF;
+    padding: 16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>班务星 APP · 项目进度看板</h1>
+  <p>小程序端 Taro + React 重建 · App 端 WebView 套壳 front</p>
+  <div class="date">更新时间：2026-09-06 · 数据来源：项目源码扫描 + 编译验证</div>
+</div>
+
+<!-- 核心指标 -->
+<div class="grid">
+  <div class="stat-card">
+    <div class="label">整体进度</div>
+    <div class="value">38%</div>
+    <div class="sub">P0-P2 完成，P3-P4 待开始</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">小程序端页面</div>
+    <div class="value green">3 / 82</div>
+    <div class="sub">启动页 / 登录 / 首页已完成</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">App 端</div>
+    <div class="value gray">0%</div>
+    <div class="sub">P4 阶段，WebView 套壳 front</div>
+  </div>
+  <div class="stat-card">
+    <div class="label">编译状态</div>
+    <div class="value green">通过</div>
+    <div class="sub">build:weapp 6.65s 零 error</div>
+  </div>
+</div>
+
+<!-- 阶段进度 -->
+<div class="panel">
+  <div class="panel-title">五阶段执行进度</div>
+  <div class="phase-list">
+    <div class="phase-item">
+      <div class="phase-name">P0 准备<span class="tag done">已完成</span></div>
+      <div class="phase-bar"><div class="phase-fill done" style="width:100%"></div></div>
+      <div class="phase-pct done">100%</div>
+      <div class="phase-desc">旧 mobile 归档（79页完整保留）+ 设计规范文档（26KB / 11章 / 20组件规范）</div>
+    </div>
+    <div class="phase-item">
+      <div class="phase-name">P1 骨架<span class="tag done">已完成</span></div>
+      <div class="phase-bar"><div class="phase-fill done" style="width:100%"></div></div>
+      <div class="phase-pct done">100%</div>
+      <div class="phase-desc">Taro 4.x + React 18 + TS + zustand；9主包页面 + 9分包结构 + 5 tabBar + request/auth/classes API 层 + Button/Card/Icon/Input 组件</div>
+    </div>
+    <div class="phase-item">
+      <div class="phase-name">P2 试点页面<span class="tag done">已完成</span></div>
+      <div class="phase-bar"><div class="phase-fill done" style="width:100%"></div></div>
+      <div class="phase-pct done">100%</div>
+      <div class="phase-desc">启动页（条纹+Logo+自动跳转）/ 登录页（表单验证+API联调+微信登录+协议）/ 首页（问候语+待办卡片+9宫格+班级动态，双API）</div>
+    </div>
+    <div class="phase-item">
+      <div class="phase-name">P3 全量页面迁移<span class="tag todo">未开始</span></div>
+      <div class="phase-bar"><div class="phase-fill todo" style="width:0%"></div></div>
+      <div class="phase-pct todo">0%</div>
+      <div class="phase-desc">9 个分包约 70+ 页面：考勤 / 作业 / 活动 / 投票 / 班费 / 资料 / 任务 / 设置 / 档案，逐页对齐 front</div>
+    </div>
+    <div class="phase-item">
+      <div class="phase-name">P4 App 壳<span class="tag todo">未开始</span></div>
+      <div class="phase-bar"><div class="phase-fill todo" style="width:0%"></div></div>
+      <div class="phase-pct todo">0%</div>
+      <div class="phase-desc">Android/iOS 原生壳 + WebView 套 front 静态文件 + JSBridge（拍照/扫码/通知/定位/存储/分享）+ 打包签名</div>
+    </div>
+  </div>
+</div>
+
+<!-- 双端对比 + 页面清单 -->
+<div class="two-col">
+  <div class="panel">
+    <div class="panel-title">各端完成度对比</div>
+    <div id="chart-end" class="chart-box"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">模块工作量分布</div>
+    <div id="chart-module" class="chart-box"></div>
+  </div>
+</div>
+
+<!-- 小程序端页面清单 -->
+<div class="panel">
+  <div class="panel-title">小程序端页面完成清单（主包 9 页）</div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#22C55E"></div>已完成（3页）</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#D1D5DB"></div>占位/待开发（6页）</div>
+  </div>
+  <div class="page-grid">
+    <div class="page-item done"><div class="dot"></div>启动页 Launch</div>
+    <div class="page-item done"><div class="dot"></div>登录页 Login</div>
+    <div class="page-item done"><div class="dot"></div>首页 Home</div>
+    <div class="page-item todo"><div class="dot"></div>注册页 Register</div>
+    <div class="page-item todo"><div class="dot"></div>重置密码 Reset</div>
+    <div class="page-item todo"><div class="dot"></div>班级页 ClassHome</div>
+    <div class="page-item todo"><div class="dot"></div>通知页 Notice</div>
+    <div class="page-item todo"><div class="dot"></div>数据页 Data</div>
+    <div class="page-item todo"><div class="dot"></div>我的页 Profile</div>
+  </div>
+  <div style="margin-top:16px; padding:12px; background:#F8FAFC; border-radius:8px; font-size:12px; color:#6B7280;">
+    分包 9 个模块（attendance / homework / activity / vote / fee / material / task / settings / archive）共约 70+ 页面，均待 P3 阶段开发。
+  </div>
+</div>
+
+<!-- 技术架构 -->
+<div class="panel">
+  <div class="panel-title">当前技术架构</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+    <div style="padding:16px; background:#F0F7FF; border-radius:10px; border-left:4px solid #0062FF;">
+      <div style="font-size:14px; font-weight:600; color:#0062FF; margin-bottom:8px;">front（Web 端）</div>
+      <div style="font-size:12px; color:#4B5563; line-height:1.8;">
+        React 18 + Vite 6 + Tailwind<br>
+        88 页面组件 / 90 路由<br>
+        运行：localhost:5174<br>
+        角色：App 套壳目标 + 效果标杆
+      </div>
+    </div>
+    <div style="padding:16px; background:#F0FDF4; border-radius:10px; border-left:4px solid #22C55E;">
+      <div style="font-size:14px; font-weight:600; color:#16A34A; margin-bottom:8px;">mobile（小程序端）</div>
+      <div style="font-size:12px; color:#4B5563; line-height:1.8;">
+        Taro 4.x + React 18 + TS + Sass<br>
+        9 主包 + 9 分包结构<br>
+        编译：build:weapp 6.65s<br>
+        角色：微信小程序走量端
+      </div>
+    </div>
+    <div style="padding:16px; background:#FFFBEB; border-radius:10px; border-left:4px solid #F59E0B;">
+      <div style="font-size:14px; font-weight:600; color:#D97706; margin-bottom:8px;">back（后端）</div>
+      <div style="font-size:12px; color:#4B5563; line-height:1.8;">
+        NestJS + Prisma + MySQL<br>
+        17 业务模块<br>
+        运行：localhost:3000<br>
+        API 前缀：/api/v1
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  班务星 APP · 校园班级事务智能管理助手 · 进度看板由项目源码自动扫描生成
+</div>
+
+<script>
+// 各端完成度雷达图
+var chartEnd = echarts.init(document.getElementById('chart-end'));
+chartEnd.setOption({
+  tooltip: { trigger: 'item' },
+  legend: { bottom: 0, textStyle: { fontSize: 12 } },
+  series: [{
+    type: 'pie',
+    radius: ['45%', '70%'],
+    center: ['50%', '45%'],
+    avoidLabelOverlap: false,
+    itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+    label: { show: true, formatter: '{b}\n{d}%', fontSize: 12 },
+    data: [
+      { value: 3.7, name: '小程序端已完成', itemStyle: { color: '#22C55E' } },
+      { value: 96.3, name: '小程序端待开发', itemStyle: { color: '#E5E7EB' } }
+    ]
+  }],
+  graphic: [{
+    type: 'text',
+    left: 'center',
+    top: '38%',
+    style: { text: '小程序端\n3/82 页', fontSize: 14, fontWeight: 600, fill: '#1A1A1A', textAlign: 'center' }
+  }]
+});
+
+// 模块工作量分布
+var chartModule = echarts.init(document.getElementById('chart-module'));
+chartModule.setOption({
+  tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+  grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+  xAxis: {
+    type: 'value',
+    axisLabel: { fontSize: 11 },
+    splitLine: { lineStyle: { color: '#F3F4F6' } }
+  },
+  yAxis: {
+    type: 'category',
+    data: ['档案', '设置', '任务', '资料', '班费', '投票', '活动', '作业', '考勤'],
+    axisLabel: { fontSize: 12 }
+  },
+  series: [{
+    type: 'bar',
+    data: [
+      { value: 5, itemStyle: { color: '#E5E7EB' } },
+      { value: 6, itemStyle: { color: '#E5E7EB' } },
+      { value: 7, itemStyle: { color: '#E5E7EB' } },
+      { value: 8, itemStyle: { color: '#E5E7EB' } },
+      { value: 8, itemStyle: { color: '#E5E7EB' } },
+      { value: 9, itemStyle: { color: '#E5E7EB' } },
+      { value: 10, itemStyle: { color: '#E5E7EB' } },
+      { value: 12, itemStyle: { color: '#E5E7EB' } },
+      { value: 10, itemStyle: { color: '#E5E7EB' } }
+    ],
+    barWidth: 18,
+    itemStyle: { borderRadius: [0, 4, 4, 0] },
+    label: { show: true, position: 'right', fontSize: 11, color: '#6B7280', formatter: '{c}页' }
+  }]
+});
+
+window.addEventListener('resize', function() {
+  chartEnd.resize();
+  chartModule.resize();
+});
+</script>
+
+</body>
+</html>

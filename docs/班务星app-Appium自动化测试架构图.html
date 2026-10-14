@@ -1,0 +1,90 @@
+<html style="margin:0;padding:0;">
+<title>班务星app App自动化测试体系架构</title>
+<div style="width:100%;box-sizing:border-box;background:#F5F7FA;font-family:'Microsoft YaHei',system-ui,sans-serif;padding:18px;border-radius:12px;">
+  <div style="text-align:center;margin-bottom:14px;">
+    <div style="font-size:20px;font-weight:700;color:#0F172A;">班务星app · Python+Appium 自动化测试体系架构</div>
+    <div style="font-size:13px;color:#64748B;margin-top:4px;">对齐课程《3天搞定企业级APP自动化》分层方法论 ｜ 用例规模 66 条 · 3 天实施</div>
+  </div>
+
+  <!-- 第0层：执行入口 -->
+  <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+    <div style="background:#0F172A;color:#fff;border-radius:8px;padding:10px 16px;font-size:14px;font-weight:600;">⚙ 执行入口：Jenkins 定时/触发 · pytest -m p0</div>
+  </div>
+  <div style="text-align:center;color:#94A3B8;font-size:18px;line-height:1;">↓</div>
+
+  <!-- 第1层：测试用例层 -->
+  <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px;margin-bottom:2px;">
+    <div style="font-size:14px;font-weight:700;color:#1D4ED8;margin-bottom:8px;">① 测试用例层 testcases/（pytest + 断言）</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <span style="background:#DC2626;color:#fff;border-radius:6px;padding:4px 10px;font-size:13px;">P0 认证 · 通知 · 考勤 · 作业（34条）</span>
+      <span style="background:#D97706;color:#fff;border-radius:6px;padding:4px 10px;font-size:13px;">P1 活动 · 投票 · 班费（16条）</span>
+      <span style="background:#2563EB;color:#fff;border-radius:6px;padding:4px 10px;font-size:13px;">P2 工具 · 资料档案 · 设置（13条）</span>
+      <span style="background:#059669;color:#fff;border-radius:6px;padding:4px 10px;font-size:13px;">E2E 端到端冒烟（3条）</span>
+    </div>
+  </div>
+  <div style="text-align:center;color:#94A3B8;font-size:18px;line-height:1;">↓</div>
+
+  <!-- 第2层：PO页面对象层 -->
+  <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:12px;margin-bottom:2px;">
+    <div style="font-size:14px;font-weight:700;color:#15803D;margin-bottom:8px;">② 页面对象层 pages/（一个页面一个类）</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:13px;color:#166534;">
+      <span style="background:#DCFCE7;border-radius:6px;padding:4px 10px;">login_page 认证</span>
+      <span style="background:#DCFCE7;border-radius:6px;padding:4px 10px;">home_page 首页/Tab</span>
+      <span style="background:#DCFCE7;border-radius:6px;padding:4px 10px;">notice_page 通知</span>
+      <span style="background:#DCFCE7;border-radius:6px;padding:4px 10px;">attendance_page 考勤</span>
+      <span style="background:#DCFCE7;border-radius:6px;padding:4px 10px;">homework_page 作业</span>
+      <span style="background:#DCFCE7;border-radius:6px;padding:4px 10px;">activity_page 活动</span>
+      <span style="background:#DCFCE7;border-radius:6px;padding:4px 10px;">vote_page 投票/抽签</span>
+      <span style="background:#DCFCE7;border-radius:6px;padding:4px 10px;">fee_page 班费</span>
+      <span style="background:#DCFCE7;border-radius:6px;padding:4px 10px;">profile_page 设置</span>
+    </div>
+  </div>
+  <div style="text-align:center;color:#94A3B8;font-size:18px;line-height:1;">↓</div>
+
+  <!-- 第3层：基础封装层 -->
+  <div style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:10px;padding:12px;margin-bottom:2px;">
+    <div style="font-size:14px;font-weight:700;color:#C2410C;margin-bottom:8px;">③ 基础封装层 base/（BASE方法 · 对应课程24集）</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:13px;color:#9A3412;">
+      <span style="background:#FFEDD5;border-radius:6px;padding:4px 10px;">BasePage 查找/点击/输入/滑动/等待</span>
+      <span style="background:#FFEDD5;border-radius:6px;padding:4px 10px;">Driver 会话创建/关闭</span>
+      <span style="background:#FFEDD5;border-radius:6px;padding:4px 10px;">Config 读取 caps/env</span>
+      <span style="background:#FFEDD5;border-radius:6px;padding:4px 10px;">DataLoader yaml/excel 数据驱动</span>
+      <span style="background:#FFEDD5;border-radius:6px;padding:4px 10px;">Common 断言/截图/日志</span>
+    </div>
+  </div>
+  <div style="text-align:center;color:#94A3B8;font-size:18px;line-height:1;">↓</div>
+
+  <!-- 第4层：驱动层 -->
+  <div style="background:#F8FAFC;border:1px solid #CBD5E1;border-radius:10px;padding:12px;margin-bottom:2px;">
+    <div style="font-size:14px;font-weight:700;color:#334155;margin-bottom:8px;">④ 驱动层 Appium-Python-Client → Appium Server → UiAutomator2 / ChromeDriver</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:13px;color:#475569;">
+      <span style="background:#E2E8F0;border-radius:6px;padding:4px 10px;">阶段一：browserName=Chrome（H5）</span>
+      <span style="background:#E2E8F0;border-radius:6px;padding:4px 10px;">阶段二：Hybrid APK + WebView context 切换</span>
+      <span style="background:#E2E8F0;border-radius:6px;padding:4px 10px;">显示等待 WebDriverWait</span>
+    </div>
+  </div>
+  <div style="text-align:center;color:#94A3B8;font-size:18px;line-height:1;">↓</div>
+
+  <!-- 第5层：被测环境 -->
+  <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:12px;">
+    <div style="font-size:14px;font-weight:700;color:#B91C1C;margin-bottom:8px;">⑤ 被测环境</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:13px;color:#991B1B;">
+      <span style="background:#FEE2E2;border-radius:6px;padding:4px 10px;">Android 模拟器 MuMu（Chrome / APK）</span>
+      <span style="background:#FEE2E2;border-radius:6px;padding:4px 10px;">班务星app 5 Tab · 70+ 页面</span>
+      <span style="background:#FEE2E2;border-radius:6px;padding:4px 10px;">后端 localhost:3000（NestJS）</span>
+      <span style="background:#FEE2E2;border-radius:6px;padding:4px 10px;">MySQL · Redis · MinIO</span>
+      <span style="background:#FEE2E2;border-radius:6px;padding:4px 10px;">接口二次校验 API（requests）</span>
+    </div>
+  </div>
+
+  <!-- 底部支撑 -->
+  <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
+    <div style="background:#fff;border:1px solid #CBD5E1;border-radius:8px;padding:8px 14px;font-size:13px;color:#334155;">📊 Allure 测试报告（功能树+失败截图）</div>
+    <div style="background:#fff;border:1px solid #CBD5E1;border-radius:8px;padding:8px 14px;font-size:13px;color:#334155;">📦 data/ 数据驱动 yaml</div>
+    <div style="background:#fff;border:1px solid #CBD5E1;border-radius:8px;padding:8px 14px;font-size:13px;color:#334155;">🌿 Git 分支管理 · .gitignore</div>
+    <div style="background:#fff;border:1px solid #CBD5E1;border-radius:8px;padding:8px 14px;font-size:13px;color:#334155;">🔁 Jenkins 每日定时回归 + 邮件告警</div>
+  </div>
+
+  <div style="text-align:center;font-size:12px;color:#94A3B8;margin-top:12px;">示意架构 · 数据来源：班务星app 工程结构（mobile/、docs/）与课程章节映射</div>
+</div>
+</html>
