@@ -1,0 +1,154 @@
+// ============================================================
+// 成员列表
+// 结构参照 front MemberList.tsx
+// ============================================================
+.mlist {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: $page-padding-top $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-3;
+  }
+
+  &__search {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+    padding: 8rpx 24rpx;
+    box-sizing: border-box;
+  }
+
+  &__tabs {
+    display: flex;
+    gap: $spacing-2;
+  }
+
+  &__tab {
+    flex: 1;
+    height: 72rpx;
+    border-radius: $radius-lg;
+    background: $surface;
+    border: 1rpx solid $border;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+
+    &--active {
+      border-color: $primary;
+      background: $accent-50;
+    }
+  }
+
+  &__tab-label {
+    font-size: $text-base;
+    color: $text-secondary;
+
+    &--active {
+      color: $primary;
+      font-weight: $font-semibold;
+    }
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-2;
+  }
+
+  &__item {
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+    padding: $spacing-3;
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    box-shadow: $shadow-sm;
+    box-sizing: border-box;
+  }
+
+  &__avatar {
+    width: 88rpx;
+    height: 88rpx;
+    border-radius: $radius-full;
+    background: $accent-50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  &__avatar-img {
+    width: 88rpx;
+    height: 88rpx;
+    border-radius: $radius-full;
+  }
+
+  &__item-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+  }
+
+  &__item-name {
+    font-size: $text-base;
+    font-weight: $font-semibold;
+    color: $text-primary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__item-tags {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+  }
+
+  &__item-role {
+    font-size: $text-11;
+    color: $text-secondary;
+  }
+
+  &__import {
+    background: $surface;
+    border: 1rpx dashed $primary;
+    border-radius: $radius-lg;
+    padding: $spacing-3;
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    box-sizing: border-box;
+    margin-top: $spacing-3;
+  }
+
+  &__import-icon {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: $radius-lg;
+    background: $accent-50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__import-text {
+    flex: 1;
+    font-size: $text-base;
+    font-weight: $font-semibold;
+    color: $primary;
+  }
+}

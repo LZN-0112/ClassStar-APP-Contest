@@ -1,0 +1,161 @@
+// ============================================================
+// 班务星 Design Tokens — SCSS 变量
+// 来源：docs/班务星设计规范.md（基于 front 源码提取）
+// 单位：rpx（设计稿 375px，1px = 2rpx）
+// 字体：仅系统字体（PingFang SC / Microsoft YaHei）
+// 通过 config/index.ts 的 sass.resource 全局注入
+// ============================================================
+
+// ============================================================
+// 1. 颜色系统
+// ============================================================
+
+// ---------- 主色 ----------
+$primary: #0062ff;          // 主按钮、链接、选中态、品牌色
+$primary-dark: #004ecc;     // 主色深色变体（渐变结束色、按压态）
+$primary-light: #4b83ff;    // 主色浅色变体（图表色 chart-2）
+
+// ---------- 语义色 ----------
+$success: #22c55e;          // 成功、签到、通过
+$warning: #f59e0b;          // 警告、待办、番茄钟
+$danger: #ef4444;           // 危险、删除、错误、活动
+
+// ---------- Accent 透明层级 ----------
+$accent-50: #0062ff0d;      // 极浅主色背景
+$accent-100: #0062ff1a;     // 浅主色背景
+$accent-200: #0062ff33;     // 主色描边/光晕
+$icon-bg: #ebf3ff;          // 图标容器背景（主色变体）
+
+// ---------- 表面与背景 ----------
+$surface: #ffffff;          // 卡片、页面内容背景
+$bg: #f8fafc;               // 手机内容区背景
+$page-bg: #e5e7eb;          // body 背景（桌面端）
+$home-bg: #f5f5f5;          // 首页背景
+$profile-bg: #f9fafb;       // 个人中心卡片容器背景
+
+// ---------- 文字色 ----------
+$text-primary: #1a1a1a;     // 主要标题、正文
+$text-secondary: #4b5563;   // 次要文字、副标题
+$text-tertiary: #9ca3af;    // 占位符、辅助说明
+$text-weak: #6b7280;        // 元信息、未选中态
+$text-inverse: #ffffff;     // 深色背景上的文字
+
+// ---------- 边框色 ----------
+$border: #e5e7eb;           // 输入框、分割线
+$border-light: #f3f4f6;     // 浅分割线（列表项间）
+
+// ---------- 中性灰阶 ----------
+$gray-50: #f8fafc;
+$gray-100: #f3f4f6;
+$gray-200: #e5e7eb;
+$gray-300: #d1d5db;
+$gray-400: #9ca3af;
+$gray-500: #6b7280;
+$gray-600: #4b5563;
+$gray-700: #374151;
+$gray-800: #1f2937;
+$gray-900: #111827;
+
+// ---------- 快捷入口图标色 ----------
+$color-notify: #2563eb;     // 通知
+$color-checkin: #22c55e;    // 签到
+$color-homework: #f97316;   // 作业
+$color-activity: #ef4444;   // 活动
+$color-material: #a855f7;   // 资料
+$color-fee: #10b981;        // 班费记账
+$color-draw: #8b5cf6;       // 抽签
+$color-vote: #3b82f6;       // 投票
+$color-pomodoro: #f59e0b;   // 番茄钟
+
+// ---------- 渐变色 ----------
+$gradient-a: linear-gradient(180deg, #076cab 0%, #32c9fd 55%, #defcff 100%);
+$gradient-b: linear-gradient(180deg, #1986e6 0%, #8acae5 55%, #defcff 100%);
+$gradient-todo: linear-gradient(-133.249deg, #0062ff 25.619%, #004ecc 74.381%);
+
+// ============================================================
+// 2. 字体系统
+// ============================================================
+
+// ---------- 字体族（仅系统字体） ----------
+$font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+
+// ---------- 字号（rpx，设计稿 px × 2） ----------
+$text-xs: 20rpx;            // 10px - 徽章、角色标签
+$text-11: 22rpx;            // 11px - 元信息、趋势标签
+$text-sm: 24rpx;            // 12px - 副文本、日期、说明
+$text-13: 26rpx;            // 13px - 副标题、列表副文本
+$text-base: 28rpx;          // 14px - 正文、列表标题、输入框
+$text-md: 30rpx;            // 15px - ListItem 标题
+$text-lg: 32rpx;            // 16px - 按钮、卡片标题
+$text-xl: 36rpx;            // 18px - 弹窗标题
+$text-2xl: 40rpx;           // 20px - 问候语、姓名
+$text-22: 44rpx;            // 22px - 统计数值
+$text-3xl: 48rpx;           // 24px
+$text-28: 56rpx;            // 28px - 页面大标题
+$text-36: 72rpx;            // 36px - 登录页欢迎标题
+
+// ---------- 字重 ----------
+$font-normal: 400;
+$font-medium: 500;
+$font-semibold: 600;
+$font-bold: 700;
+
+// ---------- 行高 ----------
+$leading-tight: 1.25;       // 大标题
+$leading-normal: 1.5;       // 正文
+$leading-relaxed: 1.75;     // 宽松正文
+
+// ============================================================
+// 3. 间距系统（rpx，设计稿 px × 2）
+// ============================================================
+$spacing-xs: 8rpx;          // 4px - 极小组件内间距
+$spacing-2: 16rpx;          // 8px - 卡片内小间距
+$spacing-sm: 16rpx;
+$spacing-3: 24rpx;          // 12px - 图标容器间距
+$spacing-md: 24rpx;
+$spacing-4: 32rpx;          // 16px - 卡片内边距、页面水平边距
+$spacing-lg: 32rpx;
+$spacing-5: 40rpx;          // 20px - 页面水平/垂直边距
+$spacing-6: 48rpx;          // 24px - StatusBar 水平边距
+$spacing-xl: 48rpx;
+$spacing-8: 64rpx;          // 32px - 空状态上下边距
+$spacing-2xl: 64rpx;
+$spacing-10: 80rpx;         // 40px - 返回按钮尺寸
+$spacing-12: 96rpx;         // 48px - 首页头像尺寸
+$spacing-14: 112rpx;        // 56px - 输入框高度
+$spacing-16: 128rpx;        // 64px - 弹窗内边距
+$spacing-20: 160rpx;        // 80px - 个人中心头像尺寸
+
+// ---------- 关键间距规范 ----------
+$page-padding-x: 40rpx;     // 页面内容区水平边距 px-5
+$page-padding-top: 32rpx;   // 页面内容区顶部 pt-4
+$page-padding-bottom: 40rpx;// 页面内容区底部 pb-5
+$card-padding: 32rpx;       // 卡片内边距 p-4
+$card-gap: 32rpx;           // 卡片间距 gap-4
+$tabbar-safe-bottom: 160rpx;// 一级页面底部安全区 pb-20
+
+// ============================================================
+// 4. 圆角系统（rpx，设计稿 px × 2）
+// ============================================================
+$radius-xs: 4rpx;           // 2px - 复选框
+$radius-sm: 8rpx;           // 4px - 小元素
+$radius-md: 16rpx;          // 8px - 输入框、小卡片
+$radius-lg: 24rpx;          // 12px - 卡片、按钮、快捷入口图标
+$radius-xl: 32rpx;          // 16px - 弹窗顶部圆角、大图标容器
+$radius-device: 80rpx;      // 40px - 手机外框圆角
+$radius-full: 9999rpx;      // 胶囊、圆形、头像
+
+// ============================================================
+// 5. 阴影系统（偏移/模糊用 rpx）
+// ============================================================
+$shadow-sm: 0 4rpx 12rpx 0 rgba(0, 0, 0, 0.05);   // icon：快捷入口图标容器
+$shadow-md: 0 4rpx 16rpx 0 rgba(0, 0, 0, 0.05);   // soft：卡片、输入框、按钮
+$shadow-lg: 0 8rpx 24rpx 0 rgba(0, 0, 0, 0.08);   // lift：悬浮元素、待办卡片
+
+// ============================================================
+// 6. 动画
+// ============================================================
+$transition-fast: 150ms;
+$transition-normal: 200ms;
+$transition-page: 250ms;
+$ease-in-out: cubic-bezier(0.25, 0.1, 0.25, 1);

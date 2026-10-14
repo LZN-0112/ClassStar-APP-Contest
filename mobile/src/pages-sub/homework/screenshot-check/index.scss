@@ -1,0 +1,277 @@
+.hwsc {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: $page-padding-top $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__label {
+    font-size: $text-11;
+    font-weight: 600;
+    color: $text-weak;
+
+    &--warn {
+      color: $warning;
+    }
+  }
+
+  &__hw-title {
+    font-size: $text-base;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__upload {
+    min-height: 360rpx;
+    background: $gray-50;
+    border: 2rpx dashed $border;
+    border-radius: $radius-lg;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    padding: 48rpx;
+    box-sizing: border-box;
+  }
+
+  &__spinner {
+    width: 56rpx;
+    height: 56rpx;
+    border: 6rpx solid $accent-200;
+    border-top-color: $primary;
+    border-radius: $radius-full;
+    animation: hwsc-spin 0.8s linear infinite;
+  }
+
+  &__upload-icon {
+    width: 112rpx;
+    height: 112rpx;
+    border-radius: $radius-full;
+    background: $icon-bg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__upload-title {
+    font-size: $text-base;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__upload-desc {
+    font-size: $text-11;
+    font-weight: 500;
+    color: $text-tertiary;
+  }
+
+  &__uploaded {
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-sm;
+    padding: 32rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8rpx;
+  }
+
+  &__uploaded-img {
+    width: 100%;
+    max-height: 320rpx;
+    border-radius: $radius-md;
+    margin-bottom: 8rpx;
+  }
+
+  &__uploaded-title {
+    font-size: $text-base;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__uploaded-desc {
+    font-size: $text-11;
+    font-weight: 500;
+    color: $text-tertiary;
+  }
+
+  &__uploaded-re {
+    font-size: $text-11;
+    font-weight: 600;
+    color: $danger;
+    margin-top: 8rpx;
+  }
+
+  &__manual {
+    display: flex;
+    gap: 16rpx;
+  }
+
+  &__manual-input {
+    flex: 1;
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    padding: 24rpx 32rpx;
+    font-size: $text-base;
+    color: $text-primary;
+    box-shadow: $shadow-sm;
+    box-sizing: border-box;
+  }
+
+  &__placeholder {
+    color: $text-tertiary;
+  }
+
+  &__manual-add {
+    width: 88rpx;
+    height: 88rpx;
+    border-radius: $radius-md;
+    background: $primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__unmatched {
+    background: #fef3c7;
+    border-radius: $radius-md;
+    padding: 24rpx;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16rpx;
+  }
+
+  &__unmatched-chip {
+    background: $surface;
+    border-radius: $radius-sm;
+    padding: 12rpx 24rpx;
+    font-size: $text-sm;
+    font-weight: 500;
+    color: #92400e;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__item {
+    min-height: 104rpx;
+    background: $surface;
+    border-radius: $radius-md;
+    box-shadow: $shadow-sm;
+    padding: 16rpx 24rpx;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+
+    &--active {
+      background: $accent-50;
+    }
+  }
+
+  &__item-main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  &__item-avatar {
+    width: 64rpx;
+    height: 64rpx;
+    border-radius: $radius-full;
+    background: #076cab;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__item-avatar-text {
+    font-size: $text-sm;
+    font-weight: 600;
+    color: $text-inverse;
+  }
+
+  &__item-id {
+    font-size: $text-base;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  &__item-status {
+    margin-left: auto;
+    font-size: $text-11;
+    font-weight: 500;
+    color: $text-tertiary;
+
+    &--on {
+      color: $primary;
+      font-weight: 600;
+    }
+  }
+
+  &__item-del {
+    width: 64rpx;
+    height: 64rpx;
+    border-radius: $radius-full;
+    background: #fee2e2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 16rpx;
+    flex-shrink: 0;
+  }
+
+  &__spacer {
+    flex: 1;
+  }
+
+  &__submit {
+    height: 104rpx;
+    border-radius: $radius-md;
+    background: $primary;
+    box-shadow: $shadow-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+
+    &--disabled {
+      opacity: 0.5;
+    }
+  }
+
+  &__submit-text {
+    font-size: $text-lg;
+    font-weight: 600;
+    color: $text-inverse;
+  }
+}
+
+@keyframes hwsc-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

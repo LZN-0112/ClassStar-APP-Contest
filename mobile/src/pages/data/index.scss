@@ -1,0 +1,127 @@
+.datadash {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: $surface;
+
+  &__body {
+    flex: 1;
+    padding: 0 $page-padding-x;
+    box-sizing: border-box;
+    /* 预留底部 TabBar 安全区 */
+    padding-bottom: $tabbar-safe-bottom;
+  }
+
+  &__grid {
+    display: flex;
+    flex-direction: row;
+    gap: $spacing-3;
+    margin-top: $spacing-3;
+  }
+
+  &__col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-3;
+  }
+
+  &__card {
+    background-color: $accent-50;
+    border: 1rpx solid $border-light;
+    border-radius: $radius-md;
+    padding: $spacing-4;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-2;
+  }
+
+  &__bar {
+    width: 100%;
+    height: 8rpx;
+    background-color: $primary;
+  }
+
+  &__label {
+    font-size: $text-11;
+    color: $text-secondary;
+  }
+
+  &__value {
+    font-size: $text-28;
+    font-weight: $font-bold;
+    color: $text-primary;
+  }
+
+  &__trend {
+    margin-top: $spacing-4;
+    background-color: $accent-50;
+    border-radius: $radius-md;
+    padding: $spacing-4;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-2;
+  }
+
+  &__trend-title {
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $text-primary;
+  }
+
+  &__bars {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    gap: $spacing-2;
+    height: 240rpx;
+    overflow-x: auto;
+  }
+
+  &__bar-item {
+    width: 56rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4rpx;
+    flex-shrink: 0;
+  }
+
+  &__bar-fill {
+    width: 100%;
+    background-color: $primary;
+    border-radius: 4rpx;
+  }
+
+  &__bar-fill--ph {
+    height: 40rpx;
+  }
+
+  &__bar-date {
+    font-size: 18rpx;
+    color: $text-weak;
+  }
+
+  &__trend-time {
+    font-size: $text-11;
+    color: $text-weak;
+  }
+
+  &__btn {
+    margin-top: $spacing-4;
+    height: 104rpx;
+    background-color: $primary;
+    border-radius: $radius-md;
+    box-shadow: $shadow-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__btn-text {
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $text-inverse;
+  }
+}

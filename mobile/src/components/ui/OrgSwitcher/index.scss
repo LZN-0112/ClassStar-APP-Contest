@@ -1,0 +1,201 @@
+// ============================================================
+// OrgSwitcher 班级切换器组件 — 样式
+// 参照 front OrgSwitcher：触发栏 + 底部弹出面板
+// 换算：面具下脚 20px→40rpx、圆角 16px→32rpx、面板 max-width 360px
+// ============================================================
+
+.cx-org-switcher {
+  &__trigger {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    padding: 4rpx 8rpx;
+    border-radius: 16rpx;
+  }
+
+  &__badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40rpx;
+    height: 40rpx;
+    border-radius: 8rpx;
+    flex-shrink: 0;
+  }
+
+  &__name {
+    max-width: 240rpx;
+    font-size: 26rpx;
+    font-weight: $font-medium;
+    color: #1a1a1a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__tag {
+    flex-shrink: 0;
+    padding: 4rpx 12rpx;
+    border-radius: 999rpx;
+    font-size: 20rpx;
+    font-weight: $font-medium;
+  }
+
+  // 面板遮罩
+  &__mask {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 128rpx 32rpx 32rpx;
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  &__panel {
+    width: 100%;
+    max-width: 720rpx;
+    overflow: hidden;
+    border-radius: 32rpx;
+    background: $surface;
+    box-shadow: $shadow-lg;
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24rpx 32rpx;
+    border-bottom: 2rpx solid $border-light;
+  }
+
+  &__head-title {
+    font-size: 32rpx;
+    font-weight: $font-semibold;
+    color: $gray-900;
+  }
+
+  &__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56rpx;
+    height: 56rpx;
+    border-radius: 999rpx;
+    background: $gray-100;
+    color: $gray-500;
+  }
+
+  &__list {
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  &__empty {
+    padding: 80rpx 0;
+    text-align: center;
+    font-size: 26rpx;
+    color: $gray-400;
+  }
+
+  &__item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 24rpx;
+    padding: 24rpx 32rpx;
+    box-sizing: border-box;
+
+    &--active {
+      background: $accent-50;
+    }
+  }
+
+  &__item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: 24rpx;
+    flex-shrink: 0;
+  }
+
+  &__item-body {
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__item-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+  }
+
+  &__item-name {
+    font-size: 30rpx;
+    font-weight: $font-medium;
+    color: $gray-900;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__todo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32rpx;
+    height: 32rpx;
+    padding: 0 8rpx;
+    border-radius: 999rpx;
+    background: $danger;
+    color: $text-inverse;
+    font-size: 20rpx;
+    font-weight: $font-semibold;
+    box-sizing: border-box;
+  }
+
+  &__item-meta {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+    margin-top: 4rpx;
+    font-size: 24rpx;
+    color: $gray-500;
+  }
+
+  &__item-sep {
+    color: $gray-400;
+  }
+
+  &__check {
+    flex-shrink: 0;
+    display: flex;
+  }
+
+  &__footer {
+    border-top: 2rpx solid $border-light;
+    padding: 24rpx;
+  }
+
+  &__create {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12rpx;
+    padding: 20rpx 0;
+    border-radius: 24rpx;
+    background: $accent-100;
+  }
+
+  &__create-text {
+    font-size: 28rpx;
+    font-weight: $font-semibold;
+    color: $primary;
+  }
+}

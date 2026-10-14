@@ -1,0 +1,97 @@
+// ============================================================
+// 账号与安全页面
+// ============================================================
+.asec {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: 24rpx $page-padding-x 40rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+  }
+
+  &__group {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__group-title {
+    font-size: 22rpx;
+    font-weight: 600;
+    color: $text-secondary;
+    padding-left: 8rpx;
+  }
+
+  &__card {
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+    padding: 8rpx;
+    box-shadow: $shadow-md;
+    overflow: hidden;
+
+    &--danger {
+      background: #fee2e2;
+      border-color: #fecaca;
+      box-shadow: none;
+    }
+  }
+
+  &__row {
+    height: 112rpx;
+    padding: 0 24rpx;
+    display: flex;
+    align-items: center;
+    gap: 24rpx;
+
+    & + & {
+      border-top: 1rpx solid $border;
+    }
+
+    &:active {
+      opacity: 0.7;
+    }
+  }
+
+  &__row--danger {
+    &:active {
+      opacity: 0.8;
+    }
+  }
+
+  &__row-icon {
+    width: 72rpx;
+    height: 72rpx;
+    border-radius: $radius-md;
+    background: rgba($primary, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--danger {
+      background: #fee2e2;
+    }
+  }
+
+  &__row-label {
+    flex: 1;
+    min-width: 0;
+    font-size: 28rpx;
+    font-weight: 500;
+    color: $text-primary;
+
+    &--danger {
+      color: #dc2626;
+    }
+  }
+
+  &__row-tag {
+    display: flex;
+    align-items: center;
+  }
+}

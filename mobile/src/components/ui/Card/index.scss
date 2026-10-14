@@ -1,0 +1,33 @@
+// ============================================================
+// Card 样式（设计规范 8.2）
+// ============================================================
+
+.cx-card {
+  background: $surface;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+  padding: $spacing-lg;
+  box-sizing: border-box;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $spacing-md;
+  }
+
+  &__title {
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $text-primary;
+  }
+
+  &__extra {
+    display: flex;
+    align-items: center;
+  }
+
+  &__body {
+    width: 100%;
+  }
+}

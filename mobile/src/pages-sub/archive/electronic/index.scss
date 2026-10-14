@@ -1,0 +1,91 @@
+.elec {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: 24rpx $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__head {
+    background: $icon-bg;
+    border-radius: $radius-lg;
+    padding: $card-padding;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12rpx;
+  }
+
+  &__head-icon {
+    width: 96rpx;
+    height: 96rpx;
+    border-radius: $radius-xl;
+    background: #dbeafe;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__head-title {
+    font-size: $text-xl;
+    font-weight: 700;
+    color: $text-primary;
+    text-align: center;
+  }
+
+  &__head-sub {
+    font-size: $text-sm;
+    color: $text-secondary;
+  }
+
+  &__content {
+    background: $surface;
+    border-radius: $radius-lg;
+    padding: $card-padding;
+    box-shadow: $shadow-md;
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__content-title {
+    font-size: $text-base;
+    font-weight: 700;
+    color: $text-primary;
+  }
+
+  &__content-line {
+    font-size: $text-base;
+    color: $text-secondary;
+  }
+
+  &__rich {
+    font-size: $text-base;
+    color: $text-secondary;
+    line-height: $leading-relaxed;
+  }
+
+  &__images {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__images-title {
+    font-size: $text-13;
+    font-weight: 600;
+    color: $text-secondary;
+    padding: 0 8rpx;
+  }
+
+  &__image {
+    width: 100%;
+    border-radius: $radius-lg;
+    background: $gray-100;
+  }
+}

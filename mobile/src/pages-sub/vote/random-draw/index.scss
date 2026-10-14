@@ -1,0 +1,491 @@
+.draw {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #85c5f4 0%, #f1f8fe 100%);
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__rules {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: 50%;
+    border: 1rpx solid #ffffff66;
+    background: #ffffff33;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__rules-text {
+    font-size: $text-xs;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  &__bg {
+    padding: 0 24rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__info-bar {
+    height: 128rpx;
+    border-radius: $radius-xl;
+    border: 1rpx solid #ffffff66;
+    background: #ffffff33;
+    padding: 24rpx;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+  }
+
+  &__info-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8rpx;
+  }
+
+  &__info-label {
+    font-size: $text-11;
+    color: $text-primary;
+  }
+
+  &__info-value {
+    font-size: $text-base;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__announce {
+    align-self: center;
+    padding: 8rpx 28rpx;
+    border-radius: 999rpx;
+    background: #00000050;
+  }
+
+  &__announce-text {
+    font-size: $text-xs;
+    color: #ffffffdd;
+  }
+
+  &__settings {
+    display: flex;
+    flex-direction: row;
+    gap: 16rpx;
+    flex-wrap: wrap;
+  }
+
+  &__setting {
+    height: 72rpx;
+    padding: 0 24rpx;
+    border-radius: $radius-lg;
+    border: 1rpx solid #ffffff66;
+    background: #ffffff40;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+  }
+
+  &__setting-label {
+    font-size: $text-11;
+    color: $text-primary;
+  }
+
+  &__setting-value {
+    font-size: $text-xs;
+    font-weight: 700;
+    color: $text-primary;
+  }
+
+  &__stepper {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8rpx;
+  }
+
+  &__step-btn {
+    width: 40rpx;
+    height: 40rpx;
+    border-radius: 50%;
+    background: #ffffff80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: $text-lg;
+    color: $text-primary;
+  }
+
+  &__step-num {
+    width: 32rpx;
+    text-align: center;
+    font-size: $text-base;
+    font-weight: 700;
+    color: $text-primary;
+  }
+
+  &__center {
+    display: flex;
+    justify-content: center;
+  }
+
+  &__start {
+    width: 428rpx;
+    height: 130rpx;
+    border-radius: 32rpx;
+    border: 4rpx solid #fde68a;
+    background: linear-gradient(180deg, #fbcfe8 0%, #fcd34d 100%);
+    box-shadow: $shadow-md;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4rpx;
+
+    &--rolling {
+      animation: draw-pulse 0.6s ease-in-out infinite;
+    }
+  }
+
+  &__start-title {
+    font-size: $text-lg;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  &__start-sub {
+    font-size: $text-sm;
+    color: #ffffffcc;
+  }
+
+  &__record-link {
+    align-self: flex-end;
+  }
+
+  &__record-link-text {
+    font-size: $text-xs;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  &__result {
+    background: $surface;
+    border-radius: 48rpx;
+    padding: 24rpx;
+    box-shadow: $shadow-md;
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+    max-height: 560rpx;
+    overflow-y: auto;
+  }
+
+  &__result-head {
+    display: flex;
+    justify-content: center;
+  }
+
+  &__result-title {
+    font-size: 36rpx;
+    font-weight: 700;
+    color: $primary;
+  }
+
+  &__rolling {
+    padding: 40rpx 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  &__rolling-name {
+    font-size: 48rpx;
+    font-weight: 700;
+    color: $primary;
+    min-height: 80rpx;
+  }
+
+  &__rolling-tip {
+    font-size: $text-sm;
+    color: $text-secondary;
+  }
+
+  &__result-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+  }
+
+  &__result-group-title {
+    font-size: $text-xs;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__result-empty {
+    font-size: $text-xs;
+    color: $text-weak;
+    padding: 8rpx;
+  }
+
+  &__row {
+    height: 52rpx;
+    padding: 0 20rpx;
+    background: $gray-100;
+    border-radius: $radius-lg;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  &__row-rank {
+    width: 36rpx;
+    height: 36rpx;
+    border-radius: 10rpx;
+    background: #1986e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__row-rank-text {
+    font-size: $text-11;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  &__row-avatar {
+    width: 40rpx;
+    height: 40rpx;
+    border-radius: 50%;
+    background: #1986e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__row-avatar-text {
+    font-size: $text-11;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  &__row-name {
+    font-size: $text-sm;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__action {
+    height: 84rpx;
+    border-radius: $radius-lg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--primary {
+      background: $primary;
+      box-shadow: $shadow-md;
+    }
+
+    &--ghost {
+      border: 1rpx solid $primary;
+      background: #0062ff0d;
+    }
+  }
+
+  &__action-text {
+    font-size: $text-base;
+    font-weight: 600;
+
+    &--primary {
+      color: $text-inverse;
+    }
+
+    &--ghost {
+      color: $primary;
+    }
+  }
+
+  &__modal-sub {
+    font-size: $text-xs;
+    color: $text-weak;
+    margin-bottom: 16rpx;
+  }
+
+  &__modal-list {
+    max-height: 50vh;
+  }
+
+  &__modal-empty {
+    display: block;
+    text-align: center;
+    font-size: $text-base;
+    color: $text-weak;
+    padding: 64rpx 0;
+  }
+
+  &__modal-item {
+    height: 88rpx;
+    padding: 0 24rpx;
+    border-radius: $radius-lg;
+    background: $gray-100;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16rpx;
+    margin-bottom: 16rpx;
+
+    &--on {
+      background: $accent-50;
+    }
+  }
+
+  &__modal-item-avatar {
+    width: 56rpx;
+    height: 56rpx;
+    border-radius: 50%;
+    background: #1986e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__modal-item-avatar-text {
+    font-size: $text-xs;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  &__modal-item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__modal-item-name {
+    font-size: $text-base;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  &__modal-item-id {
+    font-size: $text-11;
+    color: $text-weak;
+  }
+
+  &__modal-item-check {
+    width: 40rpx;
+    height: 40rpx;
+    border-radius: 50%;
+    background: $primary;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: $text-xs;
+  }
+
+  &__modal-confirm {
+    margin-top: 8rpx;
+    height: 88rpx;
+    border-radius: $radius-lg;
+    background: $primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__modal-confirm-text {
+    font-size: $text-base;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  &__preview-list {
+    max-height: 45vh;
+  }
+
+  &__preview-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+    margin-bottom: 24rpx;
+  }
+
+  &__preview-title {
+    font-size: $text-base;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__preview-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 24rpx;
+    margin-top: 8rpx;
+  }
+
+  &__preview-btn {
+    flex: 1;
+    height: 88rpx;
+    border-radius: $radius-lg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--ghost {
+      border: 1rpx solid $primary;
+      background: $surface;
+    }
+
+    &--primary {
+      background: $primary;
+    }
+  }
+
+  &__preview-text {
+    font-size: $text-base;
+    font-weight: 600;
+
+    &--ghost {
+      color: $primary;
+    }
+
+    &--primary {
+      color: #ffffff;
+    }
+  }
+
+  &__preview-cancel {
+    margin-top: 16rpx;
+    text-align: center;
+  }
+
+  &__preview-cancel-text {
+    font-size: $text-sm;
+    color: $text-weak;
+  }
+}
+
+@keyframes draw-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}

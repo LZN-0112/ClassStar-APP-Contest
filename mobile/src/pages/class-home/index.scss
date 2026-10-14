@@ -1,0 +1,331 @@
+.class-home {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100vh;
+  background-color: $home-bg;
+  box-sizing: border-box;
+
+  // ---------- 无班级空态 ----------
+  &__no-class {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 32rpx;
+    padding: 128rpx 0;
+  }
+
+  &__no-class-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 160rpx;
+    height: 160rpx;
+    border-radius: 50%;
+    background-color: $icon-bg;
+  }
+
+  &__no-class-text {
+    font-size: $text-lg;
+    color: $text-secondary;
+    font-weight: $font-medium;
+  }
+
+  &__join-btn {
+    padding: 20rpx 48rpx;
+    background-color: $primary;
+    border-radius: $radius-md;
+  }
+
+  &__join-btn-text {
+    font-size: $text-base;
+    font-weight: $font-semibold;
+    color: $text-inverse;
+  }
+
+  // ---------- 内容 ----------
+  &__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: $card-gap;
+    padding: 0 $page-padding-x $tabbar-safe-bottom;
+    padding-bottom: $tabbar-safe-bottom;
+  }
+
+  // ---------- 班级卡片 ----------
+  &__card {
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+    padding: 48rpx;
+    background-image: linear-gradient(-141.235deg, $primary 13.008%, $primary-dark 82.977%);
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-lg;
+  }
+
+  &__card-top {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__card-name {
+    font-size: 48rpx;
+    font-weight: $font-bold;
+    color: $text-inverse;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    margin-right: 24rpx;
+  }
+
+  &__card-qr {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 96rpx;
+    height: 96rpx;
+    border-radius: $radius-lg;
+    background-color: rgba(255, 255, 255, 0.13);
+    flex-shrink: 0;
+  }
+
+  &__card-meta {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 24rpx;
+  }
+
+  &__card-meta-text {
+    font-size: $text-md;
+    font-weight: $font-medium;
+    color: $text-inverse;
+    white-space: nowrap;
+  }
+
+  &__card-dot {
+    width: 4rpx;
+    height: 4rpx;
+    border-radius: $radius-full;
+    background-color: rgba(255, 255, 255, 0.5);
+  }
+
+  &__card-announce {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 16rpx;
+    padding: 20rpx;
+    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: $radius-md;
+  }
+
+  &__card-announce-text {
+    flex: 1;
+    font-size: 26rpx;
+    color: #ffffffee;
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  &__card-admins {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+    padding-top: 16rpx;
+    border-top: 2rpx solid rgba(255, 255, 255, 0.13);
+  }
+
+  &__card-owner {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 20rpx;
+  }
+
+  &__card-owner-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72rpx;
+    height: 72rpx;
+    border-radius: $radius-full;
+    background-color: $text-inverse;
+    flex-shrink: 0;
+  }
+
+  &__card-owner-char {
+    font-size: $text-base;
+    font-weight: $font-semibold;
+    color: $primary;
+  }
+
+  &__card-owner-info {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  &__card-owner-name {
+    font-size: $text-base;
+    font-weight: $font-semibold;
+    color: $text-inverse;
+  }
+
+  &__card-owner-tag {
+    padding: 4rpx 12rpx;
+    border-radius: $radius-sm;
+    background-color: rgba(255, 255, 255, 0.15);
+  }
+
+  &__card-owner-tag-text {
+    font-size: 20rpx;
+    font-weight: $font-medium;
+    color: #ffffffee;
+  }
+
+  &__card-admin-line {
+    font-size: 26rpx;
+    color: #ffffffcc;
+  }
+
+  &__card-admin-more {
+    color: #ffffffaa;
+  }
+
+  // ---------- 数据概览 ----------
+  &__stats {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 40rpx 40rpx;
+    background-color: $surface;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-md;
+  }
+
+  &__stat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12rpx;
+    padding: 8rpx;
+  }
+
+  &__stat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: $radius-lg;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  &__stat-icon-shine {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80rpx;
+    height: 24rpx;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.25);
+    pointer-events: none;
+  }
+
+  &__stat-value {
+    font-size: 40rpx;
+    font-weight: $font-bold;
+    color: $text-primary;
+    white-space: nowrap;
+  }
+
+  &__stat-label {
+    font-size: 22rpx;
+    color: $text-tertiary;
+    white-space: nowrap;
+  }
+
+  // ---------- 菜单列表 ----------
+  &__menu {
+    display: flex;
+    flex-direction: column;
+    background-color: $surface;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-md;
+    overflow: hidden;
+  }
+
+  &__menu-item {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    height: 128rpx;
+    padding: 0 32rpx;
+
+    &--border {
+      border-bottom: 2rpx solid $border-light;
+    }
+  }
+
+  &__menu-item-left {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 24rpx;
+    overflow: hidden;
+  }
+
+  &__menu-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72rpx;
+    height: 72rpx;
+    border-radius: $radius-md;
+    background-color: $gray-100;
+    flex-shrink: 0;
+  }
+
+  &__menu-item-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
+    overflow: hidden;
+  }
+
+  &__menu-item-title {
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $text-primary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__menu-item-subtitle {
+    font-size: 22rpx;
+    color: $text-secondary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

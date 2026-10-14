@@ -1,0 +1,55 @@
+.hwpub {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: $page-padding-top $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+  }
+
+  &__field {
+    min-height: 96rpx;
+    display: flex;
+    align-items: center;
+    padding: 0 32rpx;
+    border-radius: $radius-md;
+    border: 2rpx solid $border;
+    background: $surface;
+  }
+
+  &__input {
+    flex: 1;
+    font-size: $text-base;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  &__placeholder {
+    color: $text-tertiary;
+  }
+
+  &__textarea-wrap {
+    padding: 32rpx;
+    border-radius: $radius-md;
+    border: 2rpx solid $border;
+    background: $surface;
+  }
+
+  &__textarea {
+    width: 100%;
+    min-height: 280rpx;
+    font-size: $text-base;
+    font-weight: 500;
+    color: $text-primary;
+    line-height: $leading-normal;
+  }
+
+  &__spacer {
+    flex: 1;
+    min-height: 20rpx;
+  }
+}

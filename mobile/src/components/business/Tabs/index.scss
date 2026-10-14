@@ -1,0 +1,32 @@
+// Tabs 分类标签页（胶囊式，对齐 front FilterTabs）
+.cx-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16rpx; // front gap-2
+  background: $surface;
+  padding: 24rpx $page-padding-x;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+
+  &__item {
+    box-sizing: border-box;
+    padding: 16rpx 32rpx; // front py-2 px-4 => 16rpx/32rpx
+    border-radius: $radius-full;
+    background: $gray-100; // front bg-slate-100
+    color: $text-secondary;
+    font-weight: $font-medium;
+    transition: color 150ms ease, background-color 150ms ease;
+
+    &--active {
+      background: $primary;
+      color: $text-inverse;
+      box-shadow: $shadow-md;
+    }
+  }
+
+  &__label {
+    font-size: 28rpx; // front text-sm
+  }
+}

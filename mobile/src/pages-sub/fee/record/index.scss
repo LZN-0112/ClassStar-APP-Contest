@@ -1,0 +1,153 @@
+// ============================================================
+// 班费记账页面
+// ============================================================
+.feerecord {
+  min-height: 100vh;
+  background: #f8fafc;
+
+  &__body {
+    padding: 24rpx 32rpx 96rpx;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__switch {
+    width: 100%;
+    height: 88rpx;
+    background: #eef1f5;
+    border-radius: 16rpx;
+    padding: 8rpx;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 32rpx;
+  }
+
+  &__switch-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12rpx;
+
+    &--active {
+      background: #ffffff;
+      box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+    }
+  }
+
+  &__switch-label {
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #94a3b8;
+
+    &--income {
+      color: #16a34a;
+    }
+
+    &--expense {
+      color: #ef4444;
+    }
+  }
+
+  &__field {
+    margin-bottom: 24rpx;
+
+    &--area {
+      background: #ffffff;
+      border-radius: 16rpx;
+      padding: 8rpx 16rpx;
+    }
+  }
+
+  &__amount-wrap {
+    background: #ffffff;
+    border-radius: 16rpx;
+    padding: 32rpx;
+  }
+
+  &__native-wrap {
+    width: 100%;
+  }
+
+  &__native {
+    font-size: 56rpx;
+    font-weight: 700;
+    color: #1a1a1a;
+    width: 100%;
+  }
+
+  &__area {
+    width: 100%;
+    min-height: 160rpx;
+    font-size: 28rpx;
+    color: #1a1a1a;
+    line-height: 1.5;
+  }
+
+  &__upload {
+    width: 100%;
+    height: 240rpx;
+    background: #ffffff;
+    border: 1rpx dashed #cbd5e1;
+    border-radius: 16rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+  }
+
+  &__upload-tip {
+    font-size: 24rpx;
+    color: #94a3b8;
+  }
+
+  &__bill-preview {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  &__bill-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 16rpx;
+  }
+
+  &__bill-mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 16rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__bill-mask-text {
+    font-size: 26rpx;
+    color: #ffffff;
+  }
+
+  &__bill-remove {
+    position: absolute;
+    top: 12rpx;
+    right: 12rpx;
+    width: 48rpx;
+    height: 48rpx;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__spacer {
+    flex: 1;
+  }
+
+  &__placeholder {
+    color: #cbd5e1;
+  }
+}

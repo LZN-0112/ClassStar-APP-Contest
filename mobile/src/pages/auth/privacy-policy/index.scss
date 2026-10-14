@@ -1,0 +1,55 @@
+.privacy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-height: 100vh;
+  box-sizing: border-box;
+  background-color: $bg;
+
+  &__content {
+    width: calc(100% - #{2 * $spacing-4});
+    margin-top: $spacing-4;
+    padding-bottom: $spacing-8;
+    box-sizing: border-box;
+  }
+
+  &__card {
+    padding: $spacing-4;
+    margin-bottom: $spacing-md;
+    background-color: $surface;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-md;
+    box-sizing: border-box;
+  }
+
+  // 更新/生效日期（13px/22px → 26rpx/44rpx）
+  &__date {
+    display: block;
+    font-size: $text-sm;
+    line-height: 44rpx;
+    color: $text-secondary;
+    white-space: pre-line;
+  }
+
+  // 章节标题（15px → 30rpx）
+  &__heading {
+    display: block;
+    margin-bottom: $spacing-sm;
+    font-size: $text-md;
+    font-weight: $font-bold;
+    color: $text-primary;
+  }
+
+  // 正文（13px/22px → 26rpx/44rpx）
+  &__text {
+    display: block;
+    font-size: 26rpx;
+    line-height: 44rpx;
+    color: $text-secondary;
+  }
+
+  &__text--highlight {
+    color: $primary;
+  }
+}

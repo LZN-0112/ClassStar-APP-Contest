@@ -1,0 +1,230 @@
+.join-class {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: $bg;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  // ---------- Content ----------
+  &__content {
+    flex: 1;
+    padding: $spacing-6 $page-padding-x $page-padding-bottom;
+    overflow-y: auto;
+  }
+
+  &__title {
+    display: block;
+    font-size: $text-2xl;
+    font-weight: $font-bold;
+    color: $text-primary;
+    margin-bottom: $spacing-2;
+  }
+
+  &__subtitle {
+    display: block;
+    font-size: $text-base;
+    color: $text-secondary;
+    margin-bottom: $spacing-4;
+  }
+
+  // ---------- 输入卡片 ----------
+  &__card {
+    background: $surface;
+    border-radius: $radius-lg;
+    padding: $spacing-4;
+    box-shadow: $shadow-md;
+    margin-bottom: $spacing-4;
+    box-sizing: border-box;
+  }
+
+  &__field {
+    margin-bottom: $spacing-md;
+  }
+
+  &__member-hint {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $spacing-2;
+    font-size: $text-sm;
+    color: $primary;
+    font-weight: $font-medium;
+    margin: 0 0 $spacing-md;
+  }
+
+  &__scan-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-2;
+    height: 88rpx;
+    background-color: $accent-50;
+    border: 1rpx dashed $primary;
+    border-radius: $radius-md;
+    margin-bottom: $spacing-md;
+  }
+
+  &__scan-text {
+    font-size: $text-base;
+    font-weight: $font-semibold;
+    color: $primary;
+  }
+
+  // ---------- 分割线 ----------
+  &__divider {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-md;
+    margin: $spacing-4 0;
+  }
+
+  &__divider-line {
+    flex: 1;
+    height: 1rpx;
+    background-color: $border;
+  }
+
+  &__divider-text {
+    font-size: $text-xs;
+    color: $text-tertiary;
+  }
+
+  &__create-btn {
+    width: 100%;
+    height: 104rpx;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-2;
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+    margin-bottom: $spacing-4;
+  }
+
+  &__create-text {
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $primary;
+  }
+
+  // ---------- 邀请卡片 ----------
+  &__invite {
+    background: $surface;
+    border: 1rpx solid $border-light;
+    border-radius: $radius-lg;
+    padding: $spacing-4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-4;
+    box-sizing: border-box;
+  }
+
+  &__invite-title {
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $text-primary;
+  }
+
+  &__invite-code {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-2;
+    font-size: $text-22;
+    font-weight: $font-bold;
+    color: $primary;
+  }
+
+  &__invite-hint {
+    font-size: $text-xs;
+    color: $text-tertiary;
+  }
+
+  &__invite-enter {
+    width: 100%;
+  }
+
+  // ---------- 跳过 ----------
+  &__skip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: $spacing-4;
+    padding: $spacing-md;
+  }
+
+  &__skip-text {
+    font-size: $text-sm;
+    color: $text-tertiary;
+    text-decoration: underline;
+  }
+
+  // ---------- 创建弹窗 ----------
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  &__org-grid {
+    display: flex;
+    flex-direction: row;
+    gap: $spacing-2;
+  }
+
+  &__org-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-2;
+    height: 120rpx;
+    background-color: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    box-sizing: border-box;
+
+    &--active {
+      background-color: $primary;
+      border-color: $primary;
+    }
+  }
+
+  &__org-icon {
+    color: $text-secondary;
+
+    &--active {
+      color: #ffffff;
+    }
+  }
+
+  &__org-label {
+    font-size: $text-xs;
+    font-weight: $font-medium;
+    color: $text-secondary;
+
+    &--active {
+      color: #ffffff;
+    }
+  }
+
+  &__modal-actions {
+    display: flex;
+    flex-direction: row;
+    gap: $spacing-md;
+    margin-top: $spacing-4;
+  }
+
+  &__modal-btn {
+    flex: 1;
+  }
+}

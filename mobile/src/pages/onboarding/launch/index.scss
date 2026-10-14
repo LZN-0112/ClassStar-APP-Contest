@@ -1,0 +1,94 @@
+.launch {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100vh;
+  background-color: $surface;
+  overflow: hidden;
+  gap: 64rpx; // front gap-8 = 32px × 2
+
+  // 背景光带层
+  &__bg {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  &__streak {
+    position: absolute;
+    border-radius: $radius-full;
+  }
+
+  // 光带1：493x4, rotate(-8deg), left -50, top 180/844≈21.3%, #0062FF, opacity .5, blur 20px
+  &__streak--1 {
+    width: 986rpx;
+    height: 8rpx;
+    left: -100rpx;
+    top: 21.3%; // front top-[180px] / 844px
+    background-color: $primary;
+    opacity: 0.5;
+    transform: rotate(-8deg);
+    filter: blur(20px); // front blur(20px)，非设计稿尺寸不转 rpx
+  }
+
+  // 光带2：453x3, rotate(5deg), left -30, top 520/844≈61.6%, #0062FF66, opacity .45, blur 17.5px
+  &__streak--2 {
+    width: 906rpx;
+    height: 6rpx;
+    left: -60rpx;
+    top: 61.6%; // front top-[520px] / 844px
+    background-color: #0062ff66;
+    opacity: 0.45;
+    transform: rotate(5deg);
+    filter: blur(17.5px);
+  }
+
+  // 光带3：433x5, rotate(-6deg), left -20, top 680/844≈80.6%, #0062FF99, opacity .4, blur 22.5px
+  &__streak--3 {
+    width: 866rpx;
+    height: 10rpx;
+    left: -40rpx;
+    top: 80.6%; // front top-[680px] / 844px
+    background-color: #0062ff99;
+    opacity: 0.4;
+    transform: rotate(-6deg);
+    filter: blur(22.5px);
+  }
+
+  &__logo {
+    position: relative;
+    z-index: 1;
+    width: 240rpx;
+    height: 240rpx;
+    border-radius: $radius-md;
+  }
+
+  &__name {
+    position: relative;
+    z-index: 2;
+    font-size: $text-36;
+    font-weight: $font-bold;
+    color: $text-primary;
+  }
+
+  &__tagline {
+    position: relative;
+    z-index: 3;
+    font-size: $text-base;
+    color: $text-secondary;
+  }
+
+  &__version {
+    position: relative;
+    z-index: 4;
+    font-size: $text-11;
+    color: $text-secondary;
+  }
+}

@@ -1,0 +1,104 @@
+.attreport {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: $bg;
+
+  &__body {
+    flex: 1;
+    padding: $spacing-4 $page-padding-x $page-padding-bottom;
+    box-sizing: border-box;
+    overflow-y: auto;
+    background-color: $surface;
+  }
+
+  &__title {
+    font-size: $text-28;
+    font-weight: $font-bold;
+    color: $text-primary;
+  }
+
+  &__subtitle {
+    display: block;
+    font-size: $text-base;
+    color: $text-secondary;
+    margin: $spacing-2 0 $spacing-4;
+  }
+
+  &__stats {
+    display: flex;
+    flex-direction: row;
+    gap: $spacing-3;
+    margin-bottom: $spacing-4;
+  }
+
+  &__stat {
+    flex: 1;
+    height: 160rpx;
+    background-color: $surface;
+    border-radius: $radius-md;
+    box-shadow: $shadow-md;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+  }
+
+  &__stat-value {
+    font-size: $text-28;
+    font-weight: $font-bold;
+    color: $text-primary;
+  }
+
+  &__stat-label {
+    font-size: $text-xs;
+    color: $text-weak;
+  }
+
+  &__chart {
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    padding: $spacing-4;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-3;
+  }
+
+  &__chart-title {
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $text-primary;
+  }
+
+  &__bars {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    gap: $spacing-2;
+    height: 240rpx;
+  }
+
+  &__bar {
+    flex: 1;
+    background-color: $primary;
+    border-radius: 4rpx;
+  }
+
+  &__export {
+    margin-top: $spacing-4;
+    height: 104rpx;
+    background-color: $primary;
+    border-radius: $radius-md;
+    box-shadow: $shadow-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__export-text {
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $text-inverse;
+  }
+}

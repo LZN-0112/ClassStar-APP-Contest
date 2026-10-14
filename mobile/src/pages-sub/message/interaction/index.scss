@@ -1,0 +1,106 @@
+.interact {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: $surface;
+  position: relative;
+
+  &__header {
+    position: relative;
+    z-index: 2;
+  }
+
+  &__body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__decor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 320rpx;
+    background: linear-gradient(180deg, #0062ff 0%, #004ecc 100%);
+    border-radius: 0 0 48rpx 48rpx;
+  }
+
+  &__content {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    padding: $spacing-4;
+    padding-bottom: 160rpx;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-2;
+  }
+
+  &__card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $spacing-3;
+    padding: $spacing-3;
+    background-color: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-xl;
+    box-shadow: $shadow-md;
+  }
+
+  &__icon {
+    width: 88rpx;
+    height: 88rpx;
+    border-radius: $radius-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+  }
+
+  &__title {
+    font-size: $text-base;
+    font-weight: $font-semibold;
+    color: $text-primary;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__desc {
+    font-size: $text-sm;
+    color: $text-secondary;
+  }
+
+  &__side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8rpx;
+    flex-shrink: 0;
+  }
+
+  &__time {
+    font-size: $text-11;
+    color: $text-secondary;
+  }
+
+  &__dot {
+    font-size: $text-11;
+    color: $danger;
+    height: 16rpx;
+    line-height: 16rpx;
+  }
+}

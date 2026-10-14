@@ -1,0 +1,47 @@
+.reset {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-height: 100vh;
+  box-sizing: border-box;
+  background-color: $bg;
+
+  // 手机内居中卡片
+  &__card {
+    width: calc(100% - #{2 * $spacing-6});
+    margin-top: $spacing-8;
+    padding: $spacing-6;
+    box-sizing: border-box;
+    background-color: $surface;
+    border-radius: $radius-xl;
+    box-shadow: $shadow-md;
+  }
+
+  &__title {
+    display: block;
+    font-size: $text-2xl;
+    font-weight: $font-bold;
+    color: $text-primary;
+    white-space: nowrap;
+  }
+
+  &__subtitle {
+    display: block;
+    margin-top: $spacing-sm;
+    font-size: $text-base;
+    color: $text-secondary;
+    white-space: nowrap;
+  }
+
+  &__form {
+    margin-top: $spacing-6;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  &__button {
+    margin-top: $spacing-8;
+  }
+}

@@ -1,0 +1,73 @@
+.hwbc {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: $page-padding-top $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+  }
+
+  &__label {
+    font-size: $text-11;
+    font-weight: 600;
+    color: $text-weak;
+  }
+
+  &__hw-title {
+    font-size: $text-base;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__textarea-wrap {
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+    padding: 32rpx;
+    box-shadow: $shadow-sm;
+    box-sizing: border-box;
+  }
+
+  &__textarea {
+    width: 100%;
+    min-height: 400rpx;
+    font-size: $text-base;
+    line-height: $leading-normal;
+    color: $text-primary;
+  }
+
+  &__placeholder {
+    color: $text-tertiary;
+  }
+
+  &__hint {
+    background: $gray-50;
+    border-radius: $radius-md;
+    padding: 24rpx;
+  }
+
+  &__hint-text {
+    font-size: $text-11;
+    color: $text-weak;
+    line-height: $leading-normal;
+  }
+
+  &__hint-num {
+    color: $primary;
+    font-weight: $font-semibold;
+  }
+
+  &__spacer {
+    flex: 1;
+  }
+}

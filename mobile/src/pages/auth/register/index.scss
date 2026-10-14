@@ -1,0 +1,139 @@
+.register {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: $bg;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  // ---------- Content ----------
+  &__content {
+    flex: 1;
+    padding: $spacing-6 $page-padding-x $page-padding-bottom;
+    overflow-y: auto;
+  }
+
+  &__title {
+    display: block;
+    font-size: $text-2xl;
+    font-weight: $font-bold;
+    color: $text-primary;
+    margin-bottom: $spacing-2;
+  }
+
+  &__subtitle {
+    display: block;
+    font-size: $text-base;
+    color: $text-secondary;
+    margin-bottom: $spacing-6;
+  }
+
+  // ---------- Form Card（上部卡片，与 front 视觉一致） ----------
+  &__card {
+    background: $surface;
+    border-radius: $radius-lg;
+    padding: $card-padding;
+    box-shadow: $shadow-md;
+    margin-bottom: $spacing-6;
+    box-sizing: border-box;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    height: 96rpx;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    background: $surface;
+    padding: 0 $spacing-md;
+    margin-bottom: $spacing-md;
+    box-sizing: border-box;
+
+    &--last {
+      margin-bottom: 0;
+    }
+  }
+
+  &__input {
+    flex: 1;
+    height: 100%;
+    font-size: $text-base;
+    color: $text-primary;
+  }
+
+  &__placeholder {
+    color: $text-tertiary;
+    font-size: $text-base;
+  }
+
+  // 眼睛按钮：44x44 rpx 圆形点击区
+  &__eye {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 88rpx;
+    height: 88rpx;
+    flex-shrink: 0;
+    border-radius: $radius-full;
+    margin-left: $spacing-2;
+  }
+
+  // ---------- Login Link ----------
+  &__login-link {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin-top: $spacing-6;
+    height: 40rpx;
+  }
+
+  &__login-text {
+    font-size: $text-sm;
+    color: $text-secondary;
+  }
+
+  &__login-primary {
+    font-size: $text-sm;
+    color: $primary;
+  }
+
+  // ---------- Agreement ----------
+  &__agreement {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-2;
+    margin-top: $spacing-4;
+  }
+
+  // 32x32 rpx，圆角 6rpx
+  &__checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32rpx;
+    height: 32rpx;
+    border-radius: 6rpx;
+    background-color: $surface;
+    border: 1rpx solid $text-primary;
+    flex-shrink: 0;
+
+    &--checked {
+      background-color: $primary;
+    }
+  }
+
+  &__agreement-text {
+    font-size: $text-xs;
+    color: $text-secondary;
+  }
+
+  &__agreement-link {
+    color: $primary;
+    text-decoration: underline;
+  }
+}

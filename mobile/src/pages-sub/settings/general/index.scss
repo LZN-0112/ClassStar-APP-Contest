@@ -1,0 +1,72 @@
+// ============================================================
+// 通用设置
+// 结构参照 front GeneralSettings.tsx：基础偏好 / 存储管理 / 关于
+// ============================================================
+.gene {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: $page-padding-top $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+  }
+
+  &__group {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  &__group-title {
+    font-size: $text-11;
+    font-weight: $font-semibold;
+    color: $text-secondary;
+  }
+
+  &__card {
+    width: 100%;
+    box-sizing: border-box;
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-md;
+    padding: 8rpx 24rpx;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    height: 112rpx;
+    box-sizing: border-box;
+
+    &:active {
+      opacity: 0.7;
+    }
+  }
+
+  &__row-label {
+    flex: 1;
+    min-width: 0;
+    font-size: $text-base;
+    font-weight: $font-medium;
+    color: $text-primary;
+  }
+
+  &__row-right {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+  }
+
+  &__row-value {
+    font-size: $text-base;
+    font-weight: $font-medium;
+    color: $text-secondary;
+  }
+}

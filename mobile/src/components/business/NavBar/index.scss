@@ -1,0 +1,74 @@
+// NavBar 自定义导航栏
+.cx-navbar {
+  background: $surface;
+  position: relative;
+
+  &--transparent {
+    background: transparent;
+  }
+
+  // 亮色模式：深色背景下白色标题/图标
+  &--light {
+    background: transparent;
+
+    .cx-navbar__title {
+      color: #ffffff;
+    }
+
+    .cx-navbar__back {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  }
+
+  &__inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    // 导航栏标准高 44px = 88rpx
+    height: 88rpx;
+  }
+
+  &__side {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    width: 120rpx;
+  }
+
+  &__side--left {
+    left: 0;
+    padding-left: $spacing-md;
+  }
+
+  &__side--right {
+    right: 0;
+    justify-content: flex-end;
+    padding-right: $spacing-md;
+  }
+
+  // 返回按钮：40px → 80rpx、圆形、浅色底、主色文字图标
+  &__back {
+    width: 80rpx;
+    height: 80rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: $radius-full;
+    background: $gray-100;
+    color: $text-primary;
+  }
+
+  &__title {
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $text-primary;
+    // 长标题截断（避免与左右操作区重叠）
+    max-width: calc(100% - 240rpx);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

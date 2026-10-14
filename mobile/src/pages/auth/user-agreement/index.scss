@@ -1,0 +1,62 @@
+.ua {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: $bg;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  // ---------- Scrollable Content ----------
+  &__scroll {
+    flex: 1;
+    height: 100%;
+  }
+
+  &__content {
+    padding: $spacing-6 $page-padding-x $page-padding-bottom;
+  }
+
+  &__card {
+    background: $surface;
+    border-radius: $radius-lg;
+    padding: $card-padding;
+    box-shadow: $shadow-sm;
+    box-sizing: border-box;
+    margin-bottom: $spacing-4;
+
+    &--meta {
+      padding: $spacing-md;
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  &__meta {
+    display: block;
+    font-size: $text-sm;
+    line-height: 1.5;
+    color: $text-secondary;
+  }
+
+  &__heading {
+    display: block;
+    font-size: $text-md;
+    font-weight: $font-bold;
+    color: $text-primary;
+    margin-bottom: $spacing-2;
+  }
+
+  &__para {
+    display: block;
+    font-size: $text-sm;
+    line-height: 1.5;
+    color: $text-secondary;
+  }
+
+  &__link {
+    color: $primary;
+    font-weight: $font-semibold;
+  }
+}

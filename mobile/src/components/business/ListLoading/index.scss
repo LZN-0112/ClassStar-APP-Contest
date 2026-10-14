@@ -1,0 +1,61 @@
+// ListLoading 骨架屏
+@keyframes cx-skeleton-pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.cx-skeleton {
+  padding: 0 $page-padding-x;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    padding: $spacing-md 0;
+    border-bottom: 1rpx solid $border-light;
+  }
+
+  &__item:last-child {
+    border-bottom: none;
+  }
+
+  &__avatar {
+    width: 88rpx;
+    height: 88rpx;
+    border-radius: $radius-lg;
+    background: $gray-200;
+    animation: cx-skeleton-pulse 1.5s ease-in-out infinite;
+    margin-right: $spacing-md;
+    flex-shrink: 0;
+  }
+
+  &__body {
+    flex: 1;
+  }
+
+  &__line {
+    height: 28rpx;
+    border-radius: $radius-xs;
+    background: $gray-200;
+    animation: cx-skeleton-pulse 1.5s ease-in-out infinite;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__line:last-child {
+    margin-bottom: 0;
+  }
+
+  &__line--w60 {
+    width: 60%;
+  }
+
+  &__line--w40 {
+    width: 40%;
+  }
+}

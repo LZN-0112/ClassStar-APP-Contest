@@ -1,0 +1,87 @@
+.attmethod {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__header {
+    position: relative;
+    height: 320rpx;
+    background: linear-gradient(0deg, #e0f2fe 0.1%, #60a5fa 100%);
+    border-radius: 0 0 $radius-xl $radius-xl;
+    overflow: hidden;
+  }
+
+  &__header-deco {
+    position: absolute;
+    right: 40rpx;
+    top: 100rpx;
+    width: 240rpx;
+    height: 240rpx;
+    border-radius: $radius-lg;
+    background: #60a5fa;
+    opacity: 0.15;
+  }
+
+  &__body {
+    margin-top: -80rpx;
+    padding: 0 $page-padding-x $page-padding-bottom;
+    position: relative;
+  }
+
+  &__row {
+    display: flex;
+    gap: 24rpx;
+    margin-bottom: 24rpx;
+  }
+
+  &__cell {
+    flex: 1;
+    height: 340rpx;
+    background: $surface;
+    border-radius: $radius-lg;
+    border: 1rpx solid #1c8ddb;
+    box-shadow: $shadow-sm;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+  }
+
+  &__cell-icon {
+    width: 96rpx;
+    height: 96rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__cell-title {
+    font-size: $text-lg;
+    color: $text-primary;
+    font-weight: 600;
+  }
+
+  &__cell-sub {
+    font-size: $text-11;
+    color: $text-secondary;
+  }
+
+  &__next {
+    margin-top: 32rpx;
+    height: 104rpx;
+    border-radius: $radius-lg;
+    background: linear-gradient(-98.38deg, #0062ff 14.6%, #3b82f6 85.4%);
+    box-shadow: $shadow-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__next-text {
+    font-size: $text-lg;
+    color: $text-inverse;
+    font-weight: 600;
+  }
+}

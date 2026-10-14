@@ -1,0 +1,69 @@
+// ============================================================
+// 隐私设置
+// 结构参照 front PrivacySettings.tsx（以 Switch 绑定真实配置）
+// ============================================================
+.priv {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: $page-padding-top $page-padding-x $page-padding-bottom;
+  }
+
+  &__card {
+    width: 100%;
+    box-sizing: border-box;
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-md;
+    padding: 24rpx;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    height: 144rpx;
+    padding: 0 24rpx;
+    box-sizing: border-box;
+  }
+
+  &__row-icon {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: $radius-lg;
+    background: $accent-50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__row-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+  }
+
+  &__row-title {
+    font-size: $text-base;
+    font-weight: $font-semibold;
+    color: $text-primary;
+  }
+
+  &__row-subtitle {
+    font-size: $text-11;
+    color: $text-secondary;
+  }
+
+  &__switch {
+    transform: scale(0.85);
+  }
+}

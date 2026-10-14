@@ -1,0 +1,262 @@
+.login {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  background-color: #ffffff;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  // ---------- Status Bar（top:0, height:124rpx） ----------
+  &__statusbar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    height: 124rpx;
+    padding: 24rpx 48rpx 0 48rpx; // front p-[12px_24px_0px_24px]
+    flex-shrink: 0;
+    background-color: #ffffff;
+  }
+
+  &__statusbar-time {
+    font-size: 28rpx; // 14px
+    font-weight: $font-semibold;
+    color: #1a1a1a;
+  }
+
+  &__statusbar-icons {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12rpx; // 6px
+  }
+
+  &__statusbar-signal,
+  &__statusbar-battery {
+    font-size: 28rpx;
+    color: #1a1a1a;
+  }
+
+  // ---------- Login Content（相对定位容器） ----------
+  &__content {
+    position: relative;
+    flex: 1;
+    width: 100%;
+  }
+
+  // ---------- Title（top:332rpx） ----------
+  &__title {
+    position: absolute;
+    left: 32rpx; // 16px
+    top: 332rpx; // 166.2px
+    font-size: 72rpx; // 36px
+    font-weight: $font-bold;
+    color: #1a1a1a;
+    white-space: nowrap;
+  }
+
+  &__subtitle {
+    position: absolute;
+    left: 32rpx;
+    top: 438rpx; // 219.46px
+    font-size: 28rpx; // 14px
+    color: #4b5563;
+    white-space: nowrap;
+  }
+
+  // ---------- Input（top:540rpx / 680rpx, height:112rpx） ----------
+  &__input-wrap {
+    position: absolute;
+    left: 32rpx;
+    right: 32rpx;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    height: 112rpx; // 56px
+    border: 1rpx solid #e5e7eb;
+    border-radius: 16rpx; // rounded-lg
+    background-color: #ffffff;
+    padding: 0 32rpx; // 0 16px
+    box-shadow: 0 4rpx 16rpx 0 #0000000d; // 0 2px 8px
+
+    &--phone {
+      top: 540rpx; // 270px
+    }
+
+    &--password {
+      top: 680rpx; // 340px
+    }
+  }
+
+  &__input {
+    flex: 1;
+    height: 100%;
+    font-size: 28rpx; // 14px
+    color: #1a1a1a;
+  }
+
+  &__input-placeholder {
+    color: #9ca3af;
+    font-size: 28rpx;
+  }
+
+  // 眼睛按钮：44x44 rpx 圆形点击区，图标 48rpx
+  &__eye {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 88rpx; // 44px
+    height: 88rpx;
+    flex-shrink: 0;
+    border-radius: 50%;
+    margin-left: 16rpx;
+  }
+
+  // ---------- Login Button（top:840rpx, height:104rpx） ----------
+  &__btn {
+    position: absolute;
+    left: 32rpx;
+    right: 32rpx;
+    top: 840rpx; // 420px
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 104rpx; // 52px
+    border-radius: 16rpx;
+    box-shadow: 0 8rpx 32rpx 0 #0000000d; // 0 4px 16px
+    background-color: #0062ff;
+
+    &--loading {
+      background-color: #93c5fd;
+    }
+  }
+
+  &__btn-text {
+    font-size: 32rpx; // 16px
+    font-weight: $font-semibold;
+    color: #ffffff;
+  }
+
+  // ---------- Auth Links（top:960rpx） ----------
+  &__links {
+    position: absolute;
+    left: 32rpx;
+    right: 32rpx;
+    top: 960rpx; // 480px
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    height: 40rpx; // 20px
+  }
+
+  &__links-left {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  &__link {
+    font-size: 26rpx; // 13px
+    color: #4b5563;
+
+    &--primary {
+      color: #0062ff;
+    }
+  }
+
+  &__forgot {
+    font-size: 26rpx;
+    color: #0062ff;
+  }
+
+  // ---------- Or（top:1064rpx） ----------
+  &__or {
+    position: absolute;
+    left: 32rpx;
+    right: 32rpx;
+    top: 1064rpx; // 532px
+    text-align: center;
+    font-size: 28rpx; // 14px
+    color: #4b5563;
+    white-space: nowrap;
+  }
+
+  // ---------- Social Login（top:1122rpx） ----------
+  &__social {
+    position: absolute;
+    left: 32rpx;
+    right: 32rpx;
+    top: 1122rpx; // 561px
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    height: 160rpx; // 80px
+  }
+
+  &__social-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12rpx; // 6px
+  }
+
+  &__social-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 112rpx; // 56px
+    height: 112rpx;
+    border-radius: 50%;
+    background-color: #ffffff;
+    box-shadow: 0 4rpx 16rpx 0 #0000000d; // 0 2px 8px
+  }
+
+  &__social-label {
+    font-size: 22rpx; // 11px
+    color: #4b5563;
+  }
+
+  // ---------- Agreement（top:1312rpx） ----------
+  &__agreement {
+    position: absolute;
+    left: 32rpx;
+    right: 32rpx;
+    top: 1312rpx; // 656px
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx; // 8px
+  }
+
+  // 32x32 rpx，圆角 6rpx
+  &__checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32rpx; // 16px
+    height: 32rpx;
+    border-radius: 6rpx; // 3px
+    background-color: #ffffff;
+    border: 1rpx solid #1a1a1a;
+    flex-shrink: 0;
+
+    &--checked {
+      background-color: #0062ff;
+    }
+  }
+
+  &__agreement-text {
+    font-size: 22rpx; // 11px
+    color: #4b5563;
+  }
+
+  &__agreement-link {
+    color: #0062ff;
+    text-decoration: underline;
+  }
+}

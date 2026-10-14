@@ -1,0 +1,27 @@
+// DateTimePicker 日期时间选择
+.cx-datetime {
+  display: flex;
+  gap: $spacing-sm;
+
+  &__field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: $spacing-14;
+    padding: 0 $spacing-md;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    background: $surface;
+    min-width: 220rpx;
+    flex: 1;
+  }
+
+  &__text {
+    font-size: $text-base;
+    color: $text-primary;
+  }
+
+  &__text--placeholder {
+    color: $text-tertiary;
+  }
+}

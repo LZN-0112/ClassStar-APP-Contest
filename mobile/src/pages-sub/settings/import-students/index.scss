@@ -1,0 +1,357 @@
+// 导入学生页样式
+.impt {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: 24rpx $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__hint {
+    font-size: $text-sm;
+    color: $text-secondary;
+    line-height: $leading-normal;
+  }
+
+  // ------ 选择文件 ------
+  &__drop {
+    min-height: 260rpx;
+    background: $surface;
+    border: 1rpx dashed $gray-300;
+    border-radius: $radius-lg;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    padding: 32rpx;
+  }
+
+  &__drop-title {
+    font-size: $text-base;
+    font-weight: $font-semibold;
+    color: $text-primary;
+  }
+
+  &__drop-sub {
+    font-size: $text-xs;
+    color: $text-tertiary;
+    text-align: center;
+  }
+
+  &__file {
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    padding: $card-padding;
+    display: flex;
+    align-items: center;
+    gap: 20rpx;
+  }
+
+  &__file-icon {
+    width: 72rpx;
+    height: 72rpx;
+    border-radius: $radius-md;
+    background: $icon-bg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__file-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+  }
+
+  &__file-name {
+    font-size: $text-base;
+    color: $text-primary;
+    font-weight: $font-medium;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__file-sub {
+    font-size: $text-xs;
+    color: $text-secondary;
+  }
+
+  &__file-reset {
+    font-size: $text-sm;
+    color: $danger;
+    font-weight: $font-medium;
+    flex-shrink: 0;
+  }
+
+  // ------ 同步模式 ------
+  &__sync {
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    padding: $card-padding;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24rpx;
+  }
+
+  &__sync-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+  }
+
+  &__sync-title {
+    font-size: $text-base;
+    color: $text-primary;
+    font-weight: $font-semibold;
+  }
+
+  &__sync-sub {
+    font-size: $text-11;
+    color: $text-secondary;
+    line-height: $leading-normal;
+  }
+
+  &__sync-switch {
+    transform: scale(0.9);
+    flex-shrink: 0;
+  }
+
+  // ------ 格式说明 ------
+  &__tip {
+    background: $accent-50;
+    border: 1rpx solid $accent-100;
+    border-radius: $radius-md;
+    padding: $card-padding;
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+  }
+
+  &__tip-head {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+  }
+
+  &__tip-title {
+    font-size: $text-sm;
+    color: #1e40af;
+    font-weight: $font-medium;
+  }
+
+  &__tip-text {
+    font-size: $text-11;
+    color: $primary-light;
+    line-height: $leading-normal;
+  }
+
+  // ------ 提交 ------
+  &__submit {
+    margin-top: 8rpx;
+  }
+
+  // ------ 加载中 ------
+  &__loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24rpx;
+    padding: $page-padding-x;
+    padding-top: 240rpx;
+  }
+
+  &__loading-icon {
+    width: 128rpx;
+    height: 128rpx;
+    border-radius: $radius-full;
+    background: $accent-50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__spinner {
+    width: 96rpx;
+    height: 96rpx;
+    border-radius: 50%;
+    border: 6rpx solid $accent-200;
+    border-top-color: $primary;
+    animation: impt-spin 0.8s linear infinite;
+  }
+
+  &__loading-title {
+    font-size: $text-xl;
+    color: $text-primary;
+    font-weight: $font-bold;
+  }
+
+  &__loading-sub {
+    font-size: $text-sm;
+    color: $text-secondary;
+  }
+
+  &__bar {
+    width: 100%;
+    height: 12rpx;
+    background: $gray-100;
+    border-radius: $radius-full;
+    overflow: hidden;
+  }
+
+  &__bar-fill {
+    height: 100%;
+    background: $primary;
+    border-radius: $radius-full;
+    transition: width 0.2s ease;
+  }
+
+  &__loading-pct {
+    font-size: $text-base;
+    color: $primary;
+    font-weight: $font-semibold;
+  }
+
+  // ------ 结果 ------
+  &__success-card {
+    background: $accent-50;
+    border: 1rpx solid $accent-100;
+    border-radius: $radius-lg;
+    padding: 48rpx $card-padding;
+    display: flex;
+    align-items: center;
+    gap: 24rpx;
+  }
+
+  &__success-badge {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: $radius-full;
+    background: $success;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__success-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+  }
+
+  &__success-title {
+    font-size: $text-xl;
+    color: #059669;
+    font-weight: $font-bold;
+  }
+
+  &__success-sub {
+    font-size: $text-xs;
+    color: $text-weak;
+  }
+
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16rpx;
+  }
+
+  &__stat {
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    padding: 32rpx 16rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8rpx;
+  }
+
+  &__stat-value {
+    font-size: $text-22;
+    font-weight: $font-bold;
+
+    &--primary {
+      color: $primary;
+    }
+    &--success {
+      color: $success;
+    }
+    &--warning {
+      color: $warning;
+    }
+    &--danger {
+      color: $danger;
+    }
+  }
+
+  &__stat-label {
+    font-size: $text-11;
+    color: $text-secondary;
+  }
+
+  &__issues {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+  }
+
+  &__issues-title {
+    font-size: $text-base;
+    color: $text-primary;
+    font-weight: $font-semibold;
+  }
+
+  &__issue {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    padding: 20rpx;
+    border-radius: $radius-md;
+
+    &--warning {
+      background: #fef3c7;
+      border: 1rpx solid #fde68a;
+    }
+    &--danger {
+      background: #fee2e2;
+      border: 1rpx solid #fecaca;
+    }
+  }
+
+  &__issue-text {
+    flex: 1;
+    font-size: $text-sm;
+    color: $text-primary;
+    line-height: $leading-normal;
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+    margin-top: 8rpx;
+  }
+}
+
+@keyframes impt-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

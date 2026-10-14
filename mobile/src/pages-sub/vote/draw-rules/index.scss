@@ -1,0 +1,59 @@
+.drawrules {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #85c5f4 0%, #f1f8fe 100%);
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: 16rpx 40rpx 64rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__card {
+    background: #ffffffcc;
+    border: 1rpx solid #ffffff66;
+    border-radius: $radius-xl;
+    padding: 32rpx;
+    box-shadow: $shadow-sm;
+  }
+
+  &__head {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16rpx;
+    margin-bottom: 16rpx;
+  }
+
+  &__badge {
+    width: 56rpx;
+    height: 56rpx;
+    border-radius: 50%;
+    background: #1986e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__badge-text {
+    font-size: $text-sm;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  &__title {
+    font-size: $text-lg;
+    font-weight: 700;
+    color: $text-primary;
+  }
+
+  &__content {
+    display: block;
+    padding-left: 72rpx;
+    font-size: $text-sm;
+    line-height: 1.6;
+    color: $text-secondary;
+  }
+}

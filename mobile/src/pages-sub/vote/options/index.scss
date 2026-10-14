@@ -1,0 +1,176 @@
+.voteopt {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: 0 $page-padding-x;
+    padding-top: 40rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__empty {
+    padding-top: 200rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32rpx;
+  }
+
+  &__empty-text {
+    font-size: $text-base;
+    color: $text-secondary;
+  }
+
+  &__back {
+    height: 80rpx;
+    padding: 0 48rpx;
+    background: $primary;
+    border-radius: $radius-lg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__back-text {
+    font-size: $text-base;
+    color: $text-inverse;
+    font-weight: 600;
+  }
+
+  &__title-card {
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-xl;
+    padding: 32rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__label {
+    font-size: $text-11;
+    color: $text-secondary;
+  }
+
+  &__title {
+    font-size: $text-lg;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__sub {
+    font-size: $text-11;
+    color: $text-weak;
+  }
+
+  &__card {
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-xl;
+    padding: 32rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+  }
+
+  &__option {
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+    padding: 24rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+
+    &--selected {
+      background: $accent-50;
+      border-color: $primary;
+    }
+  }
+
+  &__option-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__option-left {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  &__radio {
+    width: 36rpx;
+    height: 36rpx;
+    border-radius: 50%;
+    border: 1rpx solid $border;
+    background: $surface;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--on {
+      background: $primary;
+      border-color: $primary;
+    }
+  }
+
+  &__radio-dot {
+    width: 16rpx;
+    height: 16rpx;
+    border-radius: 50%;
+    background: #ffffff;
+  }
+
+  &__option-label {
+    font-size: $text-base;
+    color: $text-primary;
+  }
+
+  &__result-num {
+    font-size: $text-xs;
+    color: $text-secondary;
+  }
+
+  &__result-track {
+    width: 100%;
+    height: 8rpx;
+    background: $gray-100;
+    border-radius: 999rpx;
+    overflow: hidden;
+  }
+
+  &__result-fill {
+    height: 8rpx;
+    background: $primary;
+    border-radius: 999rpx;
+  }
+
+  &__bottom {
+    height: 96rpx;
+    background: $gray-100;
+    border-radius: $radius-lg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__bottom-text {
+    font-size: $text-base;
+    font-weight: 600;
+    color: $text-secondary;
+
+    &--muted {
+      font-size: $text-base;
+      font-weight: 600;
+      color: $text-secondary;
+    }
+  }
+}

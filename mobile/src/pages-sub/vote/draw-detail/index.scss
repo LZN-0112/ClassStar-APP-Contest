@@ -1,0 +1,162 @@
+.drawdetail {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #85c5f4 0%, #f1f8fe 100%);
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__scroll {
+    height: calc(100vh - 140rpx);
+    padding: 0 32rpx;
+    box-sizing: border-box;
+  }
+
+  &__empty {
+    padding-top: 200rpx;
+    text-align: center;
+  }
+
+  &__empty-text {
+    font-size: $text-base;
+    color: $text-secondary;
+  }
+
+  &__title-card {
+    background: $surface;
+    border-radius: $radius-xl;
+    padding: 32rpx;
+    box-shadow: $shadow-sm;
+    margin-bottom: 24rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+  }
+
+  &__title-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__title {
+    flex: 1;
+    font-size: $text-lg;
+    font-weight: 700;
+    color: $text-primary;
+  }
+
+  &__cancelled {
+    padding: 8rpx 16rpx;
+    background: #fee2e2;
+    border-radius: 999rpx;
+  }
+
+  &__cancelled-text {
+    font-size: $text-11;
+    color: #ef4444;
+  }
+
+  &__time {
+    font-size: $text-xs;
+    color: $text-weak;
+  }
+
+  &__count {
+    font-size: $text-xs;
+    color: $text-secondary;
+  }
+
+  &__group {
+    background: $surface;
+    border-radius: $radius-xl;
+    padding: 32rpx;
+    box-shadow: $shadow-sm;
+    margin-bottom: 24rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+  }
+
+  &__group-title {
+    font-size: $text-base;
+    font-weight: 600;
+    color: $text-primary;
+    margin-bottom: 8rpx;
+  }
+
+  &__row {
+    height: 72rpx;
+    padding: 0 24rpx;
+    background: $gray-100;
+    border-radius: $radius-lg;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  &__row-rank {
+    width: 44rpx;
+    height: 44rpx;
+    border-radius: 12rpx;
+    background: #1986e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__row-rank-text {
+    font-size: $text-11;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  &__row-avatar {
+    width: 48rpx;
+    height: 48rpx;
+    border-radius: 50%;
+    background: #1986e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__row-avatar-text {
+    font-size: $text-11;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  &__row-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__row-name {
+    font-size: $text-base;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  &__row-id {
+    font-size: $text-11;
+    color: $text-weak;
+  }
+
+  &__cancel {
+    height: 96rpx;
+    border: 1rpx solid #ef4444;
+    background: #fef2f2;
+    border-radius: $radius-lg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__cancel-text {
+    font-size: $text-base;
+    font-weight: 600;
+    color: #ef4444;
+  }
+}

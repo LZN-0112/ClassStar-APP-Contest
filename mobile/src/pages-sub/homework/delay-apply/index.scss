@@ -1,0 +1,64 @@
+.hwdl {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: $page-padding-top $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__field {
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    padding: 0 32rpx;
+    min-height: 88rpx;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+  }
+
+  &__hw-title {
+    font-size: $text-base;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__textarea-wrap {
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    padding: 24rpx;
+    box-sizing: border-box;
+  }
+
+  &__textarea {
+    width: 100%;
+    min-height: 240rpx;
+    font-size: $text-base;
+    line-height: $leading-normal;
+    color: $text-primary;
+  }
+
+  &__placeholder {
+    color: $text-tertiary;
+  }
+
+  &__tip {
+    padding: 0 8rpx;
+  }
+
+  &__tip-text {
+    font-size: $text-11;
+    color: $text-tertiary;
+    line-height: $leading-normal;
+  }
+
+  &__spacer {
+    flex: 1;
+  }
+}

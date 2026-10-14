@@ -1,0 +1,57 @@
+// ============================================================
+// IconBox 图标容器 — 样式
+// 尺寸换算（front px × 2 = rpx）：
+//   sm: 36px → 72rpx，圆角 8px → 16rpx (rounded-lg)
+//   md: 44px → 88rpx，圆角 12px → 24rpx (rounded-xl)
+//   lg: 56px → 112rpx，圆角 16px → 32rpx (rounded-2xl)
+// ============================================================
+
+.cx-iconbox {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  &--primary {
+    background: $icon-bg;
+    color: $primary;
+  }
+
+  &--success {
+    background: rgba($success, 0.1);
+    color: $success;
+  }
+
+  &--warning {
+    background: rgba($warning, 0.1);
+    color: $warning;
+  }
+
+  &--danger {
+    background: rgba($danger, 0.1);
+    color: $danger;
+  }
+
+  &--muted {
+    background: $gray-100;
+    color: $text-secondary;
+  }
+
+  &--sm {
+    width: 72rpx;
+    height: 72rpx;
+    border-radius: 16rpx;
+  }
+
+  &--md {
+    width: 88rpx;
+    height: 88rpx;
+    border-radius: 24rpx;
+  }
+
+  &--lg {
+    width: 112rpx;
+    height: 112rpx;
+    border-radius: 32rpx;
+  }
+}

@@ -1,0 +1,143 @@
+.msgdetail {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: $bg;
+
+  &__body {
+    flex: 1;
+    overflow-y: auto;
+    padding: $spacing-4;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-3;
+  }
+
+  &__empty {
+    padding: 160rpx 0;
+    display: flex;
+    justify-content: center;
+  }
+
+  &__empty-text {
+    font-size: $text-base;
+    color: $text-secondary;
+  }
+
+  &__title {
+    font-size: $text-2xl;
+    font-weight: $font-bold;
+    color: $text-primary;
+  }
+
+  &__time {
+    font-size: $text-11;
+    color: $text-secondary;
+  }
+
+  &__status {
+    display: flex;
+    flex-direction: row;
+  }
+
+  &__tag {
+    border-radius: $radius-full;
+    padding: 4rpx 16rpx;
+  }
+
+  &__tag--active {
+    background-color: $icon-bg;
+    color: $primary;
+  }
+
+  &__tag--muted {
+    background-color: $gray-200;
+    color: $gray-500;
+  }
+
+  &__tag-text {
+    font-size: $text-11;
+    font-weight: $font-semibold;
+    color: inherit;
+  }
+
+  &__card {
+    background-color: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    padding: $spacing-4;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  &__card-line {
+    font-size: $text-base;
+    font-weight: $font-medium;
+    color: $text-primary;
+  }
+
+  &__content {
+    font-size: $text-base;
+    color: $text-secondary;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  &__overdue {
+    background-color: #fee2e2;
+    border-radius: $radius-md;
+    padding: $spacing-3;
+  }
+
+  &__overdue-text {
+    font-size: $text-13;
+    font-weight: $font-medium;
+    color: $danger;
+  }
+
+  &__btn {
+    height: 104rpx;
+    border-radius: $radius-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-2;
+    margin-top: $spacing-xs;
+  }
+
+  &__btn--primary {
+    background-color: $primary;
+  }
+
+  &__btn--done {
+    background-color: $gray-400;
+  }
+
+  &__btn--ghost {
+    background-color: $accent-50;
+    border: 1rpx solid $primary;
+  }
+
+  &__btn-text {
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $text-inverse;
+  }
+
+  &__btn-text--blue {
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $primary;
+  }
+
+  &__foot {
+    margin-top: $spacing-2;
+  }
+
+  &__foot-text {
+    font-size: $text-11;
+    color: $text-weak;
+  }
+}

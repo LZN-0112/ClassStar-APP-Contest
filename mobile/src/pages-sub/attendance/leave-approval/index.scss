@@ -1,0 +1,114 @@
+.attleave-approve {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__tabs {
+    display: flex;
+    gap: 16rpx;
+    padding: 24rpx 32rpx;
+  }
+
+  &__tab {
+    padding: 12rpx 32rpx;
+    border-radius: $radius-lg;
+    background: $surface;
+    border: 1rpx solid $border;
+    font-size: $text-base;
+    font-weight: 500;
+
+    &--active {
+      background: $accent-50;
+      border-color: $primary;
+      color: $primary;
+    }
+  }
+
+  &__list {
+    padding: 0 32rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__item {
+    background: $surface;
+    border-radius: $radius-lg;
+    padding: 28rpx;
+    box-shadow: $shadow-sm;
+  }
+
+  &__item-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12rpx;
+  }
+
+  &__name {
+    font-size: $text-md;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__badge {
+    font-size: $text-xs;
+    padding: 4rpx 16rpx;
+    border-radius: $radius-full;
+
+    &.badge--pending {
+      color: $warning;
+      background: rgba(245, 158, 11, 0.12);
+    }
+    &.badge--approved {
+      color: $success;
+      background: rgba(34, 197, 94, 0.12);
+    }
+    &.badge--rejected {
+      color: $danger;
+      background: rgba(239, 68, 68, 0.12);
+    }
+  }
+
+  &__reason {
+    font-size: $text-sm;
+    color: $text-secondary;
+    line-height: 1.6;
+  }
+
+  &__time {
+    display: block;
+    margin-top: 12rpx;
+    font-size: $text-xs;
+    color: $text-tertiary;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 20rpx;
+    margin-top: 20rpx;
+  }
+
+  &__btn {
+    flex: 1;
+    height: 72rpx;
+    border-radius: $radius-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: $text-sm;
+    font-weight: 500;
+
+    &--reject {
+      border: 1rpx solid $border;
+      color: $text-secondary;
+      background: $surface;
+    }
+
+    &--approve {
+      background: $primary;
+      color: $text-inverse;
+    }
+  }
+}

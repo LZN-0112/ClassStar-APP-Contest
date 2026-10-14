@@ -1,0 +1,397 @@
+.home {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100vh;
+  background-color: $home-bg;
+  box-sizing: border-box;
+
+  // ---------- Header ----------
+  &__header {
+    padding: 24rpx 40rpx 32rpx;
+    background-color: $home-bg;
+  }
+
+  &__header-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__header-text {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+  }
+
+  &__greeting {
+    font-size: 40rpx;
+    font-weight: $font-bold;
+    color: $text-primary;
+  }
+
+  &__org-name {
+    font-size: 26rpx;
+    font-weight: $font-medium;
+    color: $text-primary;
+    max-width: 240rpx;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__no-class {
+    font-size: 26rpx;
+    color: $text-primary;
+    opacity: 0.9;
+  }
+
+  &__header-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  &__scan-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: 50%;
+    background-color: $surface;
+  }
+
+  &__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 96rpx;
+    height: 96rpx;
+    border-radius: 50%;
+    background-color: $surface;
+    overflow: hidden;
+  }
+
+  &__avatar-img {
+    width: 100%;
+    height: 100%;
+  }
+
+  // ---------- Content ----------
+  &__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+    padding: 0 30rpx 32rpx;
+  }
+
+  // ---------- No Class ----------
+  &__no-class-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 32rpx;
+    padding: 128rpx 0;
+  }
+
+  &__no-class-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 160rpx;
+    height: 160rpx;
+    border-radius: 50%;
+    background-color: $icon-bg;
+  }
+
+  &__no-class-text {
+    font-size: 32rpx;
+    color: $text-secondary;
+    font-weight: $font-medium;
+  }
+
+  &__join-btn {
+    padding: 20rpx 48rpx;
+    background-color: $primary;
+    border-radius: $radius-md;
+  }
+
+  &__join-btn-text {
+    font-size: 28rpx;
+    font-weight: $font-semibold;
+    color: $text-inverse;
+  }
+
+  // ---------- Todo Card ----------
+  &__todo-card {
+    display: flex;
+    flex-direction: column;
+    gap: 40rpx;
+    padding: 40rpx;
+    background-image: $gradient-todo;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    border-radius: $radius-xl;
+    box-shadow: $shadow-lg;
+  }
+
+  &__todo-top {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  &__todo-left {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+  }
+
+  &__todo-title-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  &__todo-title {
+    font-size: 40rpx;
+    font-weight: $font-bold;
+    color: $text-inverse;
+  }
+
+  &__todo-date {
+    font-size: 24rpx;
+    color: $text-inverse;
+    opacity: 0.75;
+  }
+
+  &__todo-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12rpx;
+  }
+
+  &__todo-progress-label {
+    font-size: 24rpx;
+    color: $text-inverse;
+    opacity: 0.9;
+  }
+
+  &__todo-progress-track {
+    width: 240rpx;
+    height: 12rpx;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: $radius-full;
+    overflow: hidden;
+  }
+
+  &__todo-progress-fill {
+    height: 100%;
+    background-color: $text-inverse;
+    border-radius: $radius-full;
+  }
+
+  &__todo-btn {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8rpx;
+    padding: 16rpx 28rpx;
+    background-color: $surface;
+    border-radius: $radius-full;
+    align-self: flex-start;
+  }
+
+  &__todo-btn-text {
+    font-size: 26rpx;
+    font-weight: $font-bold;
+    color: $primary;
+  }
+
+  // ---------- Quick Grid ----------
+  &__quick-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+    padding: 32rpx;
+    background-color: $surface;
+    border-radius: $radius-xl;
+    box-shadow: $shadow-md;
+  }
+
+  &__quick-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24rpx;
+    justify-items: center;
+  }
+
+  &__quick-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16rpx;
+    padding: 12rpx 0;
+    width: 25%;
+  }
+
+  &__quick-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 84rpx;
+    height: 84rpx;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-sm;
+    position: relative;
+    overflow: hidden;
+  }
+
+  &__quick-icon-shine {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80rpx;
+    height: 32rpx;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.22);
+    pointer-events: none;
+  }
+
+  &__quick-label {
+    font-size: 24rpx;
+    font-weight: $font-medium;
+    color: $text-primary;
+  }
+
+  &__quick-divider {
+    height: 2rpx;
+    background-color: $border-light;
+  }
+
+  // ---------- Feed Card ----------
+  &__feed-card {
+    display: flex;
+    flex-direction: column;
+    gap: 30rpx;
+    padding: 32rpx;
+    background-color: $surface;
+    border-radius: $radius-xl;
+    box-shadow: $shadow-md;
+  }
+
+  &__feed-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__feed-title {
+    font-size: 32rpx;
+    font-weight: $font-semibold;
+    color: $text-primary;
+  }
+
+  &__feed-more {
+    font-size: 24rpx;
+    color: $primary;
+  }
+
+  &__feed-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+  }
+
+  &__feed-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24rpx;
+    padding: 64rpx 0;
+  }
+
+  &__feed-empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: 50%;
+    background-color: $gray-100;
+
+    &--blue {
+      background-color: $icon-bg;
+    }
+  }
+
+  &__feed-empty-text {
+    font-size: 26rpx;
+    color: $text-tertiary;
+  }
+
+  &__feed-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 24rpx;
+    padding: 12rpx 16rpx;
+    border-radius: $radius-md;
+  }
+
+  &__feed-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: $radius-md;
+    box-shadow: $shadow-sm;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  &__feed-item-shine {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 64rpx; // front w-8
+    height: 24rpx; // front h-3
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.22);
+    pointer-events: none;
+  }
+
+  &__feed-item-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
+    overflow: hidden;
+  }
+
+  &__feed-item-title {
+    font-size: 28rpx;
+    font-weight: $font-medium;
+    color: $text-primary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__feed-item-meta {
+    font-size: 22rpx;
+    color: $text-secondary;
+  }
+}

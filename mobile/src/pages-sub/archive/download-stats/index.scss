@@ -1,0 +1,115 @@
+.dstat {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: 24rpx $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__section-title {
+    font-size: $text-base;
+    font-weight: 600;
+    color: $text-primary;
+    margin-top: 8rpx;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__item {
+    background: $surface;
+    border-radius: $radius-lg;
+    padding: $card-padding;
+    box-shadow: $shadow-md;
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__item-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+  }
+
+  &__item-rankg {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  &__item-rank {
+    width: 48rpx;
+    height: 48rpx;
+    border-radius: $radius-sm;
+    background: $gray-100;
+    color: $text-secondary;
+    font-size: $text-sm;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    &--top {
+      background: $primary;
+      color: #fff;
+    }
+  }
+
+  &__item-name {
+    font-size: $text-base;
+    font-weight: 600;
+    color: $text-primary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__item-mark {
+    font-size: $text-xs;
+    color: $text-tertiary;
+    font-weight: 400;
+    margin-left: 8rpx;
+  }
+
+  &__item-countg {
+    display: flex;
+    align-items: center;
+    gap: 6rpx;
+    flex-shrink: 0;
+  }
+
+  &__item-count {
+    font-size: $text-md;
+    font-weight: 700;
+    color: $primary;
+    font-family: 'DIN Alternate', $font-family;
+  }
+
+  &__track {
+    width: 100%;
+    height: 16rpx;
+    border-radius: $radius-full;
+    background: $accent-50;
+    overflow: hidden;
+  }
+
+  &__fill {
+    height: 16rpx;
+    border-radius: $radius-full;
+    background: linear-gradient(180deg, $primary 0%, $primary-light 100%);
+    transition: width $transition-normal $ease-in-out;
+  }
+}

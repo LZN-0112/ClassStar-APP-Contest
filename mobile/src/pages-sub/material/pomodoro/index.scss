@@ -1,0 +1,262 @@
+// ============================================================
+// 番茄钟页面
+// ============================================================
+// 背景渐变借用 NavBar transparent 沉浸式，整体使用浅蓝渐变
+.pomodoro {
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: linear-gradient(
+    180deg,
+    #dfefff 0%,
+    #f4f9ff 45%,
+    #f8fafc 100%
+  );
+
+  &__body {
+    padding: 40rpx 40rpx 96rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  &__nav-set {
+    width: 72rpx;
+    height: 72rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  // 任务卡
+  &__task {
+    width: 100%;
+    background: #ffffff;
+    border-radius: 24rpx;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+    padding: 24rpx;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 20rpx;
+  }
+
+  &__task-icon {
+    width: 88rpx;
+    height: 88rpx;
+    border-radius: 20rpx;
+    background: rgba(59, 130, 246, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__task-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+    min-width: 0;
+  }
+
+  &__task-name {
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #1a1a1a;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__task-duration {
+    font-size: 24rpx;
+    color: #94a3b8;
+  }
+
+  &__task-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8rpx;
+  }
+
+  &__task-round {
+    font-size: 26rpx;
+    font-weight: 700;
+    color: #3b82f6;
+  }
+
+  &__task-min {
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  // 计时环
+  &__ring {
+    position: relative;
+    width: 480rpx;
+    height: 480rpx;
+    margin-top: 80rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__ring-track {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(#0062ff 0%, #a9c8ff 75%, #e5edff 75%, #e5edff 100%);
+    box-shadow: 0 12rpx 40rpx rgba(0, 98, 255, 0.18);
+  }
+
+  &__ring-info {
+    width: 380rpx;
+    height: 380rpx;
+    border-radius: 50%;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20rpx;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  }
+
+  &__timer {
+    font-size: 96rpx;
+    font-weight: 700;
+    color: #1a1a1a;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__round-info {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #3b82f6;
+  }
+
+  &__tip {
+    font-size: 24rpx;
+    color: #94a3b8;
+  }
+
+  &__set-time {
+    margin-top: 8rpx;
+    padding: 8rpx 24rpx;
+    border-radius: 999rpx;
+    background: rgba(0, 98, 255, 0.06);
+  }
+
+  &__set-time-label {
+    font-size: 24rpx;
+    color: #0062ff;
+  }
+
+  // 控制按钮
+  &__controls {
+    margin-top: 80rpx;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 48rpx;
+  }
+
+  &__ctrl {
+    width: 144rpx;
+    height: 144rpx;
+    border-radius: 50%;
+    background: #0062ff;
+    box-shadow: 0 12rpx 32rpx rgba(0, 98, 255, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__ctrl-text {
+    font-size: 48rpx;
+    color: #ffffff;
+    line-height: 1;
+  }
+
+  // 设置弹层
+  &__opts {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 20rpx;
+  }
+
+  &__opt {
+    flex: 1 1 auto;
+    min-width: 180rpx;
+    padding: 24rpx;
+    border-radius: 16rpx;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--active {
+      background: #0062ff;
+    }
+  }
+
+  &__opt-text {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #64748b;
+
+    &--active {
+      color: #ffffff;
+    }
+  }
+
+  // 编辑任务弹层
+  &__task-form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__task-field {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+  }
+
+  &__task-label {
+    font-size: 26rpx;
+    color: #4b5563;
+  }
+
+  &__task-input {
+    width: 100%;
+    height: 88rpx;
+    padding: 0 24rpx;
+    box-sizing: border-box;
+    background: #f8fafc;
+    border-radius: 12rpx;
+    font-size: 28rpx;
+    color: #1a1a1a;
+  }
+
+  &__ph {
+    color: #cbd5e1;
+  }
+}
+
+// 重置 nvue/taro 原生导航背景（配合 transparent）
+page {
+  background: linear-gradient(
+    180deg,
+    #dfefff 0%,
+    #f4f9ff 45%,
+    #f8fafc 100%
+  );
+}

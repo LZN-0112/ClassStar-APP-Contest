@@ -1,0 +1,106 @@
+// Modal 弹窗
+.cx-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+
+  &__mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  &__box {
+    position: absolute;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    background: $surface;
+    z-index: 1;
+  }
+
+  &__box--center {
+    top: 50%;
+    transform: translateY(-50%);
+    width: 600rpx;
+    border-radius: $radius-xl;
+    padding: $spacing-6 $spacing-6 $spacing-6;
+    box-shadow: $shadow-lg;
+  }
+
+  &__box--bottom {
+    bottom: 0;
+    width: 100%;
+    border-radius: $radius-xl $radius-xl 0 0;
+    padding: $spacing-6 $spacing-6;
+    padding-bottom: calc(#{$spacing-6} + env(safe-area-inset-bottom));
+  }
+
+  &__close {
+    position: absolute;
+    top: 24rpx;
+    right: 24rpx;
+    padding: 8rpx;
+    z-index: 2;
+  }
+
+  &__title {
+    display: block;
+    font-size: $text-xl;
+    font-weight: $font-semibold;
+    color: $text-primary;
+    text-align: center;
+    margin-bottom: $spacing-md;
+  }
+
+  &__content {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+}
+
+// ============================================================
+// P3.5-视觉对齐 阶段二：弹窗开启动画
+// center 弹窗用带 translateY(-50%) 的专属动画，避免覆盖定位 transform
+// ============================================================
+
+.cx-modal__mask {
+  animation: cx-modal-fade-in 200ms cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+
+.cx-modal__box--center {
+  animation: cx-modal-scale-center 200ms cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+
+.cx-modal__box--bottom {
+  animation: cx-modal-slide-up 250ms cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+
+@keyframes cx-modal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cx-modal-scale-center {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+
+@keyframes cx-modal-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}

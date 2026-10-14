@@ -1,0 +1,123 @@
+.msgpublish {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: $bg;
+
+  &__body {
+    flex: 1;
+    overflow-y: auto;
+    padding: $spacing-4;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-3;
+  }
+
+  &__picker {
+    background-color: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    padding: 0 $spacing-4;
+  }
+
+  &__textarea {
+    background-color: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    padding: $spacing-3;
+  }
+
+  &__textarea-native {
+    width: 100%;
+    height: 320rpx;
+    font-size: $text-base;
+    color: $text-primary;
+    line-height: 1.5;
+  }
+
+  &__placeholder {
+    color: $text-tertiary;
+  }
+
+  &__options {
+    background-color: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    padding: $spacing-4;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-3;
+  }
+
+  &__row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 80rpx;
+  }
+
+  &__row-label {
+    font-size: $text-base;
+    color: $text-primary;
+  }
+
+  &__switch {
+    width: 88rpx;
+    height: 48rpx;
+    border-radius: $radius-full;
+    background-color: $gray-200;
+    position: relative;
+    transition: background-color 150ms;
+  }
+
+  &__switch--on {
+    background-color: $primary;
+  }
+
+  &__switch-dot {
+    position: absolute;
+    top: 4rpx;
+    left: 4rpx;
+    width: 40rpx;
+    height: 40rpx;
+    border-radius: $radius-full;
+    background-color: #ffffff;
+    transition: left 150ms;
+  }
+
+  &__switch-dot--on {
+    left: 44rpx;
+  }
+
+  &__seg {
+    display: flex;
+    flex-direction: row;
+    background-color: $gray-100;
+    border-radius: $radius-full;
+    padding: 2rpx;
+  }
+
+  &__seg-item {
+    padding: 8rpx 28rpx;
+    border-radius: $radius-full;
+  }
+
+  &__seg-item--active {
+    background-color: $primary;
+  }
+
+  &__seg-text {
+    font-size: $text-sm;
+    font-weight: $font-medium;
+    color: $gray-500;
+  }
+
+  &__seg-item--active &__seg-text {
+    color: $text-inverse;
+  }
+
+  &__footer {
+    margin-top: $spacing-2;
+  }
+}

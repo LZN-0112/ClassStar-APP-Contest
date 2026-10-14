@@ -1,0 +1,11 @@
+// ============================================================
+// SectionTitle 区块标题组件 — 样式
+// 换算：text-xs 12px→24rpx，tracking-wide 0.025em
+// ============================================================
+
+.cx-section-title {
+  font-size: 24rpx;
+  font-weight: $font-semibold;
+  color: $text-tertiary;
+  letter-spacing: 1rpx;
+}

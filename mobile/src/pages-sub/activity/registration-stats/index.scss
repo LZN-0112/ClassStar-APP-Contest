@@ -1,0 +1,136 @@
+.actstats {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: 0 $page-padding-x;
+    padding-top: 40rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__stat-row {
+    display: flex;
+    flex-direction: row;
+    gap: 24rpx;
+  }
+
+  &__stat-card {
+    flex: 1;
+    box-shadow: $shadow-sm;
+    background: $surface;
+    border-radius: $radius-xl;
+    padding: 32rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+    align-items: center;
+  }
+
+  &__stat-num {
+    font-size: 56rpx;
+    font-weight: 700;
+    color: #004ecc;
+  }
+
+  &__stat-label {
+    font-size: $text-11;
+    font-weight: 600;
+    color: $text-secondary;
+  }
+
+  &__group-title {
+    font-size: $text-11;
+    font-weight: 600;
+    color: $text-secondary;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__card {
+    box-shadow: $shadow-sm;
+    background: $surface;
+    border-radius: $radius-xl;
+    padding: 32rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+    box-sizing: border-box;
+  }
+
+  &__card-head {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__name {
+    font-size: $text-lg;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__status {
+    font-size: $text-11;
+    font-weight: 500;
+    color: #f59e0b;
+
+    &--approve {
+      color: #22c55e;
+    }
+
+    &--reject {
+      color: #ef4444;
+    }
+  }
+
+  &__info {
+    font-size: $text-xs;
+    font-weight: 400;
+    color: $text-secondary;
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: row;
+    gap: 20rpx;
+  }
+
+  &__btn {
+    flex: 1;
+    height: 72rpx;
+    border-radius: $radius-lg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--approve {
+      background: #22c55e;
+    }
+
+    &--reject {
+      background: #ef44441a;
+    }
+  }
+
+  &__btn-text {
+    font-size: $text-sm;
+    font-weight: 600;
+
+    &--approve {
+      color: #ffffff;
+    }
+
+    &--reject {
+      color: #ef4444;
+    }
+  }
+}

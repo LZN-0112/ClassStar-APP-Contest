@@ -1,0 +1,75 @@
+// ============================================================
+// 帮助与反馈页面
+// ============================================================
+.hfeed {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: 24rpx $page-padding-x 40rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+  }
+
+  &__card {
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-md;
+    padding: $card-padding;
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+  }
+
+  &__card-title {
+    font-size: 32rpx;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__label {
+    font-size: 26rpx;
+    font-weight: 500;
+    color: $text-secondary;
+  }
+
+  &__textarea {
+    width: 100%;
+    min-height: 240rpx;
+    padding: 24rpx;
+    box-sizing: border-box;
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    font-size: 28rpx;
+    line-height: 1.5;
+    color: $text-primary;
+  }
+
+  &__input {
+    width: 100%;
+    height: 96rpx;
+    padding: 0 24rpx;
+    box-sizing: border-box;
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    font-size: 28rpx;
+    color: $text-primary;
+  }
+
+  &__placeholder {
+    color: $text-secondary;
+    font-size: 26rpx;
+  }
+}

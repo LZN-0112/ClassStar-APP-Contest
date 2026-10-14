@@ -1,0 +1,244 @@
+.attdetail {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: 24rpx $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__info {
+    background: $surface;
+    border-radius: $radius-lg;
+    border: 1rpx solid $border;
+    padding: 32rpx;
+  }
+
+  &__info-head {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    margin-bottom: 16rpx;
+  }
+
+  &__info-title {
+    font-size: $text-base;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__badge {
+    margin-left: auto;
+    font-size: $text-xs;
+    color: #1d4ed8;
+    background: #dbeafe;
+    padding: 4rpx 16rpx;
+    border-radius: $radius-full;
+
+    &--closed {
+      color: #6b7280;
+      background: #f3f4f6;
+    }
+  }
+
+  &__info-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+  }
+
+  &__info-row {
+    font-size: $text-xs;
+    color: $text-secondary;
+  }
+
+  &__done {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    padding: 24rpx;
+    background: #dcfce7;
+    border: 1rpx solid #bbf7d0;
+    border-radius: $radius-lg;
+  }
+
+  &__done-text {
+    font-size: $text-base;
+    font-weight: 600;
+    color: #16a34a;
+  }
+
+  &__done-time {
+    margin-left: auto;
+    font-size: $text-xs;
+    color: $text-secondary;
+  }
+
+  &__ops {
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__btn {
+    height: 96rpx;
+    border-radius: $radius-lg;
+    background: $primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--leave {
+      background: $accent-50;
+      border: 1rpx solid $border;
+    }
+  }
+
+  &__btn-text {
+    font-size: $text-lg;
+    color: $text-inverse;
+    font-weight: 600;
+
+    &--blue {
+      font-size: $text-lg;
+      color: $primary;
+      font-weight: 600;
+    }
+  }
+
+  &__closed {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    padding: 24rpx;
+    background: #fef2f2;
+    border: 1rpx solid #fecaca;
+    border-radius: $radius-lg;
+  }
+
+  &__closed-text {
+    font-size: $text-base;
+    font-weight: 600;
+    color: #dc2626;
+  }
+
+  &__stats {
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__stats-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24rpx;
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+  }
+
+  &__stats-title {
+    font-size: $text-base;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__stats-hint {
+    font-size: $text-xs;
+    color: $text-weak;
+  }
+
+  &__stats-body {
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__stat-grid {
+    display: flex;
+    gap: 24rpx;
+  }
+
+  &__stat {
+    flex: 1;
+    border-radius: $radius-lg;
+    padding: 24rpx 0;
+    text-align: center;
+
+    &--present { background: #dcfce7; }
+    &--absent { background: #fef2f2; }
+    &--leave { background: #fef3c7; }
+  }
+
+  &__stat-num {
+    display: block;
+    font-size: $text-xl;
+    font-weight: 700;
+    color: #16a34a;
+  }
+
+  &__stat--absent &__stat-num { color: #dc2626; }
+  &__stat--leave &__stat-num { color: #d97706; }
+
+  &__stat-label {
+    font-size: $text-xs;
+    color: $text-secondary;
+  }
+
+  &__stat-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+  }
+
+  &__stat-group-title {
+    font-size: $text-xs;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__stat-person {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    padding: 16rpx;
+    background: $surface;
+    border-radius: $radius-md;
+  }
+
+  &__stat-person-name {
+    font-size: $text-xs;
+    color: $text-primary;
+  }
+
+  &__stat-person-time {
+    margin-left: auto;
+    font-size: $text-xs;
+    color: $text-tertiary;
+  }
+
+  &__dot {
+    width: 24rpx;
+    height: 24rpx;
+    border-radius: $radius-full;
+
+    &--red { background: #dc2626; }
+  }
+
+  &__empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 160rpx 0;
+  }
+
+  &__empty-text {
+    font-size: $text-sm;
+    color: $text-tertiary;
+  }
+}

@@ -1,0 +1,155 @@
+.taskboard {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__nav-plus {
+    width: 72rpx;
+    height: 72rpx;
+    border-radius: 50%;
+    background: $primary;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__body {
+    padding: 24rpx $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__stats {
+    display: flex;
+    gap: 16rpx;
+  }
+
+  &__stat {
+    flex: 1;
+    background: $surface;
+    border-radius: $radius-xl;
+    padding: 28rpx 16rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8rpx;
+    box-shadow: $shadow-md;
+
+    &--active {
+      background: #076cab;
+    }
+  }
+
+  &__stat-value {
+    font-size: $text-2xl;
+    font-weight: 700;
+    color: #076cab;
+
+    &--active {
+      color: #fff;
+    }
+  }
+
+  &__stat-label {
+    font-size: $text-11;
+    font-weight: 600;
+    color: $text-secondary;
+
+    &--active {
+      color: rgba(255, 255, 255, 0.8);
+    }
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__section-title {
+    font-size: $text-13;
+    font-weight: 600;
+    color: $text-secondary;
+  }
+
+  &__card {
+    background: $surface;
+    border-radius: $radius-xl;
+    padding: 28rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+    box-shadow: $shadow-md;
+  }
+
+  &__card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__card-title {
+    font-size: $text-base;
+    font-weight: 600;
+    color: $text-primary;
+    flex: 1;
+    margin-right: 16rpx;
+  }
+
+  &__card-progress {
+    font-size: $text-base;
+    font-weight: 700;
+    color: #076cab;
+  }
+
+  &__card-deadline {
+    font-size: $text-11;
+    font-weight: 500;
+    color: $text-secondary;
+  }
+
+  &__track {
+    height: 12rpx;
+    border-radius: 999rpx;
+    background: $gray-100;
+    overflow: hidden;
+  }
+
+  &__track-fill {
+    height: 100%;
+    border-radius: 999rpx;
+    background: #076cab;
+    transition: width 0.3s;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 12rpx;
+    padding-top: 8rpx;
+  }
+
+  &__act {
+    font-size: $text-13;
+    font-weight: 600;
+    padding: 12rpx 24rpx;
+    border-radius: $radius-md;
+
+    &--done {
+      color: #076cab;
+      background: $accent-50;
+    }
+
+    &--delete {
+      color: $danger;
+      background: #fee2e2;
+    }
+
+    &--pin {
+      color: $warning;
+      background: #fef3c7;
+    }
+  }
+}

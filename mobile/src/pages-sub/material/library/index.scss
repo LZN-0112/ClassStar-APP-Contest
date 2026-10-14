@@ -1,0 +1,132 @@
+.materials {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__nav-act {
+    font-size: $text-base;
+    font-weight: 500;
+    color: $primary;
+  }
+
+  &__body {
+    padding: 24rpx $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__folders {
+    display: flex;
+    gap: 16rpx;
+  }
+
+  &__folder {
+    flex: 1;
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+    padding: 20rpx 16rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8rpx;
+
+    &--active {
+      border-color: $primary;
+      background: $accent-50;
+    }
+  }
+
+  &__folder-icon {
+    width: 96rpx;
+    height: 96rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__folder-label {
+    font-size: $text-11;
+    font-weight: 500;
+    color: $text-primary;
+
+    &--active {
+      color: $primary;
+      font-weight: 600;
+    }
+  }
+
+  &__folder-count {
+    font-size: $text-11;
+    color: $text-secondary;
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__section-title {
+    font-size: $text-base;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__item {
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+    padding: 24rpx;
+    display: flex;
+    align-items: center;
+    gap: 20rpx;
+    box-shadow: $shadow-sm;
+  }
+
+  &__file-icon {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: $radius-lg;
+    background: rgba(96, 165, 250, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  &__file-glow {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80rpx;
+    height: 36rpx;
+    border-radius: $radius-lg;
+    background: rgba(255, 255, 255, 0.15);
+    opacity: 0.15;
+  }
+
+  &__item-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+  }
+
+  &__item-title {
+    font-size: $text-base;
+    font-weight: 600;
+    color: $text-primary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__item-sub {
+    font-size: $text-11;
+    color: $text-secondary;
+  }
+}

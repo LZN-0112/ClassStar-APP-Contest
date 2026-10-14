@@ -1,0 +1,14 @@
+// ProgressRing 环形进度
+.cx-ring {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &__label {
+    position: absolute;
+    font-size: $text-sm;
+    font-weight: $font-semibold;
+    color: $text-primary;
+  }
+}

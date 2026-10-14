@@ -1,0 +1,143 @@
+// 错误看板样式
+.edash {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: 24rpx $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  // 统计卡片
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16rpx;
+  }
+
+  &__stat {
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    padding: 24rpx 12rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12rpx;
+    box-shadow: $shadow-md;
+  }
+
+  &__stat-icon {
+    width: 64rpx;
+    height: 64rpx;
+    border-radius: $radius-full;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__stat-value {
+    font-size: $text-2xl;
+    font-weight: $font-bold;
+    line-height: 1;
+  }
+
+  &__stat-label {
+    font-size: $text-11;
+    color: $text-secondary;
+  }
+
+  // 列表头
+  &__list-head {
+    display: flex;
+    align-items: center;
+    margin-top: 8rpx;
+  }
+
+  &__list-title {
+    font-size: $text-base;
+    color: $text-primary;
+    font-weight: $font-semibold;
+  }
+
+  // 日志项
+  &__item {
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    padding: $card-padding;
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__item-head {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+  }
+
+  &__item-msg {
+    font-size: $text-sm;
+    color: $text-primary;
+    line-height: $leading-normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  &__item-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+  }
+
+  &__item-time {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+    font-size: $text-xs;
+    color: $text-tertiary;
+  }
+
+  &__item-action {
+    font-size: $text-xs;
+    color: $success;
+    font-weight: $font-medium;
+    flex-shrink: 0;
+  }
+
+  // 分页
+  &__pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32rpx;
+    padding: 8rpx 0;
+  }
+
+  &__pager-btn {
+    font-size: $text-sm;
+    color: $text-secondary;
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-sm;
+    padding: 12rpx 28rpx;
+
+    &--disabled {
+      color: $text-tertiary;
+      opacity: 0.5;
+    }
+  }
+
+  &__pager-info {
+    font-size: $text-sm;
+    color: $text-weak;
+  }
+}

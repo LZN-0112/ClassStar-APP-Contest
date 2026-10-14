@@ -1,0 +1,75 @@
+.attcheckin-entry {
+  min-height: 100vh;
+  background: $surface;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: 32rpx $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__meta {
+    margin-top: 20rpx;
+    font-size: $text-base;
+    color: $text-secondary;
+  }
+
+  &__map {
+    margin-top: 48rpx;
+    height: 480rpx;
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+    background: $surface;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20rpx;
+  }
+
+  &__pin {
+    width: 120rpx;
+    height: 120rpx;
+    border-radius: $radius-lg;
+    background: $primary;
+    opacity: 0.3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__hint {
+    font-size: $text-base;
+    color: $text-secondary;
+  }
+
+  &__btn {
+    margin-top: 32rpx;
+    height: 104rpx;
+    border-radius: $radius-lg;
+    background: $primary;
+    box-shadow: $shadow-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--leave {
+      background: $accent-50;
+      border: 1rpx solid $border;
+    }
+  }
+
+  &__btn-text {
+    font-size: $text-lg;
+    color: $text-inverse;
+    font-weight: 600;
+
+    &--blue {
+      font-size: $text-lg;
+      color: $primary;
+      font-weight: 600;
+    }
+  }
+}

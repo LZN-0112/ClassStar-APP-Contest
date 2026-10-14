@@ -1,0 +1,141 @@
+.actpub {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: 24rpx $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__field {
+    height: 112rpx;
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-xl;
+    padding: 0 32rpx;
+    display: flex;
+    align-items: center;
+
+    &--area {
+      height: 240rpx;
+      padding: 32rpx;
+      align-items: flex-start;
+    }
+  }
+
+  &__input {
+    width: 100%;
+    font-size: $text-base;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  &__area {
+    width: 100%;
+    height: 100%;
+    font-size: $text-base;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  &__placeholder {
+    color: $text-tertiary;
+  }
+
+  &__row {
+    height: 112rpx;
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-xl;
+    padding: 0 32rpx;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__label {
+    font-size: $text-base;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  &__cover-card {
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-xl;
+    padding: 32rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+  }
+
+  &__cover-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__cover-remove {
+    font-size: $text-xs;
+    color: $danger;
+  }
+
+  &__cover-preview {
+    position: relative;
+    height: 320rpx;
+    width: 100%;
+    border-radius: $radius-lg;
+    overflow: hidden;
+    background: $gray-50;
+  }
+
+  &__cover-img {
+    width: 100%;
+    height: 100%;
+  }
+
+  &__cover-mask {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__cover-mask-text {
+    color: #fff;
+    font-size: $text-sm;
+  }
+
+  &__cover-trigger {
+    height: 320rpx;
+    width: 100%;
+    border: 1rpx dashed $gray-300;
+    border-radius: $radius-lg;
+    background: $gray-50;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+  }
+
+  &__cover-tip {
+    font-size: $text-13;
+    color: $text-tertiary;
+  }
+
+  &__cover-sub {
+    font-size: $text-11;
+    color: $text-tertiary;
+  }
+
+  &__spacer {
+    height: 40rpx;
+  }
+}

@@ -1,0 +1,120 @@
+.actmy {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: 0 $page-padding-x;
+    padding-top: 40rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__filters {
+    display: flex;
+    flex-direction: row;
+    gap: 16rpx;
+  }
+
+  &__filter {
+    padding: 16rpx 32rpx;
+    height: 64rpx;
+    border-radius: 999rpx;
+    background: $gray-100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--active {
+      background: $primary;
+    }
+  }
+
+  &__filter-text {
+    font-size: $text-11;
+    font-weight: 600;
+    color: $text-secondary;
+
+    &--active {
+      color: #ffffff;
+    }
+  }
+
+  &__group-title {
+    font-size: $text-11;
+    font-weight: 600;
+    color: $text-secondary;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__card {
+    height: 192rpx;
+    box-shadow: $shadow-sm;
+    background: $surface;
+    border-radius: $radius-xl;
+    padding: 32rpx;
+    display: flex;
+    flex-direction: row;
+    gap: 24rpx;
+    align-items: center;
+    box-sizing: border-box;
+  }
+
+  &__thumb {
+    width: 128rpx;
+    height: 128rpx;
+    border-radius: $radius-lg;
+    background: #dbeafe;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+    align-items: flex-start;
+  }
+
+  &__title {
+    font-size: $text-base;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__meta {
+    font-size: $text-11;
+    font-weight: 500;
+    color: $text-secondary;
+  }
+
+  &__status {
+    padding: 8rpx 16rpx;
+    border-radius: 999rpx;
+    background: #0062ff1a;
+
+    &--ended {
+      background: #6b72801a;
+    }
+  }
+
+  &__status-text {
+    font-size: $text-11;
+    font-weight: 600;
+    color: $primary;
+
+    &--ended {
+      color: #6b7280;
+    }
+  }
+}

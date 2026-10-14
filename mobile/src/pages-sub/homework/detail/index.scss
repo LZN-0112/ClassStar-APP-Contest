@@ -1,0 +1,176 @@
+.hwdtl {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+
+  &__loading {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 200rpx;
+  }
+
+  &__loading-text {
+    font-size: $text-base;
+    color: $text-tertiary;
+  }
+
+  &__scroll {
+    flex: 1;
+    box-sizing: border-box;
+    padding: 24rpx $page-padding-x 0;
+  }
+
+  &__card {
+    background: $surface;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-sm;
+    padding: $card-padding;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__head {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+  }
+
+  &__head-badge {
+    align-self: flex-start;
+    padding: 6rpx 24rpx;
+    border-radius: $radius-full;
+    background: $accent-100;
+  }
+
+  &__head-subject {
+    font-size: $text-xs;
+    font-weight: 600;
+    color: $primary;
+  }
+
+  &__title {
+    font-size: $text-lg;
+    font-weight: 700;
+    color: $text-primary;
+    line-height: $leading-tight;
+  }
+
+  &__head-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12rpx;
+  }
+
+  &__tag {
+    font-size: $text-sm;
+    color: $text-secondary;
+    background: $gray-50;
+    padding: 8rpx 20rpx;
+    border-radius: $radius-full;
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__section-title {
+    font-size: $text-sm;
+    font-weight: 600;
+    color: $text-weak;
+  }
+
+  &__content {
+    font-size: $text-base;
+    color: $text-primary;
+    line-height: $leading-relaxed;
+  }
+
+  &__content-text {
+    font-size: $text-base;
+    color: $text-tertiary;
+  }
+
+  &__file {
+    display: flex;
+    align-items: center;
+    gap: 20rpx;
+    padding: 20rpx;
+    border-radius: $radius-md;
+    background: $gray-50;
+  }
+
+  &__file-icon {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: $radius-sm;
+    background: #dbeafe;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__file-name {
+    flex: 1;
+    min-width: 0;
+    font-size: $text-13;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  &__meta {
+    font-size: $text-xs;
+    color: $text-tertiary;
+  }
+
+  &__stats {
+    margin-top: 24rpx;
+  }
+
+  &__footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    gap: 24rpx;
+    padding: 20rpx $page-padding-x calc(20rpx + env(safe-area-inset-bottom));
+    background: $surface;
+    box-shadow: 0 -8rpx 24rpx rgba(0, 0, 0, 0.06);
+  }
+
+  &__footer-btn {
+    flex: 1;
+    height: 96rpx;
+    border-radius: $radius-md;
+    background: $primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--ghost {
+      background: $surface;
+      border: 2rpx solid $border;
+    }
+
+    &--full {
+      width: 100%;
+    }
+  }
+
+  &__footer-btn-text {
+    font-size: $text-lg;
+    font-weight: 600;
+    color: $text-inverse;
+
+    &--ghost {
+      color: $text-secondary;
+    }
+  }
+}

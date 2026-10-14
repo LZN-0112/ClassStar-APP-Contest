@@ -1,0 +1,75 @@
+// Tag 标签
+.cx-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4rpx 16rpx;
+  border-radius: $radius-xs;
+  font-size: $text-xs;
+  line-height: $leading-tight;
+  font-weight: $font-medium;
+}
+
+// 实底
+.cx-tag--filled.cx-tag--primary {
+  color: #fff;
+  background: $primary;
+}
+.cx-tag--filled.cx-tag--success {
+  color: #fff;
+  background: $success;
+}
+.cx-tag--filled.cx-tag--warning {
+  color: #fff;
+  background: $warning;
+}
+.cx-tag--filled.cx-tag--danger {
+  color: #fff;
+  background: $danger;
+}
+.cx-tag--filled.cx-tag--default {
+  color: $text-secondary;
+  background: $gray-100;
+}
+
+// 描边
+.cx-tag--outline {
+  background: transparent;
+}
+.cx-tag--outline.cx-tag--primary {
+  color: $primary;
+  border: 1rpx solid $primary;
+}
+.cx-tag--outline.cx-tag--success {
+  color: $success;
+  border: 1rpx solid $success;
+}
+.cx-tag--outline.cx-tag--warning {
+  color: $warning;
+  border: 1rpx solid $warning;
+}
+.cx-tag--outline.cx-tag--danger {
+  color: $danger;
+  border: 1rpx solid $danger;
+}
+.cx-tag--outline.cx-tag--default {
+  color: $text-tertiary;
+  border: 1rpx solid $border;
+}
+
+// 圆点
+.cx-tag--dot {
+  background: transparent;
+  padding-left: 24rpx;
+  position: relative;
+}
+.cx-tag--dot::before {
+  content: '';
+  position: absolute;
+  left: 6rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: $radius-full;
+  background: currentColor;
+}

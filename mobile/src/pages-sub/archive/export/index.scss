@@ -1,0 +1,106 @@
+.expt {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: 24rpx $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__notice {
+    background: $icon-bg;
+    border-radius: $radius-lg;
+    padding: $card-padding;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+  }
+
+  &__notice-label {
+    font-size: $text-11;
+    color: $text-secondary;
+  }
+
+  &__notice-text {
+    font-size: $text-md;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  &__section-title {
+    font-size: $text-base;
+    font-weight: 600;
+    color: $text-secondary;
+    padding: 0 8rpx;
+  }
+
+  &__formats {
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__format {
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+    padding: $card-padding;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12rpx;
+    box-shadow: $shadow-md;
+    opacity: 0.7;
+
+    &--active {
+      border-color: $primary;
+      opacity: 1;
+    }
+  }
+
+  &__format-icon {
+    width: 128rpx;
+    height: 128rpx;
+    border-radius: $radius-xl;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: $shadow-md;
+  }
+
+  &__format-label {
+    font-size: $text-lg;
+    font-weight: 700;
+    color: $text-primary;
+  }
+
+  &__format-desc {
+    font-size: $text-11;
+    color: $text-secondary;
+  }
+
+  &__submit {
+    height: 104rpx;
+    border-radius: $radius-md;
+    box-shadow: $shadow-lg;
+    background: $primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 8rpx;
+
+    &--busy {
+      opacity: 0.6;
+    }
+  }
+
+  &__submit-text {
+    font-size: $text-lg;
+    font-weight: 600;
+    color: #fff;
+  }
+}

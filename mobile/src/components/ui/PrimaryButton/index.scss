@@ -1,0 +1,74 @@
+// ============================================================
+// PrimaryButton 主操作按钮组件 — 样式
+// 换算：圆角 12px→24rpx、padding 14px→28rpx、字号 16px→32rpx
+// ============================================================
+
+.cx-primary-btn {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  padding: 28rpx 0;
+  border-radius: 24rpx;
+  font-size: 32rpx;
+  font-weight: $font-semibold;
+  text-align: center;
+  box-sizing: border-box;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+
+  &--solid {
+    background: $primary;
+    color: $text-inverse;
+    box-shadow: $shadow-md;
+  }
+
+  &--outline {
+    border: 2rpx solid $primary;
+    background: $surface;
+    color: $primary;
+  }
+
+  &--disabled {
+    opacity: 0.5;
+  }
+
+  &--loading {
+    pointer-events: none;
+  }
+
+  &__spinner {
+    width: 32rpx;
+    height: 32rpx;
+    border: 4rpx solid rgba(255, 255, 255, 0.4);
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: cx-primary-btn-spin 0.8s linear infinite;
+  }
+}
+
+// 按压反馈（transform 缩放；透明度交给全局 .press-opacity）
+.cx-primary-btn:active {
+  transform: scale(0.97);
+}
+
+// 禁用态按压恢复，避免缩放/透明度误触发
+.cx-primary-btn--disabled:active {
+  transform: none;
+  opacity: 0.5;
+}
+
+// outline 变体的 spinner 边框色适配
+.cx-primary-btn--outline .cx-primary-btn__spinner {
+  border-color: rgba($primary, 0.3);
+  border-top-color: $primary;
+}
+
+@keyframes cx-primary-btn-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

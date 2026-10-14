@@ -1,0 +1,153 @@
+.matup {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: 24rpx $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__drop {
+    min-height: 240rpx;
+    background: $surface;
+    border: 1rpx dashed $gray-300;
+    border-radius: $radius-lg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--active {
+      border-color: $primary;
+      background: $accent-50;
+    }
+  }
+
+  &__drop-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16rpx;
+    padding: 32rpx;
+  }
+
+  &__drop-tip {
+    font-size: $text-base;
+    color: $text-secondary;
+  }
+
+  &__file-list {
+    width: 100%;
+    padding: 20rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+    max-height: 360rpx;
+    overflow-y: auto;
+  }
+
+  &__file-item {
+    background: $gray-50;
+    border-radius: $radius-md;
+    padding: 16rpx 20rpx;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+  }
+
+  &__file-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
+  }
+
+  &__file-name {
+    font-size: $text-13;
+    color: $text-primary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__file-size {
+    font-size: $text-11;
+    color: $text-secondary;
+  }
+
+  &__file-remove {
+    width: 44rpx;
+    height: 44rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__file-more {
+    font-size: $text-xs;
+    color: $primary;
+    text-align: center;
+    padding: 8rpx 0;
+  }
+
+  &__cat {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__cat-title {
+    font-size: $text-base;
+    color: $text-secondary;
+  }
+
+  &__cat-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16rpx;
+  }
+
+  &__cat-chip {
+    height: 72rpx;
+    padding: 0 32rpx;
+    border-radius: 999rpx;
+    background: $accent-50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--active {
+      background: $primary;
+    }
+  }
+
+  &__cat-chip-text {
+    font-size: $text-13;
+    font-weight: 600;
+    color: $primary;
+
+    &--active {
+      color: #fff;
+    }
+  }
+
+  &__repost {
+    height: 104rpx;
+    background: $accent-50;
+    border-radius: $radius-lg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__repost-text {
+    font-size: $text-base;
+    font-weight: 600;
+    color: $primary;
+  }
+}

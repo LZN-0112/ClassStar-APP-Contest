@@ -1,0 +1,74 @@
+.actreg {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: 0 $page-padding-x;
+    padding-top: 40rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__info {
+    padding: 32rpx;
+    background: $accent-50;
+    border-radius: $radius-xl;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+  }
+
+  &__info-title {
+    font-size: $text-lg;
+    font-weight: 700;
+    color: $text-primary;
+  }
+
+  &__info-meta {
+    font-size: $text-sm;
+    font-weight: 500;
+    color: $text-secondary;
+  }
+
+  &__field {
+    height: 112rpx;
+    padding: 0 32rpx;
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+    display: flex;
+    align-items: center;
+
+    &--area {
+      height: 240rpx;
+      padding: 32rpx;
+      align-items: flex-start;
+    }
+  }
+
+  &__input {
+    width: 100%;
+    font-size: $text-base;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  &__area {
+    width: 100%;
+    height: 100%;
+    font-size: $text-base;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  &__placeholder {
+    color: $text-weak;
+  }
+
+  &__spacer {
+    height: 40rpx;
+  }
+}

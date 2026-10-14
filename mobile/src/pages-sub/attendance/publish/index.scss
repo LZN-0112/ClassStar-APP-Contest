@@ -1,0 +1,154 @@
+.attpublish {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: $bg;
+
+  &__body {
+    flex: 1;
+    padding: $spacing-4 $page-padding-x $page-padding-bottom;
+    box-sizing: border-box;
+    overflow-y: auto;
+  }
+
+  &__field {
+    margin-bottom: $spacing-4;
+  }
+
+  &__field--mt {
+    margin-top: $spacing-3;
+  }
+
+  &__label {
+    display: block;
+    font-size: $text-sm;
+    color: $text-secondary;
+    margin-bottom: $spacing-2;
+  }
+
+  &__input {
+    width: 100%;
+    height: 88rpx;
+    background-color: $gray-50;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    padding: 0 $spacing-4;
+    font-size: $text-base;
+    color: $text-primary;
+    box-sizing: border-box;
+  }
+
+  &__placeholder {
+    font-size: $text-base;
+    color: $text-tertiary;
+  }
+
+  &__method-box {
+    padding: $spacing-4;
+    background-color: $gray-50;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    margin-bottom: $spacing-4;
+  }
+
+  &__method-title {
+    display: block;
+    font-size: $text-base;
+    font-weight: $font-medium;
+    color: $text-primary;
+    margin-bottom: $spacing-3;
+  }
+
+  &__method-grid {
+    display: flex;
+    flex-direction: row;
+    gap: $spacing-2;
+  }
+
+  &__method {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-2;
+    padding: $spacing-2;
+    border-radius: $radius-md;
+    border: 2rpx solid $border;
+    background-color: $surface;
+
+    &--active {
+      border-color: $primary;
+      background-color: #eff6ff;
+    }
+  }
+
+  &__method-icon {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: $radius-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__method-label {
+    font-size: $text-xs;
+    color: $text-primary;
+  }
+
+  &__gps-box {
+    padding: $spacing-4;
+    background-color: #f0f9ff;
+    border: 1rpx solid #bae6fd;
+    border-radius: $radius-md;
+    margin-bottom: $spacing-4;
+  }
+
+  &__gps-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__gps-title {
+    font-size: $text-base;
+    font-weight: $font-medium;
+    color: #0369a1;
+  }
+
+  &__gps-btn {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8rpx;
+    padding: 12rpx $spacing-3;
+    background-color: $primary;
+    border-radius: $radius-md;
+  }
+
+  &__gps-btn-text {
+    font-size: $text-sm;
+    color: $text-inverse;
+  }
+
+  &__gps-info,
+  &__gps-hint {
+    display: block;
+    font-size: $text-sm;
+    color: $text-weak;
+    margin-top: $spacing-2;
+  }
+
+  &__gps-info {
+    color: $text-weak;
+  }
+
+  &__gps-hint {
+    color: $text-tertiary;
+  }
+
+  &__footer {
+    margin-top: $spacing-4;
+  }
+}

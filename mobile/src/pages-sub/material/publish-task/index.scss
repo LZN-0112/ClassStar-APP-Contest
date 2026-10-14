@@ -1,0 +1,69 @@
+.taskpub {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: 24rpx $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__field {
+    height: 112rpx;
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-xl;
+    padding: 0 32rpx;
+    display: flex;
+    align-items: center;
+
+    &--area {
+      height: 280rpx;
+      padding: 32rpx;
+      align-items: flex-start;
+    }
+  }
+
+  &__native {
+    width: 100%;
+    font-size: $text-base;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  &__area {
+    width: 100%;
+    height: 100%;
+    font-size: $text-base;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  &__placeholder {
+    color: $text-tertiary;
+  }
+
+  &__row {
+    height: 112rpx;
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-xl;
+    padding: 0 32rpx;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__label {
+    font-size: $text-base;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  &__spacer {
+    height: 40rpx;
+  }
+}

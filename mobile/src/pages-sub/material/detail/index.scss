@@ -1,0 +1,92 @@
+.matdetail {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: 24rpx $page-padding-x $page-padding-bottom;
+  }
+
+  &__empty {
+    padding: 160rpx 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  &__empty-text {
+    font-size: $text-sm;
+    color: $text-secondary;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+  }
+
+  &__head {
+    padding: 40rpx 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  &__file-icon {
+    width: 128rpx;
+    height: 128rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__title {
+    font-size: $text-xl;
+    font-weight: 700;
+    color: $text-primary;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  &__meta {
+    font-size: $text-sm;
+    color: $text-secondary;
+  }
+
+  &__rows {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__row {
+    background: $surface;
+    border-radius: $radius-lg;
+    padding: 0 28rpx;
+    height: 104rpx;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: $shadow-sm;
+  }
+
+  &__row-label {
+    font-size: $text-base;
+    color: $text-secondary;
+  }
+
+  &__row-value {
+    font-size: $text-base;
+    color: $text-primary;
+    max-width: 60%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

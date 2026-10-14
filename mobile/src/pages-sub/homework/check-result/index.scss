@@ -1,0 +1,162 @@
+.hwcr {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+  display: flex;
+  flex-direction: column;
+
+  &__export {
+    padding: 8rpx;
+  }
+
+  &__scroll {
+    flex: 1;
+  }
+
+  &__body {
+    padding: $page-padding-top $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+  }
+
+  &__empty {
+    padding: 128rpx $page-padding-x;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  &__empty-tip {
+    font-size: $text-sm;
+    color: $text-tertiary;
+  }
+
+  &__stats {
+    display: flex;
+    gap: 16rpx;
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__section-title {
+    font-size: $text-11;
+    font-weight: 600;
+    color: $text-weak;
+
+    &--warn {
+      color: $warning;
+    }
+  }
+
+  &__unmatched {
+    background: #fef3c7;
+    border-radius: $radius-md;
+    padding: 24rpx;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16rpx;
+  }
+
+  &__unmatched-chip {
+    background: $surface;
+    border-radius: $radius-sm;
+    padding: 12rpx 24rpx;
+    font-size: $text-sm;
+    font-weight: 500;
+    color: #92400e;
+  }
+
+  &__tabs {
+    margin-top: 8rpx;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__item {
+    min-height: 104rpx;
+    background: $surface;
+    border-radius: $radius-md;
+    box-shadow: $shadow-sm;
+    padding: 16rpx 24rpx;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+  }
+
+  &__item-avatar {
+    width: 64rpx;
+    height: 64rpx;
+    border-radius: $radius-full;
+    background: #076cab;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    &--off {
+      background: #9ca3af;
+    }
+  }
+
+  &__item-avatar-text {
+    font-size: $text-sm;
+    font-weight: 600;
+    color: $text-inverse;
+  }
+
+  &__item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
+    margin-left: 20rpx;
+  }
+
+  &__item-name {
+    font-size: $text-base;
+    font-weight: 500;
+    color: $text-primary;
+  }
+
+  &__item-sid {
+    font-size: $text-11;
+    color: $text-weak;
+  }
+
+  &__detail {
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+    padding: 8rpx 0 16rpx;
+  }
+
+  &__detail-row {
+    display: flex;
+    align-items: center;
+    gap: 24rpx;
+  }
+
+  &__detail-label {
+    width: 160rpx;
+    font-size: $text-sm;
+    color: $text-weak;
+  }
+
+  &__detail-value {
+    flex: 1;
+    font-size: $text-base;
+    font-weight: 500;
+    color: $text-primary;
+  }
+}

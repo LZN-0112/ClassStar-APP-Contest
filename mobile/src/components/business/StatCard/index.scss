@@ -1,0 +1,33 @@
+// StatCard 统计卡片
+.cx-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $spacing-md $spacing-4;
+  background: $surface;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 88rpx;
+    height: 88rpx;
+    border-radius: $radius-full;
+    margin-bottom: $spacing-2;
+  }
+
+  &__value {
+    font-size: $text-22;
+    font-weight: $font-bold;
+    color: $text-primary;
+    line-height: $leading-tight;
+  }
+
+  &__label {
+    font-size: $text-xs;
+    color: $text-tertiary;
+    margin-top: 4rpx;
+  }
+}

@@ -1,0 +1,107 @@
+// ============================================================
+// 成员详情
+// 结构参照 front MemberDetail.tsx
+// ============================================================
+.mdetail {
+  min-height: 100vh;
+  background: $bg;
+  box-sizing: border-box;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  &__body {
+    padding: $page-padding-top $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-4;
+  }
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-2;
+    padding-top: $spacing-10;
+  }
+
+  &__empty-text {
+    font-size: $text-sm;
+    color: $text-secondary;
+  }
+
+  &__head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-3;
+    padding: $spacing-8 0 $spacing-4;
+  }
+
+  &__avatar {
+    width: 160rpx;
+    height: 160rpx;
+    border-radius: $radius-full;
+    background: $accent-50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  &__avatar-img {
+    width: 160rpx;
+    height: 160rpx;
+    border-radius: $radius-full;
+  }
+
+  &__name {
+    font-size: $text-2xl;
+    font-weight: $font-bold;
+    color: $text-primary;
+  }
+
+  &__card {
+    width: 100%;
+    box-sizing: border-box;
+    background: $surface;
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-md;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 104rpx;
+    padding: 0 $card-padding;
+    box-sizing: border-box;
+    border-bottom: 1rpx solid $border-light;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__row-label {
+    font-size: $text-base;
+    color: $text-secondary;
+  }
+
+  &__row-value {
+    font-size: $text-base;
+    color: $text-primary;
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-3;
+    margin-top: $spacing-2;
+  }
+
+  &__transfer {
+    color: $warning;
+  }
+}

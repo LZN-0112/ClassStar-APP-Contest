@@ -1,0 +1,49 @@
+// Chart 图表组件
+.cx-chart {
+  padding: $spacing-md $spacing-sm;
+
+  &__pie {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  &__legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-2 $spacing-md;
+    margin-top: $spacing-sm;
+    justify-content: center;
+  }
+
+  &__legend-item {
+    display: flex;
+    align-items: center;
+  }
+
+  &__legend-dot {
+    width: 20rpx;
+    height: 20rpx;
+    border-radius: $radius-full;
+    margin-right: 8rpx;
+  }
+
+  &__legend-text {
+    font-size: $text-xs;
+    color: $text-secondary;
+  }
+
+  &__xaxis {
+    display: flex;
+    justify-content: space-between;
+    margin-top: $spacing-xs;
+    padding-left: 28rpx;
+  }
+
+  &__xaxis-label {
+    flex: 1;
+    font-size: $text-xs;
+    color: $text-tertiary;
+    text-align: center;
+  }
+}

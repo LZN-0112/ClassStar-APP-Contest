@@ -1,0 +1,198 @@
+.msgstats {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: $bg;
+
+  &__body {
+    flex: 1;
+    overflow-y: auto;
+    padding: $spacing-4;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-3;
+  }
+
+  &__desc {
+    font-size: $text-base;
+    color: $text-secondary;
+  }
+
+  &__deadline {
+    font-size: $text-sm;
+    color: $text-weak;
+  }
+
+  &__cards {
+    display: flex;
+    flex-direction: row;
+    gap: $spacing-3;
+  }
+
+  &__card {
+    flex: 1;
+    background-color: $surface;
+    border-radius: $radius-xl;
+    padding: $spacing-4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4rpx;
+    box-shadow: $shadow-md;
+  }
+
+  &__num {
+    font-size: $text-22;
+    font-weight: $font-bold;
+    color: $text-primary;
+  }
+
+  &__label {
+    font-size: $text-11;
+    font-weight: $font-medium;
+    color: $text-secondary;
+  }
+
+  &__tabs {
+    display: flex;
+    flex-direction: row;
+    gap: $spacing-2;
+  }
+
+  &__tab-item {
+    flex: 1;
+    height: 72rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: $radius-full;
+    background-color: $gray-100;
+  }
+
+  &__tab-item--active {
+    background-color: $primary;
+    box-shadow: $shadow-md;
+  }
+
+  &__tab-text {
+    font-size: $text-13;
+    font-weight: $font-semibold;
+    color: $gray-500;
+  }
+
+  &__tab-item--active &__tab-text {
+    color: $text-inverse;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-2;
+  }
+
+  &__member {
+    height: 104rpx;
+    background-color: $surface;
+    border-radius: $radius-lg;
+    padding: 0 $spacing-4;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $spacing-3;
+    box-shadow: $shadow-md;
+  }
+
+  &__avatar {
+    width: 64rpx;
+    height: 64rpx;
+    border-radius: $radius-full;
+    background-color: $primary-dark;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__avatar-text {
+    font-size: $text-sm;
+    font-weight: $font-semibold;
+    color: $text-inverse;
+  }
+
+  &__member-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
+  }
+
+  &__member-top {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $spacing-2;
+  }
+
+  &__member-name {
+    font-size: $text-base;
+    font-weight: $font-medium;
+    color: $text-primary;
+  }
+
+  &__overdue-tag {
+    background-color: #fee2e2;
+    border-radius: $radius-full;
+    padding: 2rpx 12rpx;
+  }
+
+  &__overdue-text {
+    font-size: $text-xs;
+    font-weight: $font-semibold;
+    color: $danger;
+  }
+
+  &__member-id {
+    font-size: $text-11;
+    color: $text-secondary;
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-3;
+    margin-top: $spacing-2;
+  }
+
+  &__btn {
+    height: 104rpx;
+    border-radius: $radius-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__btn--primary {
+    background-color: $primary;
+  }
+
+  &__btn--disabled {
+    opacity: 0.5;
+  }
+
+  &__btn--ghost {
+    background-color: $accent-50;
+    border: 1rpx solid $primary;
+  }
+
+  &__btn-text {
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $text-inverse;
+  }
+
+  &__btn-text--blue {
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $primary;
+  }
+}

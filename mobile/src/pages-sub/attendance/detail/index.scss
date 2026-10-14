@@ -1,0 +1,184 @@
+.attdetail {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: $bg;
+
+  &__body {
+    flex: 1;
+    padding: $spacing-4 $page-padding-x $page-padding-bottom;
+    box-sizing: border-box;
+    overflow-y: auto;
+  }
+
+  &__empty {
+    padding: 120rpx 0;
+    display: flex;
+    justify-content: center;
+  }
+
+  &__empty-text {
+    font-size: $text-base;
+    color: $text-tertiary;
+  }
+
+  &__title {
+    font-size: $text-28;
+    font-weight: $font-bold;
+    color: $text-primary;
+  }
+
+  &__meta {
+    display: block;
+    font-size: $text-base;
+    color: $text-secondary;
+    margin-top: $spacing-2;
+  }
+
+  &__info {
+    margin-top: $spacing-4;
+    background-color: $surface;
+    border-radius: $radius-lg;
+    padding: $spacing-4;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-3;
+    box-shadow: $shadow-md;
+  }
+
+  &__info-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__info-label {
+    font-size: $text-sm;
+    color: $text-secondary;
+  }
+
+  &__info-value {
+    font-size: $text-sm;
+    font-weight: $font-medium;
+    color: $text-primary;
+  }
+
+  &__stats {
+    margin-top: $spacing-4;
+    display: flex;
+    flex-direction: row;
+    gap: $spacing-3;
+  }
+
+  &__stat {
+    flex: 1;
+    height: 160rpx;
+    background-color: $surface;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-md;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+  }
+
+  &__stat-value {
+    font-size: $text-28;
+    font-weight: $font-bold;
+    color: $text-primary;
+  }
+
+  &__stat-label {
+    font-size: $text-xs;
+    color: $text-weak;
+  }
+
+  &__section {
+    margin-top: $spacing-4;
+  }
+
+  &__section-title {
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $text-primary;
+  }
+
+  &__none {
+    margin-top: $spacing-2;
+    padding: $spacing-4;
+    background-color: $surface;
+    border-radius: $radius-lg;
+    display: flex;
+    justify-content: center;
+  }
+
+  &__none-text {
+    font-size: $text-sm;
+    color: $success;
+  }
+
+  &__member {
+    margin-top: $spacing-2;
+    height: 104rpx;
+    background-color: $surface;
+    border-radius: $radius-md;
+    box-shadow: $shadow-sm;
+    padding: 0 $spacing-4;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__member-name {
+    font-size: $text-base;
+    color: $text-primary;
+  }
+
+  &__member-status {
+    font-size: $text-xs;
+    color: rgba(0, 98, 255, 0.4);
+  }
+
+  &__btn {
+    margin-top: $spacing-4;
+    height: 104rpx;
+    background-color: $primary;
+    border-radius: $radius-md;
+    box-shadow: $shadow-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--ghost {
+      background-color: $accent-50;
+      border: 1rpx solid $border;
+    }
+  }
+
+  &__btn-text {
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $text-inverse;
+
+    &--blue {
+      color: $primary;
+    }
+  }
+
+  &__checked {
+    margin-top: $spacing-6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-3;
+  }
+
+  &__checked-text {
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $success;
+  }
+}
