@@ -1,0 +1,563 @@
+{
+  "pages": [
+    {
+      "path": "pages/onboarding/launch",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": ""
+      }
+    },
+    {
+      "path": "pages/onboarding/onboarding",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "欢迎"
+      }
+    },
+    {
+      "path": "pages/auth/login",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "登录"
+      }
+    },
+    {
+      "path": "pages/auth/register",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "注册"
+      }
+    },
+    {
+      "path": "pages/auth/reset-password",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "重置密码"
+      }
+    },
+    {
+      "path": "pages/auth/identity-select",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "选择身份"
+      }
+    },
+    {
+      "path": "pages/class/join-class",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "加入或创建班级"
+      }
+    },
+    {
+      "path": "pages/class/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "班级"
+      }
+    },
+    {
+      "path": "pages/home/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "首页"
+      }
+    },
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "导入学生名单"
+      }
+    },
+    {
+      "path": "pages/settings/personal-center",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "个人中心"
+      }
+    },
+    {
+      "path": "pages/settings/settings",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "设置"
+      }
+    },
+    {
+      "path": "pages/settings/account-security",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "账号与安全"
+      }
+    },
+    {
+      "path": "pages/settings/general-settings",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "通用设置"
+      }
+    },
+    {
+      "path": "pages/settings/notification-settings",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "通知设置"
+      }
+    },
+    {
+      "path": "pages/settings/privacy-settings",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "隐私设置"
+      }
+    },
+    {
+      "path": "pages/settings/help-feedback",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "帮助与反馈"
+      }
+    },
+    {
+      "path": "pages/settings/about",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "关于"
+      }
+    },
+    {
+      "path": "pages/common/not-found",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "页面不存在"
+      }
+    },
+    {
+      "path": "pages/notice/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "通知首页"
+      }
+    },
+    {
+      "path": "pages/notice/list",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "班级通知"
+      }
+    },
+    {
+      "path": "pages/notice/detail",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "通知详情"
+      }
+    },
+    {
+      "path": "pages/notice/publish",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "发布通知"
+      }
+    },
+    {
+      "path": "pages/attendance/list",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "班级签到"
+      }
+    },
+    {
+      "path": "pages/attendance/detail",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "签到详情"
+      }
+    },
+    {
+      "path": "pages/attendance/create",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "创建签到"
+      }
+    },
+    {
+      "path": "pages/attendance/check-in",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "签到"
+      }
+    },
+    {
+      "path": "pages/homework/list",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "班级作业"
+      }
+    },
+    {
+      "path": "pages/homework/detail",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "作业详情"
+      }
+    },
+    {
+      "path": "pages/homework/publish",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "布置作业"
+      }
+    },
+    {
+      "path": "pages/activity/list",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "班级活动"
+      }
+    },
+    {
+      "path": "pages/activity/detail",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "活动详情"
+      }
+    },
+    {
+      "path": "pages/activity/publish",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "发布活动"
+      }
+    },
+    {
+      "path": "pages/random-draw/list",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "抽签记录"
+      }
+    },
+    {
+      "path": "pages/random-draw/detail",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "抽签结果"
+      }
+    },
+    {
+      "path": "pages/random-draw/create",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "新建抽签"
+      }
+    },
+    {
+      "path": "pages/fee/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "班费账本"
+      }
+    },
+    {
+      "path": "pages/fee/add",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "记一笔"
+      }
+    },
+    {
+      "path": "pages/material/list",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "班级资料"
+      }
+    },
+    {
+      "path": "pages/material/upload",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "上传资料"
+      }
+    },
+    {
+      "path": "pages/material/share-inbox",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "归档外部文件"
+      }
+    },
+    {
+      "path": "pages/stock/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "股票投资模拟"
+      }
+    },
+    {
+      "path": "pages/more/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "更多功能"
+      }
+    },
+    {
+      "path": "pages/data/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "班级数据"
+      }
+    },
+    {
+      "path": "pages/data/report",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "学期报表"
+      }
+    },
+    {
+      "path": "pages/class/settings",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "班级设置"
+      }
+    },
+    {
+      "path": "pages/class/members",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "班级成员"
+      }
+    },
+    {
+      "path": "pages/class/member-detail",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "成员详情"
+      }
+    },
+    {
+      "path": "pages/class/handover",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "工作交接"
+      }
+    },
+    {
+      "path": "pages/class/archive",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "班级档案"
+      }
+    },
+    {
+      "path": "pages/class/archive-detail",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "档案详情"
+      }
+    },
+    {
+      "path": "pages/class/e-archive",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "班级电子档案"
+      }
+    },
+    {
+      "path": "pages/class/export-archive",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "导出档案"
+      }
+    },
+    {
+      "path": "pages/material/detail",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "资料详情"
+      }
+    },
+    {
+      "path": "pages/material/files",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "文件列表"
+      }
+    },
+    {
+      "path": "pages/material/download-stats",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "下载统计"
+      }
+    },
+    {
+      "path": "pages/notice/statistics",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "通知统计"
+      }
+    },
+    {
+      "path": "pages/notice/reminder",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "再次提醒设置"
+      }
+    },
+    {
+      "path": "pages/notice/interaction",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "互动消息"
+      }
+    },
+    {
+      "path": "pages/attendance/leave-approval",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "请假审批"
+      }
+    },
+    {
+      "path": "pages/attendance/leave-apply",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "请假申请"
+      }
+    },
+    {
+      "path": "pages/attendance/report",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "考勤报表"
+      }
+    },
+    {
+      "path": "pages/attendance/method",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "签到方式"
+      }
+    },
+    {
+      "path": "pages/homework/submit",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "提交作业"
+      }
+    },
+    {
+      "path": "pages/homework/delay-apply",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "延时申请"
+      }
+    },
+    {
+      "path": "pages/fee/report",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "收支报表"
+      }
+    },
+    {
+      "path": "pages/fee/payment",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "缴费登记"
+      }
+    },
+    {
+      "path": "pages/activity/signup-stats",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "报名统计"
+      }
+    },
+    {
+      "path": "pages/activity/signup-form",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "活动报名"
+      }
+    },
+    {
+      "path": "pages/activity/my-signup",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "我的报名"
+      }
+    },
+    {
+      "path": "pages/vote/list",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "投票列表"
+      }
+    },
+    {
+      "path": "pages/vote/create",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "发起投票"
+      }
+    },
+    {
+      "path": "pages/tomato/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "番茄钟"
+      }
+    },
+    {
+      "path": "pages/profile/attendance",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "我的考勤"
+      }
+    },
+    {
+      "path": "pages/profile/homework",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "我的作业"
+      }
+    },
+    {
+      "path": "pages/profile/activity",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "我的活动"
+      }
+    },
+    {
+      "path": "pages/profile/signup",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "我的报名"
+      }
+    },
+    {
+      "path": "pages/task-board/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "任务看板"
+      }
+    },
+    {
+      "path": "pages/todo/index",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "待办中心"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "校园班级事务智能管理助手",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F8F8F8"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "name": "uniapp",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev:mp-weixin": "uni -p mp-weixin",
+    "build:mp-weixin": "uni build -p mp-weixin",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@dcloudio/uni-app": "3.0.0-5010420260703001",
+    "@dcloudio/uni-app-plus": "3.0.0-5010420260703001",
+    "@dcloudio/uni-components": "3.0.0-5010420260703001",
+    "@dcloudio/uni-h5": "3.0.0-5010420260703001",
+    "@dcloudio/uni-mp-weixin": "3.0.0-5010420260703001",
+    "@iconify-json/lucide": "1.2.29",
+    "@iconify-json/material-symbols": "1.2.12",
+    "@iconify-json/mdi": "1.2.3",
+    "@iconify-json/ri": "1.2.5",
+    "@iconify-json/solar": "1.2.2",
+    "@iconify-json/tabler": "1.2.17",
+    "@iconify/vue": "4.3.0",
+    "@vue/compiler-core": "3.5.13",
+    "@vue/compiler-dom": "3.5.13",
+    "@vue/compiler-sfc": "3.5.13",
+    "@vue/compiler-ssr": "3.5.13",
+    "@vue/reactivity": "3.5.13",
+    "@vue/runtime-core": "3.5.13",
+    "@vue/runtime-dom": "3.5.13",
+    "@vue/server-renderer": "3.5.13",
+    "@vue/shared": "3.5.13",
+    "vue": "3.5.13"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "^3.4.8",
+    "@dcloudio/vite-plugin-uni": "3.0.0-5010420260703001",
+    "@playwright/test": "1.61.1",
+    "@vue/babel-plugin-jsx": "1.5.0",
+    "cac": "6.7.9",
+    "typescript": "~5.6",
+    "vite": "5.2.8",
+    "vue-tsc": "^2.0.6"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "overrides": {
+    "vue": "3.5.13",
+    "@vue/shared": "3.5.13",
+    "@vue/reactivity": "3.5.13",
+    "@vue/runtime-core": "3.5.13",
+    "@vue/runtime-dom": "3.5.13",
+    "@vue/compiler-core": "3.5.13",
+    "@vue/compiler-dom": "3.5.13",
+    "@vue/compiler-sfc": "3.5.13",
+    "@vue/compiler-ssr": "3.5.13",
+    "@vue/server-renderer": "3.5.13"
+  }
+}

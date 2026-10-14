@@ -1,0 +1,64 @@
+{
+  "name": "校园班级事务智能管理助手",
+  "appid": "__UNI__CLASSASSISTANT",
+  "description": "校园班级事务智能管理助手",
+  "versionName": "1.0.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "app-plus": {
+    "usingComponents": true,
+    "nvueStyleCompiler": "uni-app",
+    "compilerVersion": 3,
+    "splashscreen": {
+      "alwaysShowBeforeRender": true,
+      "waiting": true,
+      "autoclose": true,
+      "delay": 0
+    },
+    "modules": {},
+    "distribute": {
+      "android": {
+        "intentFilter": [
+          {
+            "action": "android.intent.action.SEND",
+            "category": "android.intent.category.DEFAULT",
+            "mimeType": "*/*"
+          },
+          {
+            "action": "android.intent.action.SEND_MULTIPLE",
+            "category": "android.intent.category.DEFAULT",
+            "mimeType": "*/*"
+          }
+        ]
+      },
+      "ios": {
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeName": "Documents",
+            "LSHandlerRank": "Alternate",
+            "LSItemContentTypes": [
+              "public.text",
+              "public.data",
+              "com.adobe.pdf",
+              "public.image",
+              "public.audio",
+              "public.movie",
+              "org.openxmlformats.wordprocessingml.document",
+              "org.openxmlformats.spreadsheetml.sheet",
+              "org.openxmlformats.presentationml.presentation"
+            ]
+          }
+        ]
+      },
+      "sdkConfigs": {}
+    }
+  },
+  "mp-weixin": {
+    "appid": "",
+    "setting": {
+      "urlCheck": false
+    },
+    "usingComponents": true
+  },
+  "vueVersion": "3"
+}
