@@ -1,0 +1,117 @@
+{
+  "children": [
+    {
+      "descendants": {
+        "n9xLw": {
+          "children": [
+            {
+              "height": 20,
+              "id": "joboP",
+              "name": "Spacer",
+              "type": "frame",
+              "width": "fill_container"
+            },
+            {
+              "alignItems": "center",
+              "children": "...",
+              "id": "xE0Xt",
+              "justifyContent": "space_between",
+              "name": "Header",
+              "type": "frame",
+              "width": "fill_container"
+            },
+            {
+              "descendants": {
+                "uwUcZ": {
+                  "content": "通知标题"
+                }
+              },
+              "id": "Lepyy",
+              "name": "Title Input",
+              "ref": "p1Ykr",
+              "type": "ref"
+            },
+            {
+              "children": "...",
+              "cornerRadius": 4,
+              "fill": "#FFFFFF",
+              "height": 160,
+              "id": "VRNRk",
+              "layout": "vertical",
+              "name": "Body Input",
+              "padding": 12,
+              "stroke": "#E5E7EB",
+              "strokeWidth": 1,
+              "type": "frame",
+              "width": "fill_container"
+            },
+            {
+              "descendants": {
+                "uwUcZ": {
+                  "content": "时间 / 地点"
+                }
+              },
+              "id": "ZmjSg",
+              "name": "Time Input",
+              "ref": "p1Ykr",
+              "type": "ref"
+            },
+            {
+              "descendants": {
+                "uwUcZ": {
+                  "content": "接收范围"
+                }
+              },
+              "id": "tiI4Y",
+              "name": "Range Input",
+              "ref": "p1Ykr",
+              "type": "ref"
+            },
+            {
+              "children": "...",
+              "cornerRadius": 8,
+              "fill": "#FFFFFF",
+              "gap": 12,
+              "id": "NJ8h0",
+              "layout": "vertical",
+              "name": "Options",
+              "padding": 16,
+              "stroke": "#E5E7EB",
+              "strokeWidth": 1,
+              "type": "frame",
+              "width": "fill_container"
+            }
+          ],
+          "gap": 16,
+          "height": "fill_container",
+          "id": "SvcC1",
+          "layout": "vertical",
+          "name": "Content",
+          "padding": [
+            0,
+            20
+          ],
+          "type": "frame",
+          "width": "fill_container"
+        }
+      },
+      "height": 844,
+      "id": "p3FLAO",
+      "name": "Phone Frame",
+      "ref": "lPWz4",
+      "type": "ref",
+      "width": 393
+    }
+  ],
+  "clip": true,
+  "cornerRadius": 40,
+  "fill": "#FFFFFF",
+  "height": 844,
+  "id": "DWL1B",
+  "layout": "vertical",
+  "name": "发布通知页",
+  "type": "frame",
+  "width": 393,
+  "x": 3784,
+  "y": 1042
+}

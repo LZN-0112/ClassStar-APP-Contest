@@ -1,0 +1,102 @@
+{
+  "children": [
+    {
+      "descendants": {
+        "n9xLw": {
+          "children": [
+            {
+              "height": 20,
+              "id": "TDXtO",
+              "name": "Spacer",
+              "type": "frame",
+              "width": "fill_container"
+            },
+            {
+              "content": "通知",
+              "fill": "#1A1A1A",
+              "fontFamily": "Funnel Sans",
+              "fontSize": 28,
+              "fontWeight": "700",
+              "id": "DqL9Y",
+              "name": "Title",
+              "type": "text"
+            },
+            {
+              "children": "...",
+              "cornerRadius": 4,
+              "effect": {
+                "blur": 8,
+                "color": "#0000000D",
+                "offset": {
+                  "x": 0,
+                  "y": 2
+                },
+                "shadowType": "outer",
+                "type": "shadow"
+              },
+              "fill": "#FFFFFF",
+              "height": 40,
+              "id": "c5nr0",
+              "name": "Tabs",
+              "padding": 2,
+              "stroke": "#00000000",
+              "strokeWidth": 1,
+              "type": "frame",
+              "width": "fill_container"
+            },
+            {
+              "children": "...",
+              "gap": 10,
+              "id": "RBAhf",
+              "layout": "vertical",
+              "name": "Notice List",
+              "type": "frame",
+              "width": "fill_container"
+            },
+            {
+              "height": 56,
+              "id": "YTnIl",
+              "layoutPosition": "absolute",
+              "name": "Tab Bar",
+              "ref": "kDswP",
+              "type": "ref",
+              "width": 393,
+              "x": 0,
+              "y": 726
+            }
+          ],
+          "gap": 16,
+          "height": "fill_container",
+          "id": "p77Zq",
+          "layout": "vertical",
+          "name": "Content",
+          "padding": [
+            0,
+            20,
+            56,
+            20
+          ],
+          "type": "frame",
+          "width": "fill_container"
+        }
+      },
+      "height": 844,
+      "id": "FqVZw",
+      "name": "Phone Frame",
+      "ref": "lPWz4",
+      "type": "ref",
+      "width": 393
+    }
+  ],
+  "clip": true,
+  "cornerRadius": 40,
+  "fill": "#FFFFFF",
+  "height": 844,
+  "id": "N0D6Y",
+  "layout": "vertical",
+  "name": "通知首页",
+  "type": "frame",
+  "width": 393,
+  "x": 2365,
+  "y": 1042
+}

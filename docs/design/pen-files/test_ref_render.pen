@@ -1,0 +1,87 @@
+{
+  "version": "2.14",
+  "children": [
+    {
+      "type": "frame",
+      "id": "phone1",
+      "name": "Phone Frame",
+      "reusable": true,
+      "clip": true,
+      "width": 393,
+      "height": 844,
+      "fill": "$bg",
+      "cornerRadius": "$rounded-device",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "status1",
+          "name": "Status Bar",
+          "width": "fill_container",
+          "height": 62,
+          "fill": "$bg",
+          "layout": "horizontal",
+          "padding": [12, 24, 0, 24],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {"type": "text", "id": "t1", "content": "9:41", "fill": "$text-primary"},
+            {"type": "text", "id": "t2", "content": "100%", "fill": "$text-primary"}
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "screen1",
+          "name": "Screen Area",
+          "width": "fill_container",
+          "height": "fill_container",
+          "fill": "$bg",
+          "layout": "vertical"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "page1",
+      "name": "Test Page",
+      "clip": true,
+      "width": 393,
+      "height": 844,
+      "fill": "$bg",
+      "cornerRadius": "$rounded-device",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "ref",
+          "id": "ref1",
+          "ref": "phone1",
+          "width": 393,
+          "height": 844,
+          "descendants": {
+            "status1": {
+              "type": "frame",
+              "id": "header1",
+              "name": "Unified Header",
+              "width": "fill_container",
+              "height": 282,
+              "fill": "#FF0000",
+              "layout": "vertical",
+              "children": [
+                {"type": "text", "id": "title1", "content": "Test", "fill": "#FFFFFF", "fontSize": 24}
+              ]
+            },
+            "screen1": {
+              "type": "frame",
+              "id": "content1",
+              "name": "Content",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "$bg",
+              "layout": "vertical"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

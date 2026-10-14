@@ -1,0 +1,65 @@
+{
+  "children": [
+    {
+      "descendants": {
+        "n9xLw": {
+          "children": [
+            {
+              "height": 20,
+              "id": "S2Tjqa",
+              "name": "Spacer",
+              "type": "frame",
+              "width": "fill_container"
+            },
+            {
+              "alignItems": "center",
+              "children": "...",
+              "id": "D4zdsB",
+              "justifyContent": "space_between",
+              "name": "Header",
+              "type": "frame",
+              "width": "fill_container"
+            },
+            {
+              "children": "...",
+              "gap": 10,
+              "id": "DEX0k",
+              "layout": "vertical",
+              "name": "List",
+              "type": "frame",
+              "width": "fill_container"
+            }
+          ],
+          "gap": 16,
+          "height": "fill_container",
+          "id": "yNwjO",
+          "layout": "vertical",
+          "name": "Content",
+          "padding": [
+            0,
+            20
+          ],
+          "type": "frame",
+          "width": "fill_container"
+        }
+      },
+      "height": 844,
+      "id": "OafCm",
+      "name": "Phone Frame",
+      "ref": "lPWz4",
+      "type": "ref",
+      "width": 393
+    }
+  ],
+  "clip": true,
+  "cornerRadius": 40,
+  "fill": "#FFFFFF",
+  "height": 844,
+  "id": "V4wG77",
+  "layout": "vertical",
+  "name": "通知列表页",
+  "type": "frame",
+  "width": 393,
+  "x": 2838,
+  "y": 1042
+}

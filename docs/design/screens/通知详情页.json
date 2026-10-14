@@ -1,0 +1,106 @@
+{
+  "children": [
+    {
+      "descendants": {
+        "n9xLw": {
+          "children": [
+            {
+              "height": 20,
+              "id": "CFbuV",
+              "name": "Spacer",
+              "type": "frame",
+              "width": "fill_container"
+            },
+            {
+              "content": "关于下周班会的通知",
+              "fill": "#1A1A1A",
+              "fontFamily": "Funnel Sans",
+              "fontSize": 20,
+              "fontWeight": "700",
+              "id": "mGZEP",
+              "name": "Title",
+              "type": "text"
+            },
+            {
+              "content": "发布时间：2024-09-10 10:00",
+              "fill": "#4B5563",
+              "fontFamily": "Geist",
+              "fontSize": 11,
+              "fontWeight": "normal",
+              "id": "E7wd12",
+              "name": "Time",
+              "type": "text"
+            },
+            {
+              "children": "...",
+              "cornerRadius": 8,
+              "fill": "#FFFFFF",
+              "gap": 8,
+              "id": "Rdmfz",
+              "layout": "vertical",
+              "name": "Info Card",
+              "padding": 16,
+              "stroke": "#E5E7EB",
+              "strokeWidth": 1,
+              "type": "frame",
+              "width": "fill_container"
+            },
+            {
+              "children": "...",
+              "cornerRadius": 8,
+              "fill": "#FFFFFF",
+              "gap": 10,
+              "id": "aMcL6",
+              "layout": "vertical",
+              "name": "Body",
+              "padding": 16,
+              "stroke": "#E5E7EB",
+              "strokeWidth": 1,
+              "type": "frame",
+              "width": "fill_container"
+            },
+            {
+              "descendants": {
+                "OrH2l": {
+                  "content": "签字确认"
+                }
+              },
+              "id": "lBWAy",
+              "name": "Confirm Button",
+              "ref": "eV6B7",
+              "type": "ref"
+            }
+          ],
+          "gap": 16,
+          "height": "fill_container",
+          "id": "neVC1",
+          "layout": "vertical",
+          "name": "Content",
+          "padding": [
+            0,
+            20
+          ],
+          "type": "frame",
+          "width": "fill_container"
+        }
+      },
+      "height": 844,
+      "id": "KdouL",
+      "name": "Phone Frame",
+      "ref": "lPWz4",
+      "type": "ref",
+      "width": 393
+    }
+  ],
+  "clip": true,
+  "cornerRadius": 40,
+  "fill": "#FFFFFF",
+  "height": 844,
+  "id": "M0DjA",
+  "layout": "vertical",
+  "name": "通知详情页",
+  "type": "frame",
+  "width": 393,
+  "x": 3311,
+  "y": 1042
+}
