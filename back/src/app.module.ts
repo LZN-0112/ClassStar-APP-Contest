@@ -36,6 +36,7 @@ import { ArchiveModule } from './modules/archive/archive.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+      expandVariables: true,
     }),
     ThrottlerModule.forRoot([
       {
