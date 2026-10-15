@@ -66,7 +66,7 @@ cd back
 npm install
 
 # 1) 生成配置文件，并填写本机 MySQL 密码
-Copy-Item .env.example .env
+Copy-Item .env.template .env
 #    打开 back/.env，把 DB_PASSWORD 改成本机 MySQL 的密码；
 #    DATABASE_URL / DATABASE_READONLY_URL 用 ${DB_USER} 等变量占位，无需手改。
 
@@ -133,7 +133,7 @@ npm run build:weapp
 
 | 现象 | 原因与处理 |
 | --- | --- |
-| Prisma 报 `Environment variable not found: DATABASE_URL` | 没有把 `back/.env.example` 复制成 `back/.env` |
+| Prisma 报 `Environment variable not found: DATABASE_URL` | 没有把 `back/.env.template` 复制成 `back/.env` |
 | 后端启动报数据库连接失败 | `back/.env` 里的 `DB_PASSWORD` 与本机 MySQL 密码不一致 |
 | 前端页面打得开但接口 404 | 后端没启动，或 `3000` 端口被占用 |
 | 上传附件失败 | MinIO 未启动；`MINIO_LOCAL_FALLBACK=true` 时会上传回退到本地存储 |
