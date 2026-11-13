@@ -7,6 +7,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './common/database/prisma.module';
 import { RedisModule } from './common/cache/redis.module';
+import { PrivacyModule } from './common/privacy/privacy.module';
+import { ClassPermissionModule } from './common/permissions/class-permission.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ClassesModule } from './modules/classes/classes.module';
 import { MessagesModule } from './modules/messages/messages.module';
@@ -22,6 +24,7 @@ import { PomodoroModule } from './modules/pomodoro/pomodoro.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { ErrorsModule } from './modules/errors/errors.module';
+import { MonitorModule } from './modules/monitor/monitor.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { ClassIsolationGuard } from './common/guards/class-isolation.guard';
 import { RoleLevelGuard } from './common/guards/role-level.guard';
@@ -30,13 +33,14 @@ import { SecurityModule } from './common/security/security.module';
 import { UploadsModule } from './common/uploads/uploads.module';
 import { MaterialModule } from './modules/material/material.module';
 import { ArchiveModule } from './modules/archive/archive.module';
+import { AiAssistantModule } from './modules/ai-assistant/ai-assistant.module';
+import { ObservabilityModule } from './common/observability/observability.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
-      expandVariables: true,
     }),
     ThrottlerModule.forRoot([
       {
@@ -48,6 +52,8 @@ import { ArchiveModule } from './modules/archive/archive.module';
     ScheduleModule.forRoot(),
     PrismaModule,
     RedisModule,
+    PrivacyModule,
+    ClassPermissionModule,
     SecurityModule,
     AuthModule,
     ClassesModule,
@@ -64,9 +70,12 @@ import { ArchiveModule } from './modules/archive/archive.module';
     SettingsModule,
     FeedbackModule,
     ErrorsModule,
+    MonitorModule,
     UploadsModule,
     MaterialModule,
     ArchiveModule,
+    AiAssistantModule,
+    ObservabilityModule,
   ],
   controllers: [AppController],
   providers: [

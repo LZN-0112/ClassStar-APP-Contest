@@ -4,7 +4,7 @@ import PageLayout from '@/components/layout/PageLayout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { api } from '@/lib/api';
 
-type FilterStatus = '全部' | '待提交' | '已提交' | '已批改';
+type FilterStatus = '全部' | '待提交' | '已提交' | '已逾期';
 
 interface HomeworkItem {
   id: string;
@@ -13,20 +13,19 @@ interface HomeworkItem {
   deadline: string;
   status: string;
   submitted: boolean;
+  delayStatus: string | null;
 }
 
 const statusColors: Record<string, { bg: string; text: string }> = {
   待提交: { bg: 'bg-[#EF44441A]', text: 'text-[#EF4444]' },
   已提交: { bg: 'bg-[#22C55E1A]', text: 'text-[#22C55E]' },
-  已批改: { bg: 'bg-[#0062FF1A]', text: 'text-[#0062FF]' },
-  已逾期: { bg: 'bg-[#EF44441A]', text: 'text-[#EF4444]' },
+  已逾期: { bg: 'bg-[#9CA3AF1A]', text: 'text-[#6B7280]' },
 };
 
 function getHomeworkStatus(item: any): string {
   if (item.submitted) return '已提交';
-  const now = new Date();
   const deadline = new Date(item.deadline);
-  if (now > deadline) return '已逾期';
+  if (new Date() > deadline) return '已逾期';
   return '待提交';
 }
 
@@ -64,6 +63,7 @@ export default function MyHomework() {
           deadline: formatDeadline(item.deadline),
           status: getHomeworkStatus(item),
           submitted: item.submitted,
+          delayStatus: item.myDelayStatus || null,
         }));
         setHomeworks(mapped);
       })
@@ -75,15 +75,10 @@ export default function MyHomework() {
       });
   }, [user?.classId]);
 
-  const tabs: FilterStatus[] = ['全部', '待提交', '已提交', '已批改'];
+  const tabs: FilterStatus[] = ['全部', '待提交', '已提交', '已逾期'];
 
   const filtered =
-    filter === '全部'
-      ? homeworks
-      : homeworks.filter((h) => {
-          if (filter === '待提交') return h.status === '待提交' || h.status === '已逾期';
-          return h.status === filter;
-        });
+    filter === '全部' ? homeworks : homeworks.filter((h) => h.status === filter);
 
   return (
     <PageLayout title="我的作业" variant="a">
@@ -143,7 +138,7 @@ export default function MyHomework() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => navigate('/homework-detail')}
+                  onClick={() => navigate(`/homework-detail/${item.id}`)}
                   data-pencil-name="Card"
                   className="box-border w-full h-[88px] shrink-0 [box-shadow:0px_2px_8px_0px_#0000000D] flex flex-row gap-[12px] p-4 justify-start items-center bg-[#FFFFFF] rounded-[16px] text-left"
                 >
@@ -188,6 +183,7 @@ export default function MyHomework() {
                       className="text-[11px]/[normal] box-border text-[#4B5563] font-body font-medium text-left [white-space:nowrap]"
                     >
                       {item.subject} · {item.deadline}截止
+                      {item.delayStatus === 'pending' && !item.submitted ? ' · 延时审核中' : ''}
                     </div>
                     <div
                       data-pencil-name="Tag"

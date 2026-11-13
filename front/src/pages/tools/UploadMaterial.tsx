@@ -1,33 +1,45 @@
 import { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Check, Plus, UploadCloud, X } from 'lucide-react';
 import { toast } from 'sonner';
 import BackButton from '@/components/navigation/BackButton';
 import PhoneFrame from '@/components/layout/PhoneFrame';
 import { api } from '@/lib/api';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useStatusBarStyle } from '@/hooks/useStatusBarStyle';
+import { MATERIAL_FOLDERS, formatFileSize, getMaterialType } from '@/lib/material';
 
-const FOLDERS = ['班会资料', '课程作业', '活动照片', '评优材料'];
 const MAX_FILES = 20;
+const MAX_FILE_SIZE = 200 * 1024 * 1024;
 
 export default function UploadMaterial() {
+  useStatusBarStyle(false); // 浅色背景 → 深色状态栏图标
   const navigate = useNavigate();
   const { user } = useCurrentUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [selectedFolder, setSelectedFolder] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
 
   const classId = user?.classId || '';
 
   const addFiles = (fileList: FileList) => {
-    const newFiles = Array.from(fileList);
-    const total = selectedFiles.length + newFiles.length;
-    if (total > MAX_FILES) {
+    const incoming = Array.from(fileList);
+    const oversize = incoming.filter((file) => file.size > MAX_FILE_SIZE).length;
+    const empty = incoming.filter((file) => file.size === 0).length;
+    const valid = incoming.filter((file) => file.size > 0 && file.size <= MAX_FILE_SIZE);
+
+    if (oversize > 0) toast.error(`${oversize} 个文件超过 200MB，已自动跳过`);
+    if (empty > 0) toast.error(`${empty} 个空文件，已自动跳过`);
+    if (valid.length === 0) return;
+
+    if (selectedFiles.length + valid.length > MAX_FILES) {
       toast.error(`单次最多上传 ${MAX_FILES} 个文件，当前已选 ${selectedFiles.length} 个`);
       return;
     }
-    setSelectedFiles((prev) => [...prev, ...newFiles]);
+    setSelectedFiles((prev) => [...prev, ...valid]);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,6 +87,7 @@ export default function UploadMaterial() {
     }
 
     setUploading(true);
+    setProgress(0);
     try {
       const formData = new FormData();
       formData.append('classId', classId);
@@ -83,146 +96,241 @@ export default function UploadMaterial() {
 
       const res = await api.post('/material/batch-upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 180000,
+        onUploadProgress: (event) => {
+          if (event.total) {
+            setProgress(Math.min(100, Math.round((event.loaded / event.total) * 100)));
+          }
+        },
       });
       const count = res.data?.uploadedCount ?? selectedFiles.length;
+      setProgress(100);
       toast.success(`成功上传 ${count} 个文件`);
-      navigate('/file-list');
-    } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || '上传失败';
+      navigate(`/file-list?folder=${encodeURIComponent(selectedFolder)}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '上传失败，请稍后重试';
       toast.error(msg);
     } finally {
       setUploading(false);
     }
   };
 
+  const totalSize = selectedFiles.reduce((sum, file) => sum + file.size, 0);
+
   return (
-    <PhoneFrame>
-      <div className="box-border w-full h-[62px] shrink-0 flex flex-row gap-0 p-[12px_24px_0px_24px] justify-between items-center bg-[#FFFFFF]">
-        <div className="text-[14px] box-border text-[#1A1A1A] font-semibold text-left [white-space:nowrap]">9:41</div>
-        <div className="box-border w-fit shrink-0 h-fit flex flex-row gap-[6px] justify-start items-center">
-          <div className="text-[14px] box-border text-[#1A1A1A] font-normal text-left [white-space:nowrap]">◉◉◉◉</div>
-          <div className="text-[14px] box-border text-[#1A1A1A] font-normal text-left [white-space:nowrap]">100%</div>
+    <PhoneFrame className="bg-[#F5F5F5]">
+      <div
+        data-pencil-name="Status Bar"
+        className="box-border flex h-[62px] w-full shrink-0 flex-row items-center justify-between gap-0 bg-[#F5F5F5] p-[12px_24px_0px_24px]"
+      >
+        <div className="text-[14px]/[normal] box-border text-left font-data font-semibold text-[#1A1A1A] [white-space:nowrap]">
+          9:41
+        </div>
+        <div className="box-border flex h-fit w-fit shrink-0 flex-row items-center justify-start gap-[6px]">
+          <div className="text-[14px]/[normal] box-border text-left font-caption font-normal text-[#1A1A1A] [white-space:nowrap]">
+            ◉◉◉◉
+          </div>
+          <div className="text-[14px]/[normal] box-border text-left font-data font-normal text-[#1A1A1A] [white-space:nowrap]">
+            100%
+          </div>
         </div>
       </div>
-      <div className="box-border w-full [flex:1_1_0] flex flex-col gap-4 p-[0px_20px] justify-start items-start overflow-y-auto pb-20">
-        <div className="box-border w-full h-[20px] shrink-0" />
+
+      <div className="box-border flex w-full shrink-0 flex-row items-center justify-between px-5 py-3">
         <div className="flex flex-row items-center gap-0">
           <BackButton className="-ml-2" />
-          <div className="text-[28px] box-border text-[#1A1A1A] font-bold text-left [white-space:nowrap]">上传资料</div>
+          <div className="text-[22px]/[normal] box-border text-left font-heading font-bold text-[#1A1A1A] [white-space:nowrap]">
+            上传资料
+          </div>
         </div>
-        <div className="box-border w-full h-[20px] shrink-0" />
+        <div className="rounded-full bg-[#FFFFFF] px-2.5 py-1 text-[10px] font-caption text-[#64748B]">
+          最多 {MAX_FILES} 个 / 单个 200MB
+        </div>
+      </div>
 
-        {/* Drop Zone */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          className="hidden"
-          onChange={handleFileSelect}
-        />
+      <div className="flex w-full flex-col gap-4 px-5 pb-8">
+        {/* 文件选择 */}
+        <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileSelect} />
         <div
           onClick={() => fileInputRef.current?.click()}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
-          className={`box-border w-full min-h-[200px] shrink-0 flex flex-col gap-[12px] justify-center items-center bg-[#FFFFFF] rounded-lg cursor-pointer transition-colors ${
+          className={`box-border flex min-h-[160px] w-full shrink-0 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl bg-[#FFFFFF] transition-colors ${
             dragOver
-              ? 'border-2 border-[#0062FF] bg-[#0062FF0D]'
+              ? 'border-2 border-[#0062FF] bg-[#EFF6FF]'
               : selectedFiles.length > 0
-              ? 'border-2 border-[#0062FF]'
-              : '[border:1px_solid_#E5E7EB]'
+                ? 'border-2 border-[#0062FF]'
+                : 'border border-[#E5E7EB]'
           }`}
         >
           {selectedFiles.length === 0 ? (
             <>
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-[24px] h-[24px]">
-                <path d="M12 3v12m5-7l-5-5-5 5m14 7v4a2 2 0 0 1-2 2h-14a2 2 0 0 1-2-2v-4" stroke="#0062FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <div className="text-[14px] text-[#4B5563] font-normal">点击或拖拽多个文件到此处上传</div>
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EFF6FF]">
+                <UploadCloud className="h-7 w-7 text-[#0062FF]" strokeWidth={1.5} />
+              </div>
+              <div className="text-[14px] font-body font-medium text-[#1A1A1A]">
+                点击选择文件
+              </div>
+              <div className="text-[11px] font-caption text-[#94A3B8]">
+                支持一次选择多个文件，也可拖拽到此处
+              </div>
             </>
           ) : (
             <div
-              className="box-border w-full max-h-[240px] overflow-y-auto p-[12px_16px] flex flex-col gap-[8px]"
+              className="box-border flex w-full flex-col gap-2 p-3"
               onClick={(e) => e.stopPropagation()}
             >
-              {selectedFiles.map((file, index) => (
-                <div
-                  key={`${file.name}-${index}`}
-                  className="box-border w-full flex flex-row items-center justify-between gap-[8px] bg-[#F9FAFB] rounded-md p-[8px_12px]"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] text-[#1A1A1A] truncate">{file.name}</div>
-                    <div className="text-[11px] text-[#4B5563]">{(file.size / 1024 / 1024).toFixed(2)} MB</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeFile(index)}
-                    className="shrink-0 w-[20px] h-[20px] flex items-center justify-center text-[#9CA3AF] hover:text-[#EF4444] transition-colors"
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" className="w-[14px] h-[14px]">
-                      <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
+              <div className="flex items-center justify-between px-1">
+                <div className="text-[12px] font-body font-semibold text-[#1A1A1A]">
+                  已选 {selectedFiles.length} 个文件
                 </div>
-              ))}
+                <div className="text-[11px] font-caption text-[#64748B]">
+                  共 {formatFileSize(totalSize)}
+                </div>
+              </div>
+              {selectedFiles.map((file, index) => {
+                const fileType = getMaterialType(file.name);
+                const FileIcon = fileType.icon;
+                return (
+                  <div
+                    key={`${file.name}-${index}`}
+                    className="flex w-full items-center gap-2.5 rounded-lg bg-[#F8FAFC] p-2.5"
+                  >
+                    <div
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                      style={{ backgroundColor: fileType.bg }}
+                    >
+                      <FileIcon
+                        className="h-[18px] w-[18px]"
+                        style={{ color: fileType.color }}
+                        strokeWidth={2}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[12px] font-body font-medium text-[#1A1A1A]">
+                        {file.name}
+                      </div>
+                      <div className="text-[10px] font-caption text-[#64748B]">
+                        {formatFileSize(file.size)}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label="移除文件"
+                      onClick={() => removeFile(index)}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#94A3B8]"
+                    >
+                      <X className="h-4 w-4" strokeWidth={2} />
+                    </button>
+                  </div>
+                );
+              })}
               <div
-                className="text-[12px] text-[#0062FF] text-center py-[4px] cursor-pointer"
+                className="flex items-center justify-center gap-1 py-1 text-[12px] font-body font-medium text-[#0062FF]"
                 onClick={(e) => {
                   e.stopPropagation();
                   fileInputRef.current?.click();
                 }}
               >
-                + 继续添加文件
+                <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
+                继续添加文件
               </div>
             </div>
           )}
         </div>
 
-        {/* Folder Selector */}
-        <div className="box-border w-full flex flex-col gap-[8px]">
-          <div className="text-[14px] text-[#4B5563] font-normal">选择分类</div>
-          <div className="box-border w-full flex flex-row gap-[8px] flex-wrap">
-            {FOLDERS.map((folder) => (
+        {/* 分类选择 */}
+        <div className="flex w-full flex-col gap-2">
+          <div className="flex items-center justify-between px-0.5">
+            <div className="text-[14px] font-body font-semibold text-[#1A1A1A]">
+              选择分类
+            </div>
+            <div className="text-[10px] font-caption text-[#94A3B8]">必选</div>
+          </div>
+          <div className="grid w-full grid-cols-2 gap-2.5">
+            {MATERIAL_FOLDERS.map((folder) => {
+              const Icon = folder.icon;
+              const active = selectedFolder === folder.name;
+              return (
+                <button
+                  key={folder.name}
+                  type="button"
+                  onClick={() => setSelectedFolder(folder.name)}
+                  className={`relative flex flex-col items-start gap-1.5 rounded-xl border p-3 text-left transition-colors ${
+                    active
+                      ? 'border-[#0062FF] bg-[#EFF6FF]'
+                      : 'border-[#E5E7EB] bg-[#FFFFFF]'
+                  }`}
+                >
+                  <div
+                    className="flex h-9 w-9 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: folder.bg }}
+                  >
+                    <Icon
+                      className="h-5 w-5"
+                      style={{ color: folder.color }}
+                      strokeWidth={2}
+                    />
+                  </div>
+                  <div className="text-[13px] font-heading font-bold text-[#1A1A1A]">
+                    {folder.name}
+                  </div>
+                  <div className="text-[10px] font-body leading-4 text-[#64748B]">
+                    {folder.hint}
+                  </div>
+                  {active && (
+                    <div className="absolute right-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#0062FF]">
+                      <Check className="h-3 w-3 text-white" strokeWidth={2.5} />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 上传进度 */}
+        {uploading && (
+          <div className="flex w-full flex-col gap-1.5 rounded-xl bg-[#FFFFFF] p-3.5">
+            <div className="flex items-center justify-between text-[11px] font-body">
+              <span className="text-[#475569]">正在上传 {selectedFiles.length} 个文件</span>
+              <span className="font-data font-semibold text-[#0062FF]">{progress}%</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#E2E8F0]">
               <div
-                key={folder}
-                onClick={() => setSelectedFolder(folder)}
-                className={`box-border h-[36px] flex flex-col gap-0 p-[0px_16px] justify-center items-center rounded-full cursor-pointer transition-colors ${
-                  selectedFolder === folder
-                    ? 'bg-[#0062FF]'
-                    : 'bg-[#0062FF0D]'
-                }`}
-              >
-                <div className={`text-[13px] font-semibold text-left [white-space:nowrap] ${
-                  selectedFolder === folder ? 'text-[#FFFFFF]' : 'text-[#0062FF]'
-                }`}>
-                  {folder}
-                </div>
-              </div>
-            ))}
+                className="h-full rounded-full bg-[#0062FF] transition-[width] duration-200"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <div className="text-[10px] font-caption text-[#94A3B8]">
+              上传过程中请保持应用在前台，避免中断
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Upload Button */}
-        <div
-          onClick={uploading ? undefined : handleUpload}
-          className={`box-border w-full h-[52px] shrink-0 [box-shadow:0px_4px_16px_0px_#0000000D] flex flex-col gap-2 p-[0px_16px] justify-center items-center bg-[#0062FF] rounded-lg cursor-pointer active:opacity-80 ${
-            uploading ? 'opacity-60' : ''
-          }`}
+        {/* 上传按钮 */}
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={handleUpload}
+          className="flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-[linear-gradient(-98.571deg,_#0062FF_14.645%,_#3B82F6_85.355%)] text-[15px] font-body font-semibold text-white shadow-[0_8px_20px_-8px_#0062FF99] active:scale-[0.99] disabled:opacity-60"
         >
-          <div className="text-[16px] text-[#FFFFFF] font-semibold [white-space:nowrap]">
-            {uploading ? '上传中...' : '批量上传'}
-          </div>
+          <UploadCloud className="h-[18px] w-[18px]" strokeWidth={2} />
+          {uploading ? `上传中 ${progress}%` : '开始上传'}
+        </button>
+        <div className="text-center text-[10px] font-caption text-[#94A3B8]">
+          上传成功后，全班同学都可以在资料库中查看和下载
         </div>
 
-        {/* Repost Entry */}
-        <div
+        {/* 一键转载 */}
+        <button
+          type="button"
           onClick={() => navigate('/repost-message')}
-          className="box-border w-full h-[52px] shrink-0 flex flex-col gap-2 p-[0px_16px] justify-center items-center bg-[#0062FF0D] rounded-lg cursor-pointer active:opacity-80"
+          className="flex h-11 w-full shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF] text-[13px] font-body font-semibold text-[#0062FF] active:opacity-80"
         >
-          <div className="text-[16px] text-[#0062FF] font-semibold [white-space:nowrap]">
-            一键转载（文字+文件）
-          </div>
-        </div>
+          一键转载（文字 + 文件）
+        </button>
       </div>
     </PhoneFrame>
   );

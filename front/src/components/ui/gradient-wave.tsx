@@ -434,6 +434,7 @@ class Gradient {
   last = 0;
   animationId?: number;
   isPlaying = false;
+  resizeHandler = (): void => this.resize();
 
   constructor(canvas: HTMLCanvasElement, colors: string[]) {
     this.canvas = canvas;
@@ -628,7 +629,7 @@ void main() {
     this.mesh = new this.minigl.Mesh(geometry, material);
 
     this.resize();
-    window.addEventListener("resize", () => this.resize());
+    window.addEventListener("resize", this.resizeHandler);
   }
 
   resize(): void {
@@ -668,7 +669,24 @@ void main() {
       cancelAnimationFrame(this.animationId);
     }
   }
+
+  dispose(): void {
+    this.stop();
+    window.removeEventListener("resize", this.resizeHandler);
+    this.minigl.gl.getExtension("WEBGL_lose_context")?.loseContext();
+  }
 }
+
+const DEFAULT_COLORS = [
+  "#38bdf8",
+  "#ffffff",
+  "#38bdf8",
+  "#ffffff",
+  "#38bdf8",
+  "#ffffff",
+];
+const DEFAULT_NOISE_FREQUENCY: [number, number] = [0.0001, 0.0009];
+const DEFAULT_DEFORM = { incline: 0.5, noiseAmp: 250, noiseFlow: 5 };
 
 interface GradientWaveProps {
   colors?: string[]; // gradient colors
@@ -691,17 +709,22 @@ interface GradientWaveProps {
 }
 
 export function GradientWave({
-  colors = ["#38bdf8", "#ffffff", "#38bdf8", "#ffffff", "#38bdf8", "#ffffff"],
+  colors = DEFAULT_COLORS,
   isPlaying = true,
   className = "",
   shadowPower = 8,
   darkenTop = false,
   noiseSpeed = 0.00001,
-  noiseFrequency = [0.0001, 0.0009],
-  deform = { incline: 0.5, noiseAmp: 250, noiseFlow: 5 },
+  noiseFrequency = DEFAULT_NOISE_FREQUENCY,
+  deform = DEFAULT_DEFORM,
 }: GradientWaveProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const gradientRef = useRef<Gradient | null>(null);
+
+  // 依赖降级为原始值：调用方传内联数组/对象时，不会每次渲染都重建 WebGL 动画
+  const colorsKey = colors.join(",");
+  const noiseFrequencyKey = noiseFrequency.join(",");
+  const deformKey = JSON.stringify(deform);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -718,7 +741,10 @@ export function GradientWave({
     containerRef.current.appendChild(canvas);
 
     try {
+      const resumedTime = gradientRef.current?.time ?? 0;
       const gradient = new Gradient(canvas, colors);
+      // 重建时延续动画进度，避免颜色变化导致画面跳回第一帧
+      gradient.time = resumedTime;
       gradientRef.current = gradient;
 
       // apply props to uniforms
@@ -741,19 +767,19 @@ export function GradientWave({
     }
 
     return () => {
-      gradientRef.current?.stop();
+      gradientRef.current?.dispose();
       if (containerRef.current?.contains(canvas)) {
         containerRef.current.removeChild(canvas);
       }
     };
   }, [
-    colors,
+    colorsKey,
     isPlaying,
     shadowPower,
     darkenTop,
     noiseSpeed,
-    noiseFrequency,
-    deform,
+    noiseFrequencyKey,
+    deformKey,
   ]);
 
   return (

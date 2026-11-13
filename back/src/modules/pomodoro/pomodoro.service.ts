@@ -2,9 +2,11 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '@/common/database/prisma.service';
+import { ClassPermissionService } from '@/common/permissions/class-permission.service';
 import { RedisService } from '@/common/cache/redis.service';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -22,6 +24,7 @@ export class PomodoroService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redisService: RedisService,
+    private readonly classPermission: ClassPermissionService,
   ) {}
 
   private escapeHtml(input?: string): string | undefined {
@@ -55,6 +58,9 @@ export class PomodoroService {
   }
 
   async create(classId: string, dto: CreatePomodoroSessionDto, userId: string) {
+    // 只有班级成员才能在该班级下创建专注记录
+    await this.classPermission.assertMember(userId, classId);
+
     const idempotencyKey = this.getIdempotencyKey(userId, dto);
     const exists = await this.redisService.exists(idempotencyKey);
     if (exists) {
@@ -64,7 +70,11 @@ export class PomodoroService {
 
     try {
       const inProgress = await this.prisma.pomodoro_sessions.findFirst({
-        where: { user_id: userId, status: PomodoroStatus.IN_PROGRESS },
+        where: {
+          class_id: classId,
+          user_id: userId,
+          status: PomodoroStatus.IN_PROGRESS,
+        },
       });
       if (inProgress) {
         throw new BadRequestException('已有进行中的专注 session，请先完成或取消');
@@ -95,10 +105,12 @@ export class PomodoroService {
     const { page = 1, pageSize = 20, userId: filterUserId, status } = query;
     const skip = (page - 1) * pageSize;
 
-    const where: any = { class_id: classId };
-    if (filterUserId) {
-      where.user_id = filterUserId;
+    // 专注记录仅本人可见，禁止查询他人记录
+    if (filterUserId && filterUserId !== userId) {
+      throw new ForbiddenException('只能查看自己的专注记录');
     }
+
+    const where: any = { class_id: classId, user_id: userId };
     if (status) {
       where.status = status;
     }
@@ -128,6 +140,11 @@ export class PomodoroService {
 
     if (!session) {
       throw new NotFoundException('专注 session 不存在');
+    }
+
+    // 专注记录仅本人可见
+    if (session.user_id !== userId) {
+      throw new ForbiddenException('只能查看自己的专注记录');
     }
 
     return this.toSessionDto(session);

@@ -25,42 +25,54 @@ export class ArchiveController {
 
   @Get('classes/:classId/archives/:archiveId')
   @ApiOperation({ summary: '获取档案详情' })
-  async getArchiveDetail(@Param('archiveId') archiveId: string) {
-    return this.archiveService.getArchiveDetail(archiveId);
+  async getArchiveDetail(
+    @Param('classId') classId: string,
+    @Param('archiveId') archiveId: string,
+  ) {
+    return this.archiveService.getArchiveDetail(classId, archiveId);
   }
 
   @Get('classes/:classId/archives/:archiveId/files/:fileId')
   @ApiOperation({ summary: '获取档案附件详情' })
   async getArchiveFile(
+    @Param('classId') classId: string,
     @Param('archiveId') archiveId: string,
     @Param('fileId') fileId: string,
   ) {
-    return this.archiveService.getArchiveFile(archiveId, fileId);
+    return this.archiveService.getArchiveFile(classId, archiveId, fileId);
   }
 
   @Get('classes/:classId/archives/:archiveId/files/:fileId/download')
   @ApiOperation({ summary: '下载档案附件' })
   async downloadArchiveFile(
+    @Param('classId') classId: string,
     @Param('archiveId') archiveId: string,
     @Param('fileId') fileId: string,
     @Res() res: Response,
   ) {
     const result = await this.archiveService.downloadArchiveFile(
+      classId,
       archiveId,
       fileId,
     );
-    res.redirect(HttpStatus.FOUND, result.fileUrl);
+    // 静态资源控制器位于全局前缀下（/api/v1/uploads），
+    // 直接重定向到相对路径 /uploads/... 会 404。
+    const target = /^https?:/i.test(result.fileUrl)
+      ? result.fileUrl
+      : `/api/v1${result.fileUrl.startsWith('/') ? '' : '/'}${result.fileUrl}`;
+    res.redirect(HttpStatus.FOUND, target);
   }
 
   @Get('classes/:classId/archives/:archiveId/export')
   @ApiOperation({ summary: '导出档案（xlsx 或 pdf）' })
   async exportArchive(
+    @Param('classId') classId: string,
     @Param('archiveId') archiveId: string,
     @Query() query: ExportArchiveDto,
     @Res() res: Response,
   ) {
     const format = query.format === 'pdf' ? 'pdf' : 'xlsx';
-    const result = await this.archiveService.exportArchive(archiveId, format);
+    const result = await this.archiveService.exportArchive(classId, archiveId, format);
     res.setHeader('Content-Type', result.mimeType);
     res.setHeader(
       'Content-Disposition',

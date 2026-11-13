@@ -4,6 +4,7 @@ import { CheckCircle, AlertCircle, Users, Download, Bell, FileCheck, Loader2, Ar
 import PageLayout from '@/components/layout/PageLayout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { api } from '@/lib/api';
+import { saveBlobFile } from '@/lib/save-file';
 import { toast } from 'sonner';
 
 interface CheckResultItem {
@@ -88,13 +89,22 @@ export default function CheckResult() {
   const unsubmittedList = checkResult?.unsubmittedList || [];
   const unmatchedList = checkResult?.unmatchedList || [];
 
-  const handleExport = () => {
-    const csv = ['学号,姓名', ...unsubmittedList.map((m) => `${m.studentId || '-'},${m.name}`)].join('\n');
+  const handleExport = async () => {
+    const rows = [
+      ['学号', '姓名'],
+      ...unsubmittedList.map((m) => [m.studentId || '-', m.name]),
+    ];
+    // 转义引号并包裹字段，避免姓名/学号中的逗号、换行破坏 CSV 结构
+    const escapeCell = (value: string) => `"${String(value).replace(/"/g, '""')}"`;
+    // 添加 UTF-8 BOM，保证 Excel 打开中文不乱码
+    const csv = '\uFEFF' + rows.map((row) => row.map(escapeCell).join(',')).join('\r\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `未交名单-${homeworkTitle}.csv`;
-    link.click();
+    const result = await saveBlobFile(`未交名单-${homeworkTitle}.csv`, blob, 'text/csv');
+    if (!result.ok) {
+      toast.error('导出失败，请稍后重试');
+      return;
+    }
+    toast.success(result.path ? `已导出到：${result.path}` : '导出成功');
   };
 
   const handleRemind = async () => {

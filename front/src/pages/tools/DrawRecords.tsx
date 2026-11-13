@@ -15,10 +15,12 @@ interface DrawRecord {
   createdBy: string | null;
 }
 
-function formatDateTime(dateStr: string): string {
+// 列表标题用：同年省略年份，跨年补上，保证 13 条重复标题也能区分
+function formatShortDateTime(dateStr: string): string {
   const d = new Date(dateStr);
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const md = `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return d.getFullYear() === new Date().getFullYear() ? md : `${d.getFullYear()}-${md}`;
 }
 
 export default function DrawRecords() {
@@ -50,9 +52,12 @@ export default function DrawRecords() {
 
   return (
     <div className="flex min-h-[100dvh] w-full items-start justify-center overflow-x-hidden overflow-y-auto bg-gray-200 sm:items-center sm:p-6">
-      <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-background sm:h-phone sm:w-phone sm:rounded-device sm:shadow-lift">
+      <div
+        className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-background sm:h-phone sm:w-phone sm:rounded-device sm:shadow-lift"
+        style={{ backgroundImage: 'linear-gradient(180deg, #85C5F4 0%, #F1F8FE 100%)' }}
+      >
         {/* Status Bar */}
-        <div className="box-border flex h-[62px] w-full shrink-0 flex-row items-center justify-between gap-0 bg-[#85C5F4] p-[12px_24px_0px_24px]">
+        <div className="box-border flex h-[62px] w-full shrink-0 flex-row items-center justify-between gap-0 bg-transparent p-[12px_24px_0px_24px]">
           <div className="box-border text-left font-data text-[14px]/[normal] font-semibold text-[#1A1A1A] [white-space:nowrap]">
             9:41
           </div>
@@ -67,7 +72,7 @@ export default function DrawRecords() {
         </div>
 
         {/* Content */}
-        <div className="relative flex w-full flex-1 flex-col items-center justify-start gap-2 bg-cover bg-no-repeat p-[0px_0px_56px_0px] [background-image:linear-gradient(180deg,#85C5F4_0%,#F1F8FE_100%)]">
+        <div className="relative flex w-full flex-1 flex-col items-center justify-start gap-2 p-[0px_0px_56px_0px]">
           {/* Header */}
           <div className="relative box-border flex h-[48px] w-full shrink-0 flex-row items-center justify-between gap-0 bg-[#00000000] p-[0px_20px]">
             <button
@@ -116,7 +121,9 @@ export default function DrawRecords() {
                     className="box-border flex w-full flex-col gap-2 rounded-[16px] bg-white p-[14px_16px] shadow-sm cursor-pointer transition-transform duration-150 active:scale-[0.98]"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="text-[15px] font-semibold text-[#1F2937] truncate max-w-[200px]">
+                      <div className="text-[15px] font-semibold text-[#1F2937] truncate max-w-[230px]">
+                        <span className="text-[#6B7280]">{formatShortDateTime(record.createdAt)}</span>
+                        <span className="mx-1 text-[#D1D5DB]">·</span>
                         {record.title}
                       </div>
                       <div className="flex items-center gap-1 rounded-full bg-[#0062FF0D] px-2 py-0.5">
@@ -127,20 +134,12 @@ export default function DrawRecords() {
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1">
-                        <span className="text-[11px] text-[#9CA3AF]">
-                          正选{record.mainCount}人 · 候补{record.backupCount}人
-                        </span>
-                        {record.createdBy && (
-                          <>
-                            <span className="text-[#D1D5DB]">·</span>
-                            <span className="text-[11px] text-[#6B7280]">{record.createdBy}</span>
-                          </>
-                        )}
-                      </div>
                       <div className="text-[11px] text-[#9CA3AF]">
-                        {formatDateTime(record.createdAt)}
+                        正选{record.mainCount}人 · 候补{record.backupCount}人
                       </div>
+                      {record.createdBy && (
+                        <div className="text-[11px] text-[#6B7280]">{record.createdBy}</div>
+                      )}
                     </div>
                   </div>
                 ))}

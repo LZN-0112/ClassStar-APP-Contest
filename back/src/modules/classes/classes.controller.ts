@@ -2,11 +2,12 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Delete,
   Body,
   Param,
   Query,
   UseGuards,
-  Req,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ClassesService } from './classes.service';
@@ -18,8 +19,13 @@ import {
   CreateClassDto,
   JoinClassDto,
   ImportMembersDto,
+  GetMembersQueryDto,
   UpdateMemberRoleLevelDto,
+  UpdateMemberDisplayRoleDto,
+  UpdateMemberProfileDto,
+  VerifyMemberDto,
   TransferOwnerDto,
+  UpdateClassDto,
 } from './dto/classes.dto';
 
 @ApiTags('班级成员')
@@ -60,22 +66,41 @@ export class ClassesController {
     return this.classesService.getClass(id);
   }
 
+  @Patch(':id')
+  @AdminOrOwner()
+  @ApiOperation({ summary: '更新班级信息（名称、公告、简介、年级、专业）' })
+  updateClass(
+    @Param('id') id: string,
+    @Body() dto: UpdateClassDto,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.classesService.updateClass(id, dto, userId);
+  }
+
   @Get(':id/members')
   @ApiOperation({ summary: '获取成员列表' })
   getMembers(
     @Param('id') id: string,
-    @Query('keyword') keyword?: string,
-    @Query('role') role?: string,
-    @Query('page') page?: number,
-    @Query('pageSize') pageSize?: number,
+    @CurrentUser('userId') userId: string,
+    @Query() query: GetMembersQueryDto,
   ) {
-    return this.classesService.getMembers(id, { keyword, role, page, pageSize });
+    return this.classesService.getMembers(id, userId, query);
   }
 
   @Get(':id/members/:memberId')
   @ApiOperation({ summary: '获取成员详情' })
-  getMember(@Param('id') id: string, @Param('memberId') memberId: string) {
-    return this.classesService.getMember(id, memberId);
+  getMember(
+    @Param('id') id: string,
+    @Param('memberId') memberId: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.classesService.getMember(id, memberId, userId);
+  }
+
+  @Post(':id/qrcode')
+  @ApiOperation({ summary: '生成/获取班级二维码' })
+  ensureQrCode(@Param('id') id: string, @CurrentUser('userId') userId: string) {
+    return this.classesService.ensureQrCode(id, userId);
   }
 
   @Post(':id/members/import')
@@ -101,6 +126,53 @@ export class ClassesController {
     return this.classesService.updateMemberRoleLevel(id, userId, dto, operatorUserId);
   }
 
+  @Post(':id/members/:userId/display-role')
+  @AdminOrOwner()
+  @ApiOperation({ summary: '修改成员显示身份（如团支书、学习委员，不含权限）' })
+  updateMemberDisplayRole(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @Body() dto: UpdateMemberDisplayRoleDto,
+    @CurrentUser('userId') operatorUserId: string,
+  ) {
+    return this.classesService.updateMemberDisplayRole(id, userId, dto, operatorUserId);
+  }
+
+  @Post(':id/members/:userId/reset-password')
+  @AdminOrOwner()
+  @ApiOperation({ summary: '重置成员密码（返回一次性临时密码）' })
+  resetMemberPassword(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @CurrentUser('userId') operatorUserId: string,
+  ) {
+    return this.classesService.resetMemberPassword(id, userId, operatorUserId);
+  }
+
+  @Post(':id/members/:userId/verify')
+  @AdminOrOwner()
+  @ApiOperation({ summary: '确认成员身份状态' })
+  verifyMember(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @Body() dto: VerifyMemberDto,
+    @CurrentUser('userId') operatorUserId: string,
+  ) {
+    return this.classesService.verifyMember(id, userId, dto, operatorUserId);
+  }
+
+  @Post(':id/members/:userId/profile')
+  @AdminOrOwner()
+  @ApiOperation({ summary: '修正成员真实姓名与学号' })
+  updateMemberProfile(
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+    @Body() dto: UpdateMemberProfileDto,
+    @CurrentUser('userId') operatorUserId: string,
+  ) {
+    return this.classesService.updateMemberProfile(id, userId, dto, operatorUserId);
+  }
+
   @Post(':id/transfer-owner')
   @OwnerOnly()
   @ApiOperation({ summary: '转让群主' })
@@ -119,5 +191,26 @@ export class ClassesController {
     @CurrentUser('userId') userId: string,
   ) {
     return this.classesService.leaveClass(id, userId);
+  }
+
+  @Delete(':id/members/:memberId')
+  @AdminOrOwner()
+  @ApiOperation({ summary: '移除班级成员' })
+  removeMember(
+    @Param('id') id: string,
+    @Param('memberId') memberId: string,
+    @CurrentUser('userId') operatorUserId: string,
+  ) {
+    return this.classesService.removeMember(id, memberId, operatorUserId);
+  }
+
+  @Delete(':id')
+  @OwnerOnly()
+  @ApiOperation({ summary: '解散班级（软删除，清理全部成员关系）' })
+  dissolveClass(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.classesService.dissolveClass(id, userId);
   }
 }

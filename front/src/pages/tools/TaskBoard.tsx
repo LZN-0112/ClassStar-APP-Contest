@@ -2,8 +2,10 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Target, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '@/components/layout/PageLayout';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { api } from '@/lib/api';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { getPriorityMeta } from '@/utils/taskPriority';
 import { toast } from 'sonner';
 
 // 后端状态: todo / in_progress / done
@@ -14,12 +16,20 @@ type TaskStatus = 'pending' | 'in-progress' | 'completed';
 interface TaskItem {
   id: string;
   title: string;
-  owner?: string;
+  ownerId?: string;
+  ownerName?: string | null;
   deadline: string;
   progress: number;
+  priority?: number;
   status: BackendStatus;
   location?: string;
   content?: string;
+}
+
+interface TaskStats {
+  todo: number;
+  inProgress: number;
+  done: number;
 }
 
 const SWIPE_THRESHOLD = 80;
@@ -31,6 +41,15 @@ function toFrontStatus(s: BackendStatus): TaskStatus {
   return 'pending';
 }
 
+/** 截止时间按本地时区展示 */
+function formatDeadline(value?: string | null): string {
+  if (!value) return '无截止日期';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).replace('T', ' ');
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 export default function TaskBoard() {
   const navigate = useNavigate();
   const { user } = useCurrentUser();
@@ -38,7 +57,10 @@ export default function TaskBoard() {
   /* ---------- 状态 ---------- */
   const [taskList, setTaskList] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [stats, setStats] = useState<TaskStats>({ todo: 0, inProgress: 0, done: 0 });
   const [swipedId, setSwipedId] = useState<string | null>(null);
+  const [confirmTask, setConfirmTask] = useState<TaskItem | null>(null);
   const [filter, setFilter] = useState<TaskStatus | null>(null);
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => {
     const saved = localStorage.getItem(`task-pinned-${user?.classId}`);
@@ -48,12 +70,22 @@ export default function TaskBoard() {
   /* ---------- 加载任务 ---------- */
   const fetchTasks = useCallback(async () => {
     if (!user?.classId) return;
+    setLoadError(false);
     try {
       const res = await api.get(`/classes/${user.classId}/tasks`, { params: { pageSize: 100 } });
       const body = res.data.data || res.data;
       const list = (body.list || []) as TaskItem[];
       setTaskList(list);
+      // 统计数字使用后端全量统计，避免只统计前 100 条导致不准
+      if (body.stats) {
+        setStats({
+          todo: body.stats.todo ?? 0,
+          inProgress: body.stats.inProgress ?? 0,
+          done: body.stats.done ?? 0,
+        });
+      }
     } catch {
+      setLoadError(true);
       toast.error('加载任务失败');
     } finally {
       setLoading(false);
@@ -64,12 +96,14 @@ export default function TaskBoard() {
     fetchTasks();
   }, [fetchTasks]);
 
-  /* ---------- 派生数据 ---------- */
-  const stats = {
-    pending: taskList.filter((t) => t.status === 'todo').length,
-    inProgress: taskList.filter((t) => t.status === 'in_progress').length,
-    completed: taskList.filter((t) => t.status === 'done').length,
-  };
+  /* ---------- 派生数据 / 权限 ---------- */
+  const isCommittee =
+    user?.roleLevel === 'owner' || user?.roleLevel === 'admin';
+  // 已完成：班委或该任务负责人；删除：仅班委；置顶：本地偏好，所有人可用
+  const canComplete = (task: TaskItem) =>
+    task.status !== 'done' && (isCommittee || (!!user?.id && task.ownerId === user.id));
+  const getActionWidth = (task: TaskItem) =>
+    60 + (canComplete(task) ? 60 : 0) + (isCommittee ? 60 : 0);
 
   const displayTasks = (() => {
     let list: TaskItem[];
@@ -92,7 +126,7 @@ export default function TaskBoard() {
   const handleComplete = async (id: string) => {
     if (!user?.classId) return;
     try {
-      await api.patch(`/classes/${user.classId}/tasks/${id}`, {
+      await api.put(`/classes/${user.classId}/tasks/${id}`, {
         status: 'done',
         progress: 100,
       });
@@ -100,22 +134,35 @@ export default function TaskBoard() {
         prev.map((t) => (t.id === id ? { ...t, status: 'done' as BackendStatus, progress: 100 } : t)),
       );
       setSwipedId(null);
+      toast.success('任务已完成');
+      fetchTasks();
     } catch {
       toast.error('操作失败');
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!user?.classId) return;
+  // 删除前二次确认
+  const requestDelete = (task: TaskItem) => {
+    setSwipedId(null);
+    setConfirmTask(task);
+  };
+
+  const confirmDelete = async () => {
+    const task = confirmTask;
+    if (!task || !user?.classId) return;
+    setConfirmTask(null);
     try {
-      await api.delete(`/classes/${user.classId}/tasks/${id}`);
-      setTaskList((prev) => prev.filter((t) => t.id !== id));
+      await api.delete(`/classes/${user.classId}/tasks/${task.id}`);
+      setTaskList((prev) => prev.filter((t) => t.id !== task.id));
       setSwipedId(null);
+      toast.success('任务已删除');
+      fetchTasks();
     } catch {
       toast.error('删除失败');
     }
   };
 
+  // 系统返回键优先关闭删除确认弹层由 ConfirmDialog 内部处理
   const handleTogglePin = (id: string) => {
     setPinnedIds((prev) => {
       const newSet = new Set(prev);
@@ -137,6 +184,7 @@ export default function TaskBoard() {
   const swiping = useRef(false);
   const locked = useRef<'h' | 'v' | null>(null);
   const activeId = useRef<string | null>(null);
+  const activeWidth = useRef(180);
 
   const getPoint = (e: MouseEvent | TouchEvent) => {
     if ('touches' in e && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -145,6 +193,8 @@ export default function TaskBoard() {
   };
 
   const beginSwipe = (clientX: number, clientY: number, id: string) => {
+    const task = taskList.find((t) => t.id === id);
+    activeWidth.current = task ? getActionWidth(task) : 60;
     startX.current = clientX;
     startY.current = clientY;
     swiping.current = false;
@@ -165,7 +215,8 @@ export default function TaskBoard() {
       const el = document.getElementById(`tc-${activeId.current}`);
       if (!el) return;
       el.style.transition = 'none';
-      if (dx <= 0 && dx >= -200) {
+      const dragLimit = Math.max(activeWidth.current + 20, SWIPE_THRESHOLD + 40);
+      if (dx <= 0 && dx >= -dragLimit) {
         el.style.transform = `translateX(${dx}px)`;
       }
       if ('preventDefault' in e) e.preventDefault();
@@ -182,13 +233,25 @@ export default function TaskBoard() {
 
       const el = document.getElementById(`tc-${id}`);
       if (!el) return;
+      const { x, y } = getPoint(e);
+      const dx = x - startX.current;
+      const dy = y - startY.current;
+      const tapped = !swiping.current && Math.abs(dx) < 8 && Math.abs(dy) < 8;
+
       const rect = el.getBoundingClientRect();
       const parentRect = el.parentElement?.getBoundingClientRect();
       const offset = parentRect ? parentRect.left - rect.left : 0;
 
       el.style.transition = '';
-      if (offset >= SWIPE_THRESHOLD) {
-        el.style.transform = 'translateX(-180px)';
+      if (tapped) {
+        // 点击（非滑动）：已滑开时先收起，否则进入任务详情
+        el.style.transform = 'translateX(0)';
+        setSwipedId(null);
+        if (offset < SWIPE_THRESHOLD) {
+          navigate(`/task-detail/${id}`);
+        }
+      } else if (offset >= SWIPE_THRESHOLD) {
+        el.style.transform = `translateX(-${activeWidth.current}px)`;
         setSwipedId(id);
       } else {
         el.style.transform = 'translateX(0)';
@@ -236,9 +299,9 @@ export default function TaskBoard() {
 
   /* ---------- 统计卡片 ---------- */
   const statItems: { label: string; value: number; key: TaskStatus }[] = [
-    { label: '待完成', value: stats.pending, key: 'pending' },
+    { label: '待完成', value: stats.todo, key: 'pending' },
     { label: '进行中', value: stats.inProgress, key: 'in-progress' },
-    { label: '已完成', value: stats.completed, key: 'completed' },
+    { label: '已完成', value: stats.done, key: 'completed' },
   ];
 
   /* ---------- 渲染 ---------- */
@@ -295,35 +358,58 @@ export default function TaskBoard() {
           <div className="box-border flex w-full flex-col gap-2">
             {loading ? (
               <div className="py-10 text-center text-[13px] text-[#94A3B8]">加载中...</div>
+            ) : loadError ? (
+              <div className="flex flex-col items-center gap-3 py-10">
+                <div className="text-[13px] text-[#94A3B8]">任务加载失败，请检查网络后重试</div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoading(true);
+                    fetchTasks();
+                  }}
+                  className="rounded-full border border-[#076CAB] px-4 py-[6px] text-[12px] font-semibold text-[#076CAB] active:opacity-70"
+                >
+                  重新加载
+                </button>
+              </div>
             ) : displayTasks.length === 0 ? (
-              <div className="py-10 text-center text-[13px] text-[#94A3B8]">暂无任务</div>
+              <div className="py-10 text-center text-[13px] text-[#94A3B8]">
+                {filter ? '该分类下暂无任务' : '暂无任务'}
+              </div>
             ) : (
               displayTasks.map((task) => {
                 const isSwiped = swipedId === task.id;
-                const deadlineStr = task.deadline ? task.deadline.replace('T', '  ') : '无截止日期';
+                const deadlineStr = formatDeadline(task.deadline);
+                const priorityMeta = getPriorityMeta(task.priority);
 
                 return (
                   <div key={task.id} className="relative overflow-hidden rounded-2xl">
-                    {/* 操作按钮（底层） */}
+                    {/* 操作按钮（底层）：删除仅班委、已完成仅班委或负责人可见 */}
                     <div className="absolute inset-y-0 right-0 flex h-full">
-                      <button
-                        type="button"
-                        onClick={() => handleComplete(task.id)}
-                        className="flex h-full w-[60px] items-center justify-center rounded-r-2xl bg-white text-[11px] font-semibold text-[#076CAB] shadow-soft"
-                      >
-                        已完成
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(task.id)}
-                        className="flex h-full w-[60px] items-center justify-center bg-white text-[11px] font-semibold text-[#EF4444] shadow-soft"
-                      >
-                        删除
-                      </button>
+                      {canComplete(task) && (
+                        <button
+                          type="button"
+                          onClick={() => handleComplete(task.id)}
+                          className="flex h-full w-[60px] items-center justify-center rounded-l-2xl bg-white text-[11px] font-semibold text-[#076CAB] shadow-soft"
+                        >
+                          已完成
+                        </button>
+                      )}
+                      {isCommittee && (
+                        <button
+                          type="button"
+                          onClick={() => requestDelete(task)}
+                          className={`flex h-full w-[60px] items-center justify-center bg-white text-[11px] font-semibold text-[#EF4444] shadow-soft ${
+                            canComplete(task) ? '' : 'rounded-l-2xl'
+                          }`}
+                        >
+                          删除
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => handleTogglePin(task.id)}
-                        className="flex h-full w-[60px] items-center justify-center rounded-l-2xl bg-white text-[11px] font-semibold text-[#F59E0B] shadow-soft"
+                        className="flex h-full w-[60px] items-center justify-center rounded-r-2xl bg-white text-[11px] font-semibold text-[#F59E0B] shadow-soft"
                       >
                         置顶
                       </button>
@@ -336,13 +422,26 @@ export default function TaskBoard() {
                       onTouchStart={(e) => onTouchStart(e, task.id)}
                       onMouseDown={(e) => onMouseDown(e, task.id)}
                       className="relative z-10 box-border flex w-full flex-col gap-[10px] rounded-2xl bg-white p-4 text-left shadow-soft transition-[transform] duration-200 ease-out select-none"
-                      style={{ transform: isSwiped ? 'translateX(-180px)' : 'translateX(0)' }}
+                      style={{ transform: isSwiped ? `translateX(-${getActionWidth(task)}px)` : 'translateX(0)' }}
                     >
-                      <div className="box-border flex w-full flex-row items-center justify-between">
-                        <div className="text-[14px]/[normal] box-border text-left font-body font-semibold text-[#1E293B] [white-space:nowrap]">
-                          {task.title}
+                      <div className="box-border flex w-full flex-row items-center justify-between gap-2">
+                        <div className="flex min-w-0 flex-1 flex-row items-center gap-[6px]">
+                          {(task.priority ?? 0) >= 1 && (
+                            <span
+                              className="shrink-0 rounded-full px-[6px] py-[1px] text-[10px] font-semibold"
+                              style={{
+                                color: priorityMeta.text,
+                                backgroundColor: priorityMeta.bg,
+                              }}
+                            >
+                              {priorityMeta.label}
+                            </span>
+                          )}
+                          <div className="truncate text-[14px]/[normal] box-border text-left font-body font-semibold text-[#1E293B]">
+                            {task.title}
+                          </div>
                         </div>
-                        <div className="text-[14px]/[normal] box-border text-left font-body font-bold text-[#076CAB] [white-space:nowrap]">
+                        <div className="shrink-0 text-[14px]/[normal] box-border text-left font-body font-bold text-[#076CAB] [white-space:nowrap]">
                           {task.progress}%
                         </div>
                       </div>
@@ -363,6 +462,17 @@ export default function TaskBoard() {
           </div>
         </div>
       </div>
+
+      {/* 删除二次确认 */}
+      <ConfirmDialog
+        open={!!confirmTask}
+        title="删除任务"
+        description={`确定删除「${confirmTask?.title ?? ''}」吗？删除后无法恢复。`}
+        confirmText="删除"
+        danger
+        onCancel={() => setConfirmTask(null)}
+        onConfirm={confirmDelete}
+      />
     </PageLayout>
   );
 }

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../../common/database/prisma.service';
+import { PrivacyService } from '@/common/privacy/privacy.service';
 import {
   CreateAttendanceDto,
   CheckInDto,
@@ -10,10 +11,23 @@ import {
 
 @Injectable()
 export class AttendancesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly privacyService: PrivacyService,
+  ) {}
 
   async create(classId: string, dto: CreateAttendanceDto, publisherId: string) {
     const attendanceId = uuidv4();
+    await this.assertCommittee(classId, publisherId, '仅班委可发起签到');
+
+    const startTime = new Date(dto.startTime);
+    const endTime = new Date(dto.endTime);
+    if (Number.isNaN(startTime.getTime()) || Number.isNaN(endTime.getTime())) {
+      throw new BadRequestException('签到时间格式不正确');
+    }
+    if (endTime <= startTime) {
+      throw new BadRequestException('结束时间必须晚于开始时间');
+    }
 
     if (dto.method === 'code' && !dto.code) {
       throw new BadRequestException('口令签到需设置签到口令');
@@ -29,8 +43,8 @@ export class AttendancesService {
         publisher_id: publisherId,
         title: dto.title,
         type: dto.type,
-        start_time: new Date(dto.startTime),
-        end_time: new Date(dto.endTime),
+        start_time: startTime,
+        end_time: endTime,
         method: dto.method,
         location: dto.location,
         latitude: dto.latitude != null ? dto.latitude : undefined,
@@ -63,6 +77,12 @@ export class AttendancesService {
           users: { select: { id: true, name: true } },
           _count: { select: { attendance_records: true } },
           attendance_records: { where: { student_id: userId } },
+          leave_applications: {
+            where: { student_id: userId },
+            select: { id: true, status: true, reason: true, created_at: true },
+            orderBy: { created_at: 'desc' },
+            take: 1,
+          },
         },
         skip,
         take: pageSize,
@@ -89,6 +109,14 @@ export class AttendancesService {
               checkInAt: a.attendance_records[0].check_in_at,
             }
           : null,
+        myLeaveApplication: a.leave_applications?.[0]
+          ? {
+              id: a.leave_applications[0].id,
+              status: a.leave_applications[0].status,
+              reason: a.leave_applications[0].reason,
+              createdAt: a.leave_applications[0].created_at,
+            }
+          : null,
         createdAt: a.created_at,
       })),
       pagination: { page, pageSize, total, totalPages: Math.ceil(total / (pageSize || 20)) },
@@ -101,7 +129,12 @@ export class AttendancesService {
       include: {
         users: { select: { id: true, name: true } },
         attendance_records: { where: { student_id: userId } },
-        leave_applications: { where: { student_id: userId } },
+        leave_applications: {
+          where: { student_id: userId },
+          select: { id: true, status: true, reason: true, created_at: true, reviewed_at: true },
+          orderBy: { created_at: 'desc' },
+          take: 1,
+        },
       },
     });
 
@@ -129,7 +162,15 @@ export class AttendancesService {
             checkInAt: attendance.attendance_records[0].check_in_at,
           }
         : null,
-      myLeaveApplication: attendance.leave_applications[0] || null,
+      myLeaveApplication: attendance.leave_applications[0]
+        ? {
+            id: attendance.leave_applications[0].id,
+            status: attendance.leave_applications[0].status,
+            reason: attendance.leave_applications[0].reason,
+            createdAt: attendance.leave_applications[0].created_at,
+            reviewedAt: attendance.leave_applications[0].reviewed_at,
+          }
+        : null,
       createdAt: attendance.created_at,
     };
   }
@@ -156,6 +197,17 @@ export class AttendancesService {
     });
     if (existed) {
       throw new BadRequestException('您已完成签到，无需重复操作');
+    }
+
+    const approvedLeave = await this.prisma.leave_applications.findFirst({
+      where: { attendance_id: id, student_id: studentId, status: 'approved' },
+    });
+    if (approvedLeave) {
+      throw new BadRequestException('您已请假，无需签到');
+    }
+
+    if (dto.method !== attendance.method) {
+      throw new BadRequestException('签到方式与签到要求不一致');
     }
 
     // 校验签到方式
@@ -210,9 +262,7 @@ export class AttendancesService {
     if (!attendance) {
       throw new NotFoundException('签到不存在');
     }
-    if (attendance.publisher_id !== userId) {
-      throw new ForbiddenException('无权限关闭该签到');
-    }
+    await this.assertCommittee(classId, userId, '无权限关闭该签到');
 
     await this.prisma.attendances.update({
       where: { id },
@@ -222,7 +272,7 @@ export class AttendancesService {
     return null;
   }
 
-  async getStatistics(classId: string, id: string) {
+  async getStatistics(classId: string, id: string, viewerUserId: string) {
     const attendance = await this.prisma.attendances.findFirst({
       where: { id, class_id: classId },
     });
@@ -264,12 +314,39 @@ export class AttendancesService {
 
     const absentList = absentMembers.filter((m) => !leaveUserIds.has(m.user_id));
 
+    const involvedUserIds = [
+      ...records.map((r) => r.student_id),
+      ...absentList.map((m) => m.user_id),
+      ...leaves.map((l) => l.student_id),
+    ];
+    const [privacyLevels, viewer] = await Promise.all([
+      this.privacyService.getLevels(involvedUserIds),
+      this.privacyService.getViewer(classId, viewerUserId),
+    ]);
+
+    const canSee = (userId: string) => {
+      const levels = this.privacyService.levelsOf(privacyLevels, userId);
+      return this.privacyService.canView(levels.attendance, {
+        ...viewer,
+        isSelf: userId === viewerUserId,
+      });
+    };
+
+    const visibleRecords = records.filter((r) => canSee(r.student_id));
+    const visibleAbsent = absentList.filter((m) => canSee(m.user_id));
+    const visibleLeaves = leaves.filter((l) => canSee(l.student_id));
+    const hiddenCount =
+      (records.length - visibleRecords.length) +
+      (absentList.length - visibleAbsent.length) +
+      (leaves.length - visibleLeaves.length);
+
     return {
       total: totalMembers,
       presentCount: records.length,
       absentCount: absentList.length,
       leaveCount: leaves.length,
-      presentList: records.map((r) => ({
+      hiddenCount,
+      presentList: visibleRecords.map((r) => ({
         userId: r.student_id,
         name: r.users.name,
         studentId: r.users.student_id,
@@ -277,13 +354,13 @@ export class AttendancesService {
         checkInAt: r.check_in_at,
         method: r.check_in_method,
       })),
-      absentList: absentList.map((m) => ({
+      absentList: visibleAbsent.map((m) => ({
         userId: m.user_id,
         name: m.users.name,
         studentId: m.users.student_id,
         avatar: m.users.avatar,
       })),
-      leaveList: leaves.map((l) => ({
+      leaveList: visibleLeaves.map((l) => ({
         userId: l.student_id,
         name: l.users_leave_applications_student_idTousers.name,
         studentId: l.users_leave_applications_student_idTousers.student_id,
@@ -303,6 +380,16 @@ export class AttendancesService {
     });
     if (!attendance) {
       throw new NotFoundException('签到不存在');
+    }
+    if (attendance.status !== 'open' || new Date() > new Date(attendance.end_time)) {
+      throw new BadRequestException('签到已结束，无法申请请假');
+    }
+
+    const record = await this.prisma.attendance_records.findFirst({
+      where: { attendance_id: id, student_id: studentId },
+    });
+    if (record) {
+      throw new BadRequestException('您已完成签到，无需请假');
     }
 
     const existed = await this.prisma.leave_applications.findFirst({
@@ -332,11 +419,32 @@ export class AttendancesService {
     dto: ReviewLeaveDto,
     reviewerId: string,
   ) {
+    const attendance = await this.prisma.attendances.findFirst({
+      where: { id, class_id: classId },
+      select: { id: true, publisher_id: true },
+    });
+    if (!attendance) {
+      throw new NotFoundException('签到不存在');
+    }
+
+    await this.assertCommittee(classId, reviewerId, '仅班委可审批请假');
+
     const application = await this.prisma.leave_applications.findFirst({
       where: { id: applicationId, attendance_id: id },
     });
     if (!application) {
       throw new NotFoundException('请假申请不存在');
+    }
+    if (application.status !== 'pending') {
+      throw new BadRequestException('该请假申请已处理');
+    }
+    if (dto.status === 'approved') {
+      const record = await this.prisma.attendance_records.findFirst({
+        where: { attendance_id: id, student_id: application.student_id },
+      });
+      if (record) {
+        throw new BadRequestException('该成员已完成签到，无法批准请假');
+      }
     }
 
     await this.prisma.leave_applications.update({
@@ -358,18 +466,34 @@ export class AttendancesService {
     if (!attendance) {
       throw new NotFoundException('签到不存在');
     }
-    if (attendance.publisher_id !== userId) {
-      throw new ForbiddenException('无权限催签');
-    }
+    await this.assertCommittee(classId, userId, '无权限催签');
 
-    const stats = await this.getStatistics(classId, id);
+    const [records, leaves, members] = await Promise.all([
+      this.prisma.attendance_records.findMany({
+        where: { attendance_id: id },
+        select: { student_id: true },
+      }),
+      this.prisma.leave_applications.findMany({
+        where: { attendance_id: id, status: 'approved' },
+        select: { student_id: true },
+      }),
+      this.prisma.class_members.findMany({
+        where: { class_id: classId },
+        select: { user_id: true },
+      }),
+    ]);
 
-    if (stats.absentList.length === 0) {
+    const presentIds = new Set(records.map((r) => r.student_id));
+    const leaveIds = new Set(leaves.map((l) => l.student_id));
+    const absentUserIds = members
+      .map((m) => m.user_id)
+      .filter((uid) => !presentIds.has(uid) && !leaveIds.has(uid));
+
+    if (absentUserIds.length === 0) {
       return { reminded: 0 };
     }
 
     // 为每个未签到人员创建催签通知
-    const absentUserIds = stats.absentList.map((a) => a.userId);
     const messageId = uuidv4();
     await this.prisma.messages.create({
       data: {
@@ -393,6 +517,185 @@ export class AttendancesService {
     });
 
     return { reminded: absentUserIds.length };
+  }
+
+  async listLeaveApplications(classId: string, id: string, userId: string) {
+    const attendance = await this.prisma.attendances.findFirst({
+      where: { id, class_id: classId },
+      select: { publisher_id: true },
+    });
+    if (!attendance) {
+      throw new NotFoundException('签到不存在');
+    }
+    await this.assertCommittee(classId, userId, '仅班委可查看请假申请');
+
+    const applications = await this.prisma.leave_applications.findMany({
+      where: { attendance_id: id },
+      include: {
+        users_leave_applications_student_idTousers: {
+          select: { id: true, name: true, student_id: true, avatar: true },
+        },
+      },
+      orderBy: { created_at: 'asc' },
+    });
+
+    return applications.map((a) => ({
+      id: a.id,
+      student: {
+        id: a.users_leave_applications_student_idTousers.id,
+        name: a.users_leave_applications_student_idTousers.name,
+        studentId: a.users_leave_applications_student_idTousers.student_id,
+        avatar: a.users_leave_applications_student_idTousers.avatar,
+      },
+      reason: a.reason,
+      status: a.status,
+      createdAt: a.created_at,
+      reviewedAt: a.reviewed_at,
+    }));
+  }
+
+  async listPendingLeaves(classId: string, userId: string) {
+    await this.assertCommittee(classId, userId, '仅班委可查看请假审批');
+
+    const applications = await this.prisma.leave_applications.findMany({
+      where: { status: 'pending', attendances: { class_id: classId } },
+      include: {
+        users_leave_applications_student_idTousers: {
+          select: { id: true, name: true, student_id: true, avatar: true },
+        },
+        attendances: {
+          select: { id: true, title: true, start_time: true, end_time: true },
+        },
+      },
+      orderBy: { created_at: 'asc' },
+      take: 100,
+    });
+
+    return applications.map((a) => ({
+      id: a.id,
+      attendance: {
+        id: a.attendances.id,
+        title: a.attendances.title,
+        startTime: a.attendances.start_time,
+        endTime: a.attendances.end_time,
+      },
+      student: {
+        id: a.users_leave_applications_student_idTousers.id,
+        name: a.users_leave_applications_student_idTousers.name,
+        studentId: a.users_leave_applications_student_idTousers.student_id,
+        avatar: a.users_leave_applications_student_idTousers.avatar,
+      },
+      reason: a.reason,
+      createdAt: a.created_at,
+    }));
+  }
+
+  async getReport(classId: string, userId: string) {
+    // 考勤报表包含全班出勤明细，仅班委可查看
+    await this.assertCommittee(classId, userId, '仅班委可查看考勤报表');
+
+    const [attendances, memberCount] = await Promise.all([
+      this.prisma.attendances.findMany({
+        where: { class_id: classId },
+        select: {
+          id: true,
+          title: true,
+          start_time: true,
+          end_time: true,
+          status: true,
+          method: true,
+        },
+        orderBy: { start_time: 'desc' },
+        take: 100,
+      }),
+      this.prisma.class_members.count({ where: { class_id: classId } }),
+    ]);
+
+    const attendanceIds = attendances.map((a) => a.id);
+    let records: Array<{ attendance_id: string; student_id: string; status: string }> = [];
+    let leaves: Array<{ attendance_id: string; student_id: string }> = [];
+    if (attendanceIds.length) {
+      [records, leaves] = await Promise.all([
+        this.prisma.attendance_records.findMany({
+          where: { attendance_id: { in: attendanceIds } },
+          select: { attendance_id: true, student_id: true, status: true },
+        }),
+        this.prisma.leave_applications.findMany({
+          where: { attendance_id: { in: attendanceIds }, status: 'approved' },
+          select: { attendance_id: true, student_id: true },
+        }),
+      ]);
+    }
+
+    const now = Date.now();
+    let myPresent = 0;
+    let myLeave = 0;
+    let myAbsent = 0;
+    let endedSessions = 0;
+
+    const sessions = attendances.map((a) => {
+      const sessionRecords = records.filter((r) => r.attendance_id === a.id);
+      const sessionLeaves = new Set(
+        leaves.filter((l) => l.attendance_id === a.id).map((l) => l.student_id),
+      );
+      const myRecord = sessionRecords.find((r) => r.student_id === userId);
+      const started = new Date(a.start_time).getTime() <= now;
+      const ended = new Date(a.end_time).getTime() < now || a.status === 'closed';
+
+      let myStatus: 'present' | 'late' | 'leave' | 'absent' | 'pending' | 'upcoming';
+      if (myRecord) {
+        myStatus = myRecord.status === 'late' ? 'late' : 'present';
+      } else if (sessionLeaves.has(userId)) {
+        myStatus = 'leave';
+      } else if (ended) {
+        myStatus = 'absent';
+      } else {
+        myStatus = started ? 'pending' : 'upcoming';
+      }
+
+      if (ended) {
+        endedSessions += 1;
+        if (myStatus === 'present' || myStatus === 'late') myPresent += 1;
+        else if (myStatus === 'leave') myLeave += 1;
+        else myAbsent += 1;
+      }
+
+      return {
+        id: a.id,
+        title: a.title,
+        method: a.method,
+        startTime: a.start_time,
+        endTime: a.end_time,
+        status: ended ? 'completed' : started ? 'in-progress' : 'pending',
+        presentCount: sessionRecords.length,
+        leaveCount: sessionLeaves.size,
+        total: memberCount,
+        absentCount: Math.max(0, memberCount - sessionRecords.length - sessionLeaves.size),
+        myStatus,
+      };
+    });
+
+    return {
+      totalSessions: endedSessions,
+      memberCount,
+      myPresent,
+      myLeave,
+      myAbsent,
+      attendanceRate:
+        endedSessions > 0 ? Math.round((myPresent / endedSessions) * 100) : 0,
+      sessions,
+    };
+  }
+
+  private async assertCommittee(classId: string, userId: string, message: string) {
+    // 班委统一以权限等级判定：群主或管理员
+    const member = await this.prisma.class_members.findFirst({
+      where: { class_id: classId, user_id: userId },
+      select: { role_level: true },
+    });
+    if (!member || (member.role_level !== 'owner' && member.role_level !== 'admin')) {
+      throw new ForbiddenException(message);
+    }
   }
 
   private calcDistance(lat1: number, lon1: number, lat2: number, lon2: number) {

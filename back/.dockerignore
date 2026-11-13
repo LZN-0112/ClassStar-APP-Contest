@@ -1,0 +1,16 @@
+node_modules
+dist
+coverage
+tmp
+logs
+*.log
+.git
+.gitignore
+.env
+.env.*
+!.env.template
+database
+test
+docker/.env
+.vscode
+.idea

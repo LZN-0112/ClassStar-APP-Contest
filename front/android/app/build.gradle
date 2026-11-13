@@ -8,7 +8,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -18,7 +18,8 @@ android {
     }
     signingConfigs {
         release {
-            storeFile file("../keystore/banwuxing-release.keystore")
+            // 2026 版发布密钥，与已安装包签名一致（MD5 B841AE94ACD0E6D8BA0BB1AF358E89BB）
+            storeFile file("../keystore/banwuxing-release-2026.keystore")
             // 签名口令不写入版本库，改用环境变量注入：
             // BANWUXING_STORE_PASSWORD / BANWUXING_KEY_PASSWORD
             storePassword System.getenv("BANWUXING_STORE_PASSWORD") ?: "REPLACE_ME"
@@ -29,8 +30,10 @@ android {
     buildTypes {
         release {
             signingConfig signingConfigs.release
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // 上线标准：开启 R8 代码混淆与资源压缩，减小包体并提升逆向难度
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }
@@ -51,6 +54,9 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+
+    // 微信开放平台移动应用 SDK（App 微信登录）
+    implementation 'com.tencent.mm.opensdk:wechat-sdk-android:6.8.34'
 
     // Fix duplicate kotlin stdlib classes
     constraints {

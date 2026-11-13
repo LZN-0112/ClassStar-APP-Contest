@@ -3,25 +3,39 @@ import { Calendar, ImagePlus, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '@/components/layout/PageLayout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { api } from '@/lib/api';
+import { api, resolveFileUrl } from '@/lib/api';
 import { toast } from 'sonner';
+
+const inputShell =
+  'box-border flex min-h-[60px] w-full shrink-0 flex-col justify-center gap-1 rounded-xl border border-[#E2E8F0] bg-white px-4 py-2';
+const labelClass =
+  'text-[11px]/[normal] box-border font-body font-medium text-[#94A3B8] text-left';
+const inputClass =
+  'w-full bg-transparent font-body text-[14px] font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none';
+
+const ACTIVITY_CATEGORIES = ['文体活动', '学习交流', '志愿服务', '班级事务', '其他'];
+const MAX_PHOTOS = 6;
+
+interface ActivityPhoto {
+  key: string;
+  url: string;
+}
 
 export default function PublishActivity() {
   const navigate = useNavigate();
-  const { user } = useCurrentUser();
+  const { user, loading: userLoading } = useCurrentUser();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     title: '',
+    category: '',
     date: '',
     location: '',
     description: '',
     deadline: '',
     quota: '',
   });
-  const [, setCoverFile] = useState<File | null>(null);
-  const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  const [uploadingCover, setUploadingCover] = useState(false);
-  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<ActivityPhoto[]>([]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const classId = user?.classId;
 
@@ -38,61 +52,108 @@ export default function PublishActivity() {
       toast.error('请选择活动时间');
       return false;
     }
+    const eventStart = new Date(form.date).getTime();
+    if (Number.isNaN(eventStart) || eventStart < Date.now()) {
+      toast.error('活动时间不能早于当前时间');
+      return false;
+    }
     if (!form.location.trim()) {
       toast.error('请输入活动地点');
+      return false;
+    }
+    if (form.description.trim().length > 2000) {
+      toast.error('活动详情不能超过 2000 字');
+      return false;
+    }
+    if (form.deadline) {
+      const deadline = new Date(form.deadline).getTime();
+      if (Number.isNaN(deadline) || deadline <= Date.now()) {
+        toast.error('报名截止时间必须晚于当前时间');
+        return false;
+      }
+      if (deadline > eventStart) {
+        toast.error('报名截止时间不能晚于活动开始时间');
+        return false;
+      }
+    }
+    if (form.quota) {
+      const quota = Number(form.quota);
+      if (!Number.isInteger(quota) || quota <= 0) {
+        toast.error('人数限制必须为正整数');
+        return false;
+      }
+    }
+    if (uploadingPhoto) {
+      toast.error('图片正在上传，请稍候');
       return false;
     }
     return true;
   };
 
-  const handleCoverSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handlePhotosSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const files = Array.from(input.files ?? []);
+    input.value = '';
+    if (!files.length) return;
 
-    if (!file.type.startsWith('image/')) {
-      toast.error('请选择图片文件');
+    const remaining = MAX_PHOTOS - photos.length;
+    if (remaining <= 0) {
+      toast.error(`最多上传 ${MAX_PHOTOS} 张图片`);
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('图片大小不能超过 5MB');
+    if (files.length > remaining) {
+      toast.error(`最多上传 ${MAX_PHOTOS} 张图片，本次仅添加前 ${remaining} 张`);
+    }
+    const selected = files.slice(0, remaining);
+
+    if (!classId) {
+      toast.error('缺少班级信息，请返回重试');
       return;
     }
 
-    setCoverFile(file);
-    setCoverPreview(URL.createObjectURL(file));
-    setCoverUrl(null);
-
-    if (!classId) return;
-    setUploadingCover(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const res = await api.post(`/classes/${classId}/activities/upload-cover`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      const url = res.data?.data?.coverUrl || res.data?.coverUrl;
-      if (url) {
-        setCoverUrl(url);
-        toast.success('封面上传成功');
+    setUploadingPhoto(true);
+    for (const file of selected) {
+      if (!file.type.startsWith('image/')) {
+        toast.error('请选择图片文件');
+        continue;
       }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : '封面上传失败');
-      setCoverFile(null);
-      setCoverPreview(null);
-    } finally {
-      setUploadingCover(false);
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('单张图片大小不能超过 5MB');
+        continue;
+      }
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await api.post(`/classes/${classId}/activities/upload-cover`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        const url = res.data?.data?.coverUrl || res.data?.coverUrl;
+        if (url) {
+          setPhotos((prev) => [
+            ...prev,
+            { key: `${Date.now()}-${Math.random().toString(36).slice(2)}`, url },
+          ]);
+        } else {
+          toast.error('图片上传失败，请重试');
+        }
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : '图片上传失败');
+      }
     }
+    setUploadingPhoto(false);
   };
 
-  const handleRemoveCover = () => {
-    if (coverPreview) URL.revokeObjectURL(coverPreview);
-    setCoverFile(null);
-    setCoverPreview(null);
-    setCoverUrl(null);
+  const handleRemovePhoto = (key: string) => {
+    setPhotos((prev) => prev.filter((photo) => photo.key !== key));
   };
 
   const handleSubmit = async () => {
-    if (!validate() || loading || !classId) return;
+    if (loading || !classId) return;
+    if (user?.roleLevel !== 'owner' && user?.roleLevel !== 'admin') {
+      toast.error('仅班委可发布活动');
+      return;
+    }
+    if (!validate()) return;
 
     const [eventDate, eventTimeRaw] = form.date.split('T');
     const eventTime = eventTimeRaw ? `${eventTimeRaw}:00` : undefined;
@@ -101,12 +162,15 @@ export default function PublishActivity() {
     try {
       await api.post(`/classes/${classId}/activities`, {
         title: form.title.trim(),
+        category: form.category || undefined,
         eventDate,
         eventTime,
         location: form.location.trim(),
+        description: form.description.trim() || undefined,
         capacity: form.quota ? Number(form.quota) : undefined,
         deadline: form.deadline ? new Date(form.deadline).toISOString() : undefined,
-        coverUrl: coverUrl || undefined,
+        coverUrl: photos[0]?.url || undefined,
+        images: photos.length ? photos.map((photo) => photo.url) : undefined,
       });
       toast.success('发布成功');
       navigate('/activity-list', { replace: true });
@@ -117,6 +181,33 @@ export default function PublishActivity() {
     }
   };
 
+  if (userLoading) {
+    return (
+      <PageLayout title="发布活动" variant="a">
+        <div className="flex min-h-[300px] items-center justify-center text-sm text-gray-500">
+          加载中...
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (user?.roleLevel !== 'owner' && user?.roleLevel !== 'admin') {
+    return (
+      <PageLayout title="发布活动" variant="a">
+        <div className="flex min-h-[300px] flex-col items-center justify-center gap-3">
+          <p className="text-[14px] text-[#4B5563]">仅班委可发布活动</p>
+          <button
+            type="button"
+            onClick={() => navigate('/activity-list', { replace: true })}
+            className="rounded-lg bg-[#0062FF] px-4 py-2 text-[13px] font-medium text-white"
+          >
+            返回活动列表
+          </button>
+        </div>
+      </PageLayout>
+    );
+  }
+
   return (
     <>
       <PageLayout
@@ -125,140 +216,170 @@ export default function PublishActivity() {
         decor={<Calendar className="h-[120px] w-[120px] text-white" strokeWidth={1.5} />}
       >
         <div className="flex min-h-full w-full flex-col gap-5">
-        <div
-          data-pencil-name="Input Field"
-          className="box-border flex h-[56px] w-full shrink-0 flex-col justify-center rounded-xl border border-[#E2E8F0] bg-white px-4"
-        >
-          <input
-            type="text"
-            value={form.title}
-            onChange={(e) => handleChange('title', e.target.value)}
-            placeholder="请输入活动名称"
-            className="w-full bg-transparent font-body text-[14px] font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none"
-          />
-        </div>
-        <div
-          data-pencil-name="Input Field"
-          className="box-border flex h-[56px] w-full shrink-0 flex-col justify-center rounded-xl border border-[#E2E8F0] bg-white px-4"
-        >
-          <input
-            type="datetime-local"
-            value={form.date}
-            onChange={(e) => handleChange('date', e.target.value)}
-            placeholder="请选择活动时间"
-            className="w-full bg-transparent font-body text-[14px] font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none"
-          />
-        </div>
-        <div
-          data-pencil-name="Input Field"
-          className="box-border flex h-[56px] w-full shrink-0 flex-col justify-center rounded-xl border border-[#E2E8F0] bg-white px-4"
-        >
-          <input
-            type="text"
-            value={form.location}
-            onChange={(e) => handleChange('location', e.target.value)}
-            placeholder="请输入活动地点"
-            className="w-full bg-transparent font-body text-[14px] font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none"
-          />
-        </div>
-        <div
-          data-pencil-name="Textarea"
-          className="box-border flex h-[120px] w-full shrink-0 flex-col justify-start rounded-xl border border-[#E2E8F0] bg-white p-4"
-        >
-          <textarea
-            value={form.description}
-            onChange={(e) => handleChange('description', e.target.value)}
-            placeholder="请输入活动详情..."
-            rows={4}
-            className="h-full w-full resize-none bg-transparent font-body text-[14px] font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none"
-          />
-        </div>
-        <div className="box-border flex w-full shrink-0 flex-col gap-2 rounded-xl border border-[#E2E8F0] bg-white p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[14px] font-medium text-[#1A1A1A]">活动封面照片</span>
-            {coverPreview && (
-              <button
-                type="button"
-                onClick={handleRemoveCover}
-                className="flex items-center gap-1 text-[12px] text-red-500"
-              >
-                <X className="h-3 w-3" />
-                移除
-              </button>
-            )}
+          <div data-pencil-name="Input Field" className={inputShell}>
+            <span className={labelClass}>活动名称</span>
+            <input
+              type="text"
+              value={form.title}
+              onChange={(e) => handleChange('title', e.target.value)}
+              placeholder="请输入活动名称"
+              maxLength={50}
+              className={inputClass}
+            />
           </div>
-          {coverPreview ? (
-            <div className="relative h-[160px] w-full overflow-hidden rounded-lg bg-gray-50">
-              <img
-                src={coverPreview}
-                alt="活动封面预览"
-                className="h-full w-full object-cover"
-              />
-              {uploadingCover && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/30 text-white text-sm">
-                  上传中...
+          <div className="box-border flex w-full shrink-0 flex-col gap-2 rounded-xl border border-[#E2E8F0] bg-white p-4">
+            <span className={labelClass}>活动分类（选填）</span>
+            <div className="flex flex-wrap gap-2">
+              {ACTIVITY_CATEGORIES.map((category) => {
+                const active = form.category === category;
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        category: active ? '' : category,
+                      }))
+                    }
+                    className={`h-8 rounded-full px-3 text-[12px] font-medium ${
+                      active ? 'bg-[#0062FF] text-white' : 'bg-[#F1F5F9] text-[#475569]'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div data-pencil-name="Input Field" className={inputShell}>
+            <span className={labelClass}>活动时间</span>
+            <input
+              type="datetime-local"
+              value={form.date}
+              onChange={(e) => handleChange('date', e.target.value)}
+              className={inputClass}
+            />
+          </div>
+          <div data-pencil-name="Input Field" className={inputShell}>
+            <span className={labelClass}>活动地点</span>
+            <input
+              type="text"
+              value={form.location}
+              onChange={(e) => handleChange('location', e.target.value)}
+              placeholder="请输入活动地点"
+              maxLength={100}
+              className={inputClass}
+            />
+          </div>
+          <div
+            data-pencil-name="Textarea"
+            className="box-border flex h-[140px] w-full shrink-0 flex-col justify-start gap-1 rounded-xl border border-[#E2E8F0] bg-white p-4"
+          >
+            <span className={labelClass}>活动详情（选填）</span>
+            <textarea
+              value={form.description}
+              onChange={(e) => handleChange('description', e.target.value)}
+              placeholder="请输入活动详情..."
+              rows={4}
+              maxLength={2000}
+              className="h-full w-full resize-none bg-transparent font-body text-[14px] font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none"
+            />
+          </div>
+          <div className="box-border flex w-full shrink-0 flex-col gap-2 rounded-xl border border-[#E2E8F0] bg-white p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-[14px] font-medium text-[#1A1A1A]">
+                活动照片（最多 {MAX_PHOTOS} 张）
+              </span>
+              <span className="text-[12px] text-[#94A3B8]">
+                {photos.length}/{MAX_PHOTOS}
+              </span>
+            </div>
+            <div className="grid w-full grid-cols-3 gap-2">
+              {photos.map((photo, index) => (
+                <div
+                  key={photo.key}
+                  className="relative aspect-square overflow-hidden rounded-lg bg-gray-50"
+                >
+                  <img
+                    src={resolveFileUrl(photo.url)}
+                    alt={`活动照片 ${index + 1}`}
+                    className="h-full w-full object-cover"
+                  />
+                  {index === 0 && (
+                    <span className="absolute bottom-1 left-1 rounded bg-[#0062FF] px-1.5 py-0.5 text-[10px] font-medium text-white">
+                      封面
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    aria-label="删除图片"
+                    onClick={() => handleRemovePhoto(photo.key)}
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 text-white"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
                 </div>
+              ))}
+              {photos.length < MAX_PHOTOS && (
+                <label className="flex aspect-square w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-[#CBD5E1] bg-gray-50 text-[#94A3B8]">
+                  <ImagePlus className="h-6 w-6" />
+                  <span className="text-[11px]">
+                    {uploadingPhoto ? '上传中...' : '添加图片'}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/jpg"
+                    multiple
+                    disabled={uploadingPhoto}
+                    onChange={handlePhotosSelect}
+                    className="hidden"
+                  />
+                </label>
               )}
             </div>
-          ) : (
-            <label className="flex h-[160px] w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[#CBD5E1] bg-gray-50 text-[#94A3B8]">
-              <ImagePlus className="h-8 w-8" />
-              <span className="text-[13px]">点击上传活动封面照片</span>
-              <span className="text-[11px]">支持 jpg/png，不超过 5MB</span>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/jpg"
-                onChange={handleCoverSelect}
-                className="hidden"
-              />
-            </label>
-          )}
-        </div>
-        <div
-          data-pencil-name="Input Field"
-          className="box-border flex h-[56px] w-full shrink-0 flex-col justify-center rounded-xl border border-[#E2E8F0] bg-white px-4"
-        >
-          <input
-            type="datetime-local"
-            value={form.deadline}
-            onChange={(e) => handleChange('deadline', e.target.value)}
-            placeholder="请选择报名截止时间"
-            className="w-full bg-transparent font-body text-[14px] font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none"
-          />
-        </div>
-        <div
-          data-pencil-name="Input Field"
-          className="box-border flex h-[56px] w-full shrink-0 flex-col justify-center rounded-xl border border-[#E2E8F0] bg-white px-4"
-        >
-          <input
-            type="number"
-            value={form.quota}
-            onChange={(e) => handleChange('quota', e.target.value)}
-            placeholder="请输入人数限制"
-            className="w-full bg-transparent font-body text-[14px] font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none"
-          />
-        </div>
-        <div
-          data-pencil-name="Spacer"
-          className="box-border h-[20px] w-full shrink-0"
-        ></div>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={loading}
-          data-pencil-name="Button Primary"
-          className={`box-border flex h-[52px] w-full shrink-0 flex-col items-center justify-center rounded-xl shadow-[0px_4px_16px_0px_#0000001A] ${
-            loading ? 'bg-[#93C5FD]' : 'bg-[#0062FF]'
-          }`}
-        >
-          <div
-            data-pencil-name="Text"
-            className="text-[16px]/[normal] box-border text-left font-body font-semibold text-white [white-space:nowrap]"
-          >
-            {loading ? '发布中...' : '发布活动'}
+            <span className="text-[11px] text-[#94A3B8]">
+              支持 jpg/png，单张不超过 5MB；第一张图片将作为活动封面
+            </span>
           </div>
-        </button>
-      </div>
+          <div data-pencil-name="Input Field" className={inputShell}>
+            <span className={labelClass}>报名截止时间（选填）</span>
+            <input
+              type="datetime-local"
+              value={form.deadline}
+              onChange={(e) => handleChange('deadline', e.target.value)}
+              className={inputClass}
+            />
+          </div>
+          <div data-pencil-name="Input Field" className={inputShell}>
+            <span className={labelClass}>人数限制（选填）</span>
+            <input
+              type="number"
+              min={1}
+              value={form.quota}
+              onChange={(e) => handleChange('quota', e.target.value)}
+              placeholder="不填写则表示不限制人数"
+              className={inputClass}
+            />
+          </div>
+          <div data-pencil-name="Spacer" className="box-border h-[20px] w-full shrink-0"></div>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading || uploadingPhoto}
+            data-pencil-name="Button Primary"
+            className={`box-border flex h-[52px] w-full shrink-0 flex-col items-center justify-center rounded-xl shadow-[0px_4px_16px_0px_#0000001A] ${
+              loading || uploadingPhoto ? 'bg-[#93C5FD]' : 'bg-[#0062FF]'
+            }`}
+          >
+            <div
+              data-pencil-name="Text"
+              className="text-[16px]/[normal] box-border text-left font-body font-semibold text-white [white-space:nowrap]"
+            >
+              {loading ? '发布中...' : uploadingPhoto ? '图片上传中...' : '发布活动'}
+            </div>
+          </button>
+        </div>
       </PageLayout>
     </>
   );

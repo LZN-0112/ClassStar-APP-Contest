@@ -1,6 +1,13 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
+import * as path from 'path';
 import { PrismaService } from '../../common/database/prisma.service';
+import { MinioService } from '@/common/storage/minio.service';
 import { OcrService } from './ocr.service';
 import {
   CreateHomeworkDto,
@@ -9,14 +16,50 @@ import {
   OfflineCheckDto,
 } from './dto/homeworks.dto';
 
+/** 解析分页参数（兼容 undefined/null/NaN/非法值） */
+function toPositiveInt(value: unknown, fallback: number, max?: number): number {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 1) return fallback;
+  const int = Math.floor(num);
+  return max ? Math.min(int, max) : int;
+}
+
 @Injectable()
 export class HomeworksService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ocrService: OcrService,
+    private readonly minioService: MinioService,
   ) {}
 
+  /** 校验用户是班级成员，返回成员信息 */
+  private async assertMember(classId: string, userId: string) {
+    const member = await this.prisma.class_members.findFirst({
+      where: { class_id: classId, user_id: userId },
+      select: { id: true, role_level: true },
+    });
+    if (!member) {
+      throw new ForbiddenException('您不是该班级成员');
+    }
+    return member;
+  }
+
+  /** 校验用户是班委（群主/管理员） */
+  private async assertManager(classId: string, userId: string) {
+    const member = await this.assertMember(classId, userId);
+    const isManager =
+      member.role_level === 'owner' || member.role_level === 'admin';
+    if (!isManager) {
+      throw new ForbiddenException('仅班委可执行该操作');
+    }
+    return member;
+  }
+
   async create(classId: string, dto: CreateHomeworkDto, publisherId: string) {
+    await this.assertManager(classId, publisherId);
+    if (new Date(dto.deadline).getTime() <= Date.now()) {
+      throw new BadRequestException('截止时间需晚于当前时间');
+    }
     const homeworkId = uuidv4();
     await this.prisma.homeworks.create({
       data: {
@@ -38,20 +81,25 @@ export class HomeworksService {
     userId: string,
     options: { status?: string; page?: number; pageSize?: number },
   ) {
-    const { status, page = 1, pageSize = 20 } = options;
-    const pageNum = Math.max(1, parseInt(String(page)));
-    const pageSizeNum = Math.max(1, parseInt(String(pageSize)));
+    await this.assertMember(classId, userId);
+    const { status } = options;
+    const pageNum = toPositiveInt(options.page, 1);
+    const pageSizeNum = toPositiveInt(options.pageSize, 20, 200);
     const skip = (pageNum - 1) * pageSizeNum;
 
     const where: any = { class_id: classId };
     if (status) where.status = status;
 
-    const [homeworks, total] = await Promise.all([
+    const [homeworks, total, totalMembers] = await Promise.all([
       this.prisma.homeworks.findMany({
         where,
         include: {
           users: { select: { id: true, name: true } },
           homework_submissions: { where: { student_id: userId } },
+          homework_delay_applications: {
+            where: { student_id: userId },
+            orderBy: { created_at: 'desc' },
+          },
           _count: { select: { homework_submissions: true } },
         },
         skip: skip || 0,
@@ -59,7 +107,24 @@ export class HomeworksService {
         orderBy: { created_at: 'desc' },
       }),
       this.prisma.homeworks.count({ where }),
+      this.prisma.class_members.count({ where: { class_id: classId } }),
     ]);
+
+    // 班委端待审批延时数量（按作业聚合，避免逐条查询）
+    const homeworkIds = homeworks.map((h) => h.id);
+    const pendingDelayGroups = homeworkIds.length
+      ? await this.prisma.homework_delay_applications.groupBy({
+          by: ['homework_id'],
+          where: {
+            homework_id: { in: homeworkIds },
+            status: 'pending',
+          },
+          _count: { _all: true },
+        })
+      : [];
+    const pendingDelayMap = new Map(
+      pendingDelayGroups.map((group) => [group.homework_id, group._count._all]),
+    );
 
     return {
       list: homeworks.map((h) => ({
@@ -70,27 +135,46 @@ export class HomeworksService {
         deadline: h.deadline,
         publisher: h.users,
         submitted: h.homework_submissions.length > 0,
+        mySubmissionStatus: h.homework_submissions[0]?.status || null,
+        myDelayStatus: h.homework_delay_applications[0]?.status || null,
+        myDelayDeadline: h.homework_delay_applications[0]?.expected_deadline || null,
+        pendingDelayCount: pendingDelayMap.get(h.id) || 0,
         submissionCount: h._count.homework_submissions,
+        totalMembers,
         status: h.status,
         createdAt: h.created_at,
       })),
-      pagination: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
+      pagination: {
+        page: pageNum,
+        pageSize: pageSizeNum,
+        total,
+        totalPages: Math.ceil(total / pageSizeNum),
+      },
     };
   }
 
   async findOne(classId: string, id: string, userId: string) {
+    await this.assertMember(classId, userId);
     const homework = await this.prisma.homeworks.findFirst({
       where: { id, class_id: classId },
       include: {
         users: { select: { id: true, name: true } },
         homework_submissions: { where: { student_id: userId } },
-        homework_delay_applications: { where: { student_id: userId } },
+        homework_delay_applications: {
+          where: { student_id: userId },
+          orderBy: { created_at: 'desc' },
+        },
+        _count: { select: { homework_submissions: true } },
       },
     });
 
     if (!homework) {
       throw new NotFoundException('作业不存在');
     }
+
+    const totalMembers = await this.prisma.class_members.count({
+      where: { class_id: classId },
+    });
 
     return {
       id: homework.id,
@@ -101,16 +185,40 @@ export class HomeworksService {
       publisher: homework.users,
       mySubmission: homework.homework_submissions[0] || null,
       myDelayApplication: homework.homework_delay_applications[0] || null,
+      submissionCount: homework._count.homework_submissions,
+      totalMembers,
       createdAt: homework.created_at,
     };
   }
 
   async submit(classId: string, id: string, dto: SubmitHomeworkDto, userId: string) {
+    await this.assertMember(classId, userId);
     const homework = await this.prisma.homeworks.findFirst({
       where: { id, class_id: classId },
     });
     if (!homework) {
       throw new NotFoundException('作业不存在');
+    }
+
+    const content = (dto.content || '').trim();
+    if (!content && (!dto.fileUrls || dto.fileUrls.length === 0)) {
+      throw new BadRequestException('请填写提交内容或上传附件');
+    }
+
+    // 截止时间校验：已截止且无有效延时审批时禁止提交
+    const now = new Date();
+    if (now > homework.deadline) {
+      const approvedDelay = await this.prisma.homework_delay_applications.findFirst({
+        where: {
+          homework_id: id,
+          student_id: userId,
+          status: 'approved',
+          expected_deadline: { gte: now },
+        },
+      });
+      if (!approvedDelay) {
+        throw new BadRequestException('作业已截止，如需补交请先申请延时');
+      }
     }
 
     await this.prisma.homework_submissions.upsert({
@@ -121,13 +229,13 @@ export class HomeworksService {
         id: uuidv4(),
         homework_id: id,
         student_id: userId,
-        content: dto.content,
-        attachments: dto.fileUrls ? JSON.stringify(dto.fileUrls) : undefined,
+        content,
+        attachments: dto.fileUrls ?? undefined,
         status: 'submitted',
       },
       update: {
-        content: dto.content,
-        attachments: dto.fileUrls ? JSON.stringify(dto.fileUrls) : undefined,
+        content,
+        attachments: dto.fileUrls ?? undefined,
         status: 'submitted',
         submitted_at: new Date(),
       },
@@ -142,11 +250,37 @@ export class HomeworksService {
     dto: DelayApplicationDto,
     userId: string,
   ) {
+    await this.assertMember(classId, userId);
     const homework = await this.prisma.homeworks.findFirst({
       where: { id, class_id: classId },
     });
     if (!homework) {
       throw new NotFoundException('作业不存在');
+    }
+
+    const requestedDeadline = new Date(dto.requestedDeadline);
+    if (isNaN(requestedDeadline.getTime())) {
+      throw new BadRequestException('延时截止时间格式错误');
+    }
+    if (requestedDeadline <= homework.deadline) {
+      throw new BadRequestException('申请的新截止时间需晚于当前截止时间');
+    }
+    if (requestedDeadline <= new Date()) {
+      throw new BadRequestException('申请的新截止时间需晚于当前时间');
+    }
+
+    const existing = await this.prisma.homework_delay_applications.findFirst({
+      where: {
+        homework_id: id,
+        student_id: userId,
+        status: { in: ['pending', 'approved'] },
+      },
+      orderBy: { created_at: 'desc' },
+    });
+    if (existing) {
+      throw new BadRequestException(
+        existing.status === 'pending' ? '已有一条待审批的延时申请' : '延时申请已通过，无需重复申请',
+      );
     }
 
     await this.prisma.homework_delay_applications.create({
@@ -155,7 +289,7 @@ export class HomeworksService {
         homework_id: id,
         student_id: userId,
         reason: dto.reason,
-        expected_deadline: new Date(dto.requestedDeadline),
+        expected_deadline: requestedDeadline,
         status: 'pending',
       },
     });
@@ -170,8 +304,16 @@ export class HomeworksService {
     status: string,
     userId: string,
   ) {
+    await this.assertManager(classId, userId);
     if (!['approved', 'rejected'].includes(status)) {
       throw new BadRequestException('审批状态错误');
+    }
+
+    const homework = await this.prisma.homeworks.findFirst({
+      where: { id, class_id: classId },
+    });
+    if (!homework) {
+      throw new NotFoundException('作业不存在');
     }
 
     const application = await this.prisma.homework_delay_applications.findFirst({
@@ -179,6 +321,9 @@ export class HomeworksService {
     });
     if (!application) {
       throw new NotFoundException('申请不存在');
+    }
+    if (status === 'approved' && new Date(application.expected_deadline) <= new Date()) {
+      throw new BadRequestException('申请已过期，无法通过，请驳回后让学生重新申请');
     }
 
     await this.prisma.homework_delay_applications.update({
@@ -193,17 +338,72 @@ export class HomeworksService {
     return null;
   }
 
+  /** 班委查看某份作业的延时申请 */
+  async listDelayApplications(classId: string, id: string, userId: string) {
+    await this.assertManager(classId, userId);
+    const homework = await this.prisma.homeworks.findFirst({
+      where: { id, class_id: classId },
+    });
+    if (!homework) {
+      throw new NotFoundException('作业不存在');
+    }
+
+    const list = await this.prisma.homework_delay_applications.findMany({
+      where: { homework_id: id },
+      include: {
+        users_homework_delay_applications_student_idTousers: {
+          select: { id: true, name: true },
+        },
+      },
+      orderBy: { created_at: 'desc' },
+    });
+
+    return list.map((item) => ({
+      id: item.id,
+      studentId: item.student_id,
+      studentName:
+        item.users_homework_delay_applications_student_idTousers?.name || '学生',
+      reason: item.reason,
+      expectedDeadline: item.expected_deadline,
+      status: item.status,
+      createdAt: item.created_at,
+    }));
+  }
+
+  /** 学生上传作业附件 */
+  async uploadAttachment(
+    classId: string,
+    file: Express.Multer.File,
+    userId: string,
+  ): Promise<{ url: string; name: string }> {
+    await this.assertMember(classId, userId);
+    if (!file) {
+      throw new BadRequestException('请选择要上传的图片');
+    }
+    if (!file.mimetype.startsWith('image/')) {
+      throw new BadRequestException('仅支持上传图片附件');
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      throw new BadRequestException('图片大小不能超过 10MB');
+    }
+
+    const ext = path.extname(file.originalname || '') || '.jpg';
+    const objectName = `homeworks/${classId}/${Date.now()}-${uuidv4()}${ext}`;
+    const url = await this.minioService.uploadBuffer(objectName, file.buffer, {
+      'Content-Type': file.mimetype,
+    });
+    return { url, name: file.originalname || '附件' };
+  }
+
   async recognizeScreenshot(
     classId: string,
     file: Express.Multer.File,
     userId: string,
   ): Promise<{ studentIds: string[]; unmatched: string[]; rawText: string }> {
-    // 验证用户在班级中
-    const member = await this.prisma.class_members.findFirst({
-      where: { class_id: classId, user_id: userId },
-    });
-    if (!member) {
-      throw new BadRequestException('您不是该班级成员');
+    // 仅班委可发起截图识别
+    await this.assertManager(classId, userId);
+    if (!file) {
+      throw new BadRequestException('请上传要识别的图片');
     }
 
     // OCR识别学号
@@ -235,6 +435,14 @@ export class HomeworksService {
   }
 
   async offlineCheck(classId: string, dto: OfflineCheckDto, userId: string) {
+    await this.assertManager(classId, userId);
+    const homework = await this.prisma.homeworks.findFirst({
+      where: { id: dto.homeworkId, class_id: classId },
+      select: { id: true },
+    });
+    if (!homework) {
+      throw new NotFoundException('作业不存在');
+    }
     const checkId = uuidv4();
 
     const result = await this.prisma.$transaction(async (tx) => {
@@ -342,14 +550,28 @@ export class HomeworksService {
     return result;
   }
 
-  async getOfflineCheck(classId: string, checkId: string, userId: string) {
-    // 验证班级成员身份
-    const member = await this.prisma.class_members.findFirst({
-      where: { class_id: classId, user_id: userId },
+  async listOfflineChecks(classId: string, userId: string) {
+    await this.assertManager(classId, userId);
+    const checks = await this.prisma.homework_offline_checks.findMany({
+      where: { homeworks: { class_id: classId } },
+      include: { homeworks: { select: { id: true, title: true } } },
+      orderBy: { checked_at: 'desc' },
+      take: 10,
     });
-    if (!member) {
-      throw new BadRequestException('您不是该班级成员');
-    }
+    return checks.map((check) => ({
+      id: check.id,
+      homeworkId: check.homework_id,
+      homeworkTitle: check.homeworks?.title || '作业',
+      submittedCount: check.submitted_count,
+      totalCount: check.total_count,
+      checkType: check.check_type,
+      checkedAt: check.checked_at,
+    }));
+  }
+
+  async getOfflineCheck(classId: string, checkId: string, userId: string) {
+    // 离线核对详情包含全班提交情况，仅班委可查看
+    await this.assertManager(classId, userId);
 
     // 查询离线核对记录
     const check = await this.prisma.homework_offline_checks.findFirst({

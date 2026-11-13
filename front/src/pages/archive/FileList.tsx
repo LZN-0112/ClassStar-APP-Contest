@@ -1,239 +1,420 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  Download,
+  FolderOpen,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash2,
+  UploadCloud,
+  X,
+} from 'lucide-react';
 import { toast } from 'sonner';
-import BackButton from '@/components/navigation/BackButton';
-import PhoneFrame from '@/components/layout/PhoneFrame';
+import PageLayout from '@/components/layout/PageLayout';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { api } from '@/lib/api';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import {
+  MaterialFileItem,
+  downloadMaterialFile,
+  formatFileSize,
+  formatRelativeTime,
+  getMaterialType,
+  isNewMaterial,
+} from '@/lib/material';
 
-interface FileItem {
-  id: string;
-  fileName: string;
-  fileUrl: string;
-  fileSize: number;
-  folderName: string | null;
-  uploaderName: string | null;
-  downloadCount: number;
-  createdAt: string;
-}
+type TypeFilter = '全部' | '文档' | '图片' | '音视频' | '压缩包' | '其他';
+type SortKey = '最新' | '名称' | '下载最多';
+
+const TYPE_GROUPS: Record<TypeFilter, string[]> = {
+  全部: [],
+  文档: ['pdf', 'word', 'excel', 'ppt', 'text'],
+  图片: ['image'],
+  音视频: ['video', 'audio'],
+  压缩包: ['archive'],
+  其他: ['other'],
+};
+
+const TYPE_FILTERS: TypeFilter[] = ['全部', '文档', '图片', '音视频', '压缩包', '其他'];
+const SORT_KEYS: SortKey[] = ['最新', '名称', '下载最多'];
 
 export default function FileList() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useCurrentUser();
-  const [files, setFiles] = useState<FileItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchKeyword, setSearchKeyword] = useState('');
-  const [activeTab, setActiveTab] = useState('全部');
 
   const classId = user?.classId || '';
-  const folderFromUrl = searchParams.get('folder') || '';
+  const folder = searchParams.get('folder') || '';
+  const view = searchParams.get('view') || 'all';
+  const initialKeyword = searchParams.get('keyword') || '';
 
+  const [files, setFiles] = useState<MaterialFileItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState(initialKeyword);
+  const [keyword, setKeyword] = useState(initialKeyword);
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('全部');
+  const [sortKey, setSortKey] = useState<SortKey>(view === 'hot' ? '下载最多' : '最新');
+
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<MaterialFileItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // 通过站内导航切换视图时组件不会重挂载，需同步刷新排序方式
   useEffect(() => {
-    fetchFiles();
-  }, [classId, folderFromUrl]);
+    setSortKey(view === 'hot' ? '下载最多' : '最新');
+  }, [view]);
 
-  const fetchFiles = async () => {
+  // 输入防抖 300ms，避免逐个字符请求
+  useEffect(() => {
+    const timer = window.setTimeout(() => setKeyword(searchInput.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
+
+  const fetchFiles = useCallback(async () => {
     if (!classId) {
+      setFiles([]);
       setLoading(false);
       return;
     }
-
+    setLoading(true);
+    setLoadError(null);
     try {
-      const params: any = { classId };
-      if (folderFromUrl) {
-        params.folderName = folderFromUrl;
-      }
-      if (searchKeyword) {
-        params.keyword = searchKeyword;
-      }
-
+      const params: Record<string, string> = { classId };
+      if (folder) params.folderName = folder;
+      if (keyword) params.keyword = keyword;
       const response = await api.get('/material/list', { params });
-      setFiles(response.data.data || []);
-    } catch (err: any) {
-      console.error('获取文件列表失败:', err);
-      toast.error('获取文件列表失败');
+      const body = response.data?.data ?? response.data;
+      setFiles(Array.isArray(body) ? body : []);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : '获取文件列表失败');
+      setFiles([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [classId, folder, keyword]);
 
-  const handleSearch = () => {
-    setLoading(true);
+  useEffect(() => {
     fetchFiles();
-  };
+  }, [fetchFiles]);
 
-  const handleDelete = async (fileId: string, fileName: string) => {
-    if (!confirm(`确定要删除文件 "${fileName}" 吗？`)) {
-      return;
-    }
-
+  const handleDownload = async (event: React.MouseEvent, file: MaterialFileItem) => {
+    event.stopPropagation();
+    if (downloadingId) return;
+    setDownloadingId(file.id);
     try {
-      await api.delete(`/material/${fileId}`);
-      toast.success('删除成功');
-      fetchFiles();
-    } catch (err: any) {
-      toast.error(err.message || '删除失败');
+      const result = await downloadMaterialFile(file.id, file.fileName);
+      if (!result.ok) {
+        toast.error('下载失败，请稍后重试');
+        return;
+      }
+      toast.success(result.path ? `已保存到：${result.path}` : '下载成功');
+      setFiles((prev) =>
+        prev.map((item) =>
+          item.id === file.id
+            ? { ...item, downloadCount: (item.downloadCount || 0) + 1 }
+            : item,
+        ),
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '下载失败');
+    } finally {
+      setDownloadingId(null);
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / 1024 / 1024).toFixed(1) + ' MB';
-  };
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (days === 0) return '今天';
-    if (days === 1) return '昨天';
-    if (days < 7) return `${days}天前`;
-    if (days < 30) return `${Math.floor(days / 7)}周前`;
-    return `${Math.floor(days / 30)}月前`;
-  };
-
-  const getFileIcon = (fileName: string) => {
-    const ext = fileName.split('.').pop()?.toLowerCase();
-    const iconColors: Record<string, string> = {
-      pdf: '#1E3A8A',
-      ppt: '#3B82F6',
-      pptx: '#3B82F6',
-      zip: '#4B5563',
-      rar: '#4B5563',
-      doc: '#2563EB',
-      docx: '#2563EB',
-      xls: '#059669',
-      xlsx: '#059669',
-    };
-    return iconColors[ext || ''] || '#6B7280';
-  };
-
-  const filteredFiles = files.filter((file) => {
-    if (activeTab === '全部') return true;
-    const ext = file.fileName.split('.').pop()?.toLowerCase();
-    if (activeTab === '文档') {
-      return ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'].includes(ext || '');
+  const handleDelete = async () => {
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/material/${deleteTarget.id}`);
+      toast.success('已删除');
+      setFiles((prev) => prev.filter((item) => item.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '删除失败');
+    } finally {
+      setDeleting(false);
     }
-    if (activeTab === '压缩包') {
-      return ['zip', 'rar', '7z'].includes(ext || '');
-    }
-    return true;
-  });
+  };
 
-  const pageTitle = folderFromUrl || '文件列表';
+  const canDelete = (file: MaterialFileItem) =>
+    Boolean(user?.isCommittee) ||
+    user?.roleLevel === 'owner' ||
+    user?.roleLevel === 'admin' ||
+    file.uploaderId === user?.id;
+
+  const visibleFiles = useMemo(() => {
+    let list = [...files];
+    if (view === 'mine') {
+      list = list.filter((file) => file.uploaderId === user?.id);
+    }
+    if (typeFilter !== '全部') {
+      const allowed = TYPE_GROUPS[typeFilter];
+      list = list.filter((file) => allowed.includes(getMaterialType(file.fileName).key));
+    }
+    if (sortKey === '下载最多') {
+      list.sort((a, b) => b.downloadCount - a.downloadCount);
+    } else if (sortKey === '名称') {
+      list.sort((a, b) => a.fileName.localeCompare(b.fileName, 'zh-CN'));
+    } else {
+      list.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+    }
+    return list;
+  }, [files, view, typeFilter, sortKey, user?.id]);
+
+  const pageTitle = folder || (view === 'mine' ? '我上传的' : view === 'hot' ? '热门下载' : '全部资料');
 
   return (
-    <PhoneFrame>
-      <div className="box-border w-full h-[267.99px] shrink-0 flex flex-col gap-0 justify-start items-start [background-image:linear-gradient(47.497deg,_#85c5f4_10.918%,_#44a7ec_90.517%)] bg-no-repeat bg-[length:100%_100%] rounded-[0px_0px_24px_24px]">
-        <div className="box-border w-full h-[62px] shrink-0 flex flex-row gap-0 p-[12px_24px_0px_24px] justify-between items-center bg-[#00000000]">
-          <div className="text-[14px] box-border text-[#FFFFFF] font-semibold text-left [white-space:nowrap]">9:41</div>
-          <div className="box-border w-fit shrink-0 h-fit flex flex-row gap-[6px] justify-start items-center">
-            <div className="text-[14px] box-border text-[#FFFFFF] font-normal text-left [white-space:nowrap]">◉◉◉◉</div>
-            <div className="text-[14px] box-border text-[#FFFFFF] font-normal text-left [white-space:nowrap]">100%</div>
-          </div>
-        </div>
-        <div className="box-border w-full h-[220px] shrink-0 flex flex-col gap-[12px] p-[20px] justify-start items-start bg-[#00000000] relative">
-          <BackButton variant="dark" className="absolute left-[-4px] top-[0px] z-10" />
-          <div className="box-border w-full h-[24px] shrink-0 flex flex-row gap-0 justify-start items-center relative [z-index:0]">
-            <div className="box-border w-[24px] shrink-0 h-[24px]"></div>
-          </div>
-          <div className="text-[28px] box-border text-[#FFFFFF] font-bold text-left [white-space:nowrap] relative [z-index:1]">
-            {pageTitle}
-          </div>
-          <svg viewBox="0 0 24 24" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" className="box-border w-[120px] h-[120px] opacity-[0.15] absolute left-[260px] top-[50px] overflow-visible [z-index:2]">
-            <path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-14a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2" fill="none" />
-            <path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-14a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2" fill="none" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-          </svg>
-        </div>
-      </div>
-      <div className="box-border w-full [flex:1_1_0] bg-[#FFFFFF] relative overflow-y-auto pb-20">
-        <div className="box-border w-full h-fit flex flex-col gap-[12px] justify-start items-start p-[15px_24px]">
-          <div className="box-border w-full h-[40px] shrink-0 flex flex-row gap-2 p-[0px_12px] justify-start items-center bg-[#FFFFFF] [border:1px_solid_#E5E7EB] rounded-full">
-            <svg viewBox="0 0 24 24" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" className="box-border w-[18px] shrink-0 h-[18px] overflow-visible">
-              <path d="M3 10a7 7 0 1 0 14 0 7 7 0 1 0-14 0m18 11l-6-6" fill="none" />
-              <path d="M3 10a7 7 0 1 0 14 0 7 7 0 1 0-14 0m18 11l-6-6" fill="none" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-            </svg>
+    <>
+      <PageLayout
+        title={pageTitle}
+        variant="b"
+        decor={<FolderOpen className="h-[120px] w-[120px] text-white" strokeWidth={1.5} />}
+        right={
+          classId ? (
+            <button
+              type="button"
+              onClick={() => navigate('/upload-material')}
+              className="mr-2 flex h-9 items-center gap-1 rounded-full bg-white/20 px-3 text-sm font-medium text-white backdrop-blur"
+            >
+              <Plus className="h-4 w-4" />
+              上传
+            </button>
+          ) : undefined
+        }
+      >
+        <div className="flex w-full flex-col gap-4">
+          {/* 搜索 */}
+          <div className="flex h-11 w-full items-center gap-2 rounded-full border border-[#E5E7EB] bg-white px-4">
+            <Search className="h-[18px] w-[18px] shrink-0 text-[#64748B]" strokeWidth={2} />
             <input
               type="text"
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder="搜索文件"
-              className="flex-1 text-[14px] text-[#1A1A1A] bg-transparent outline-none placeholder:text-[#4B5563]"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="搜索当前分类下的文件"
+              className="min-w-0 flex-1 bg-transparent text-[14px] font-body text-[#1A1A1A] outline-none placeholder:text-[#94A3B8]"
             />
-          </div>
-          <div className="box-border w-full h-[32px] shrink-0 flex flex-row gap-2 justify-start items-center">
-            {['全部', '文档', '压缩包'].map((tab) => (
-              <div
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`box-border w-fit shrink-0 h-[32px] flex flex-col gap-0 p-[0px_12px] justify-center items-center rounded-full cursor-pointer ${
-                  activeTab === tab ? 'bg-[#0062FF]' : 'bg-[#0062FF0D]'
-                }`}
+            {searchInput && (
+              <button
+                type="button"
+                aria-label="清空搜索"
+                onClick={() => setSearchInput('')}
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#F1F5F9] text-[#64748B]"
               >
-                <div className={`text-[11px] font-semibold text-left [white-space:nowrap] ${activeTab === tab ? 'text-[#FFFFFF]' : 'text-[#0062FF]'}`}>
-                  {tab}
-                </div>
-              </div>
-            ))}
+                <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+              </button>
+            )}
           </div>
-        </div>
 
-        <div className="box-border w-full flex flex-col gap-[10px] justify-start items-start p-[0px_24px]">
-          {loading ? (
-            <div className="w-full text-center py-8 text-[#4B5563]">加载中...</div>
-          ) : filteredFiles.length === 0 ? (
-            <div className="w-full text-center py-8 text-[#4B5563]">暂无文件</div>
-          ) : (
-            filteredFiles.map((file) => (
-              <div
-                key={file.id}
-                onClick={() => navigate(`/material-detail?fileId=${file.id}`)}
-                className="box-border w-full h-[76px] shrink-0 [box-shadow:0px_2px_8px_0px_#0000000D] flex flex-row gap-[12px] p-[12px] justify-start items-center bg-[#FFFFFF] rounded-lg cursor-pointer"
-              >
-                <div className="box-border w-[48px] shrink-0 h-[48px] flex flex-row gap-0 justify-center items-center bg-[#1E3A8A1A] rounded-lg">
-                  <svg viewBox="0 0 24 24" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" className="box-border w-[28px] shrink-0 h-[28px] overflow-visible">
-                    <path d="M14 3v4a1 1 0 0 0 1 1h4m-14 4v-7a2 2 0 0 1 2-2h7l5 5v4m-14 6h1.5a1.5 1.5 0 0 0 0-3h-1.5v6m12-3h2m1-3h-3v6m-6-6v6h1a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2z" fill="none" />
-                    <path d="M14 3v4a1 1 0 0 0 1 1h4m-14 4v-7a2 2 0 0 1 2-2h7l5 5v4m-14 6h1.5a1.5 1.5 0 0 0 0-3h-1.5v6m12-3h2m1-3h-3v6m-6-6v6h1a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2z" fill="none" stroke={getFileIcon(file.fileName)} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-                  </svg>
-                </div>
-                <div className="box-border [flex:1_1_0] h-fit flex flex-col gap-[2px] justify-center items-start">
-                  <div className="text-[16px] box-border text-[#1A1A1A] font-semibold text-left [white-space:nowrap] overflow-hidden text-ellipsis w-full">
-                    {file.fileName}
-                  </div>
-                  <div className="text-[11px] box-border text-[#4B5563] font-normal text-left [white-space:nowrap]">
-                    {formatFileSize(file.fileSize)} · {formatDate(file.createdAt)}
-                    {file.uploaderName ? ` · ${file.uploaderName}` : ''}
-                  </div>
-                </div>
+          {/* 类型筛选：收紧内边距与间距，保证 6 个胶囊在窄屏上也能完整显示（极窄屏仍可横向滑动） */}
+          <div className="-mx-5 flex w-[calc(100%+40px)] flex-row gap-1.5 overflow-x-auto px-5 pb-1">
+            {TYPE_FILTERS.map((tab) => {
+              const active = typeFilter === tab;
+              return (
                 <button
-                  onClick={(e) => { e.stopPropagation(); handleDelete(file.id, file.fileName); }}
-                  className="box-border w-[24px] h-[24px] flex items-center justify-center text-[#EF4444] hover:bg-[#EF44440D] rounded"
+                  key={tab}
+                  type="button"
+                  onClick={() => setTypeFilter(tab)}
+                  className={`h-8 shrink-0 rounded-full px-2.5 text-[12px] font-body font-semibold transition-colors ${
+                    active
+                      ? 'bg-[#0062FF] text-white'
+                      : 'bg-[#F1F5F9] text-[#64748B]'
+                  }`}
                 >
-                  <svg viewBox="0 0 24 24" className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" />
-                  </svg>
+                  {tab}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* 数量与排序 */}
+          <div className="flex items-center justify-between">
+            <div className="text-[11px] font-caption text-[#64748B]">
+              共 {visibleFiles.length} 个文件
+            </div>
+            <div className="flex items-center gap-1">
+              {SORT_KEYS.map((key) => {
+                const active = sortKey === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setSortKey(key)}
+                    className={`rounded-full px-2.5 py-1 text-[11px] font-body transition-colors ${
+                      active
+                        ? 'bg-[#EFF6FF] font-semibold text-[#0062FF]'
+                        : 'text-[#94A3B8]'
+                    }`}
+                  >
+                    {key}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 文件列表 */}
+          {loading ? (
+            <div className="flex flex-col gap-2.5">
+              {[0, 1, 2, 3].map((item) => (
+                <div key={item} className="h-[76px] w-full animate-pulse rounded-xl bg-[#E9EEF5]" />
+              ))}
+            </div>
+          ) : loadError ? (
+            <div className="flex flex-col items-center gap-3 rounded-xl bg-white py-10">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#FEF2F2]">
+                <RefreshCw className="h-6 w-6 text-[#DC2626]" strokeWidth={2} />
+              </div>
+              <div className="text-[14px] font-body font-semibold text-[#1A1A1A]">
+                文件加载失败
+              </div>
+              <div className="px-6 text-center text-[12px] font-body text-[#64748B]">
+                {loadError}
+              </div>
+              <button
+                type="button"
+                onClick={fetchFiles}
+                className="rounded-full bg-[#0062FF] px-5 py-2 text-[12px] font-body font-semibold text-white active:opacity-80"
+              >
+                重新加载
+              </button>
+            </div>
+          ) : visibleFiles.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 rounded-xl bg-white px-6 py-12">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#EBF3FF]">
+                <FolderOpen className="h-8 w-8 text-[#0062FF]" strokeWidth={1.5} />
+              </div>
+              <div className="text-[14px] font-body font-semibold text-[#1A1A1A]">
+                {keyword ? '没有找到相关文件' : '这个分类还没有文件'}
+              </div>
+              <div className="text-center text-[12px] font-body leading-5 text-[#64748B]">
+                {keyword
+                  ? '换个关键词试试，或切换类型筛选'
+                  : '上传第一个文件，全班同学都能查看'}
+              </div>
+              <div className="mt-1 flex items-center gap-2">
+                {keyword && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchInput('')}
+                    className="rounded-full bg-[#F1F5F9] px-4 py-2 text-[12px] font-body font-semibold text-[#64748B]"
+                  >
+                    清空搜索
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => navigate('/upload-material')}
+                  className="flex items-center gap-1.5 rounded-full bg-[#0062FF] px-5 py-2 text-[12px] font-body font-semibold text-white active:opacity-80"
+                >
+                  <UploadCloud className="h-4 w-4" strokeWidth={2} />
+                  上传文件
                 </button>
               </div>
-            ))
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2.5">
+              {visibleFiles.map((file) => {
+                const type = getMaterialType(file.fileName);
+                const Icon = type.icon;
+                const deletable = canDelete(file);
+                return (
+                  <div
+                    key={file.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => navigate(`/material-detail?fileId=${file.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        navigate(`/material-detail?fileId=${file.id}`);
+                      }
+                    }}
+                    className="flex w-full items-center gap-3 rounded-xl bg-white p-3 text-left shadow-soft transition-transform active:scale-[0.99]"
+                  >
+                    <div
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                      style={{ backgroundColor: type.bg }}
+                    >
+                      <Icon className="h-[22px] w-[22px]" style={{ color: type.color }} strokeWidth={2} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="min-w-0 truncate text-[14px] font-body font-semibold text-[#1A1A1A]">
+                          {file.fileName}
+                        </span>
+                        {isNewMaterial(file.createdAt) && (
+                          <span className="shrink-0 rounded-full bg-[#FEF2F2] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-[#DC2626]">
+                            新
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1 truncate text-[11px] font-caption text-[#64748B]">
+                        {formatFileSize(file.fileSize)} · {file.uploaderName || '未知'} ·{' '}
+                        {formatRelativeTime(file.createdAt)}
+                      </div>
+                      <div className="mt-0.5 text-[10px] font-caption text-[#94A3B8]">
+                        {file.downloadCount || 0} 次下载
+                        {file.folderName ? ` · ${file.folderName}` : ''}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label="下载"
+                      disabled={downloadingId === file.id}
+                      onClick={(e) => handleDownload(e, file)}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EFF6FF] text-[#0062FF] active:scale-95 disabled:opacity-60"
+                    >
+                      <Download className="h-[18px] w-[18px]" strokeWidth={2} />
+                    </button>
+                    {deletable && (
+                      <button
+                        type="button"
+                        aria-label="删除"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteTarget(file);
+                        }}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FEF2F2] text-[#DC2626] active:scale-95"
+                      >
+                        <Trash2 className="h-[18px] w-[18px]" strokeWidth={2} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
 
-        <div className="box-border w-full h-fit flex flex-col gap-[10px] p-[20px_24px]">
-          <div
+        {/* 底部固定上传 */}
+        <div className="sticky bottom-0 z-10 -mx-5 -mb-[calc(20px+env(safe-area-inset-bottom))] mt-4 border-t border-[#E2E8F0] bg-white px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-3">
+          <button
+            type="button"
             onClick={() => navigate('/upload-material')}
-            className="box-border w-full h-[52px] [box-shadow:0px_4px_16px_0px_#0062FF33] flex flex-col gap-0 justify-center items-center [background-image:linear-gradient(-98.571deg,_#0062FF_14.645%,_#3B82F6_85.355%)] bg-no-repeat bg-[length:100%_100%] rounded-lg cursor-pointer active:opacity-80"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(-98.571deg,_#0062FF_14.645%,_#3B82F6_85.355%)] text-[15px] font-body font-semibold text-white shadow-[0_8px_20px_-8px_#0062FF99] active:scale-[0.99]"
           >
-            <div className="text-[16px] box-border text-[#FFFFFF] font-semibold text-left [white-space:nowrap]">
-              上传文件
-            </div>
-          </div>
+            <UploadCloud className="h-[18px] w-[18px]" strokeWidth={2} />
+            上传资料
+          </button>
         </div>
-      </div>
-    </PhoneFrame>
+      </PageLayout>
+
+      {/* 删除确认 */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="删除这个文件？"
+        description={`${deleteTarget?.fileName ?? ''} · 删除后文件和下载记录将无法恢复，请确认后操作。`}
+        confirmText="确认删除"
+        danger
+        loading={deleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+      />
+    </>
   );
 }

@@ -80,19 +80,14 @@ export class MinioService {
   }
 
   async downloadFile(fileUrl: string): Promise<string> {
-    if (fileUrl.startsWith('local://')) {
-      const localPath = fileUrl.replace('local://', '');
-      this.logger.debug(`本地回退下载: ${localPath}`);
-      if (!fs.existsSync(localPath)) {
-        this.logger.error(`本地文件不存在: ${localPath}`);
-        throw new Error('本地文件不存在');
-      }
-      return localPath;
-    }
-
-    // 本地回退模式：fileUrl 格式为 /uploads/xxx
+    // 本地回退模式：fileUrl 格式为 /uploads/xxx，仅允许访问 localDir 内的文件，防止路径穿越
     if (fileUrl.startsWith('/uploads/')) {
-      const localPath = path.join(this.localDir, fileUrl.replace('/uploads/', ''));
+      const localDir = path.resolve(this.localDir);
+      const localPath = path.resolve(localDir, fileUrl.replace('/uploads/', ''));
+      if (!localPath.startsWith(`${localDir}${path.sep}`)) {
+        this.logger.warn(`拒绝越权的本地文件访问: ${fileUrl}`);
+        throw new Error('非法的文件地址');
+      }
       this.logger.debug(`本地回退下载: ${localPath}`);
       if (!fs.existsSync(localPath)) {
         this.logger.error(`本地文件不存在: ${localPath}`);
@@ -114,14 +109,6 @@ export class MinioService {
   }
 
   async deleteFile(fileUrl: string): Promise<void> {
-    if (fileUrl.startsWith('local://')) {
-      const localPath = fileUrl.replace('local://', '');
-      if (fs.existsSync(localPath)) {
-        fs.unlinkSync(localPath);
-      }
-      return;
-    }
-
     const objectName = this.extractObjectName(fileUrl);
     if (!objectName) return;
     await this.client.removeObject(this.bucketName, objectName).catch((err) => {

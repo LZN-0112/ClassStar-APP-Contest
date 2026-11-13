@@ -66,6 +66,15 @@ export class ActivitiesController {
     return this.activitiesService.findAll(classId, userId, query);
   }
 
+  @Get('summary')
+  @ApiOperation({ summary: '活动入口汇总（首页角标）' })
+  getSummary(
+    @Param('classId', ParseUUIDPipe) classId: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.activitiesService.getSummary(classId, userId);
+  }
+
   @Get('my-registrations')
   @ApiOperation({ summary: '我的活动报名' })
   findMyRegistrations(

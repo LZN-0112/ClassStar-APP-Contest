@@ -176,190 +176,261 @@
     gap: 20rpx;
   }
 
-  &__badges {
+  // ---------- 通用卡片 ----------
+  &__card {
+    background-color: $surface;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-md;
+    padding: $spacing-4;
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: $spacing-2;
+    flex-direction: column;
   }
 
-  &__badge {
-    background-color: #fef3c7;
-    border-radius: $radius-full;
-    padding: 8rpx 20rpx;
+  &__card--tight {
+    padding: 0 $spacing-4;
+  }
+
+  &__card--feed {
+    padding: $spacing-4 $spacing-4 4rpx;
+  }
+
+  &__card--list {
+    padding: 0 $spacing-4;
+  }
+
+  &__card-head {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: $spacing-3;
+  }
+
+  &__card-head-left {
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+  }
+
+  &__card-title {
+    font-size: 28rpx;
+    font-weight: $font-bold;
+    color: $text-primary;
+  }
+
+  &__card-sub {
+    font-size: $text-11;
+    color: $text-tertiary;
+  }
+
+  // ---------- 我的概览 ----------
+  &__rank {
     display: flex;
     flex-direction: row;
     align-items: center;
+    gap: 2rpx;
+    padding-top: 4rpx;
+    flex-shrink: 0;
+  }
+
+  &__rank-text {
+    font-size: $text-11;
+    font-weight: $font-semibold;
+    color: $primary;
+    white-space: nowrap;
+  }
+
+  &__metrics {
+    display: flex;
+    flex-direction: row;
+    margin-top: $spacing-4;
+  }
+
+  &__metric {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     gap: 8rpx;
   }
 
-  &__badge--committee {
-    background-color: #fee2e2;
+  &__metric + &__metric {
+    border-left: 1rpx solid $border-light;
+    padding-left: $spacing-3;
   }
 
-  &__badge-text {
+  &__metric-label {
+    font-size: 20rpx;
+    color: $text-tertiary;
+  }
+
+  &__metric-value-row {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+  }
+
+  &__metric-value {
+    font-size: 44rpx;
+    font-weight: $font-bold;
+    color: $text-primary;
+    line-height: 1.1;
+  }
+
+  &__metric-unit {
+    margin-left: 2rpx;
     font-size: $text-11;
-    font-weight: $font-medium;
-    color: $text-primary;
+    font-weight: $font-semibold;
+    color: $text-tertiary;
   }
 
-  &__stats {
-    display: flex;
-    flex-direction: row;
-    gap: 20rpx;
-  }
-
-  &__quick {
-    background-color: $surface;
-    border-radius: $radius-lg;
-    padding: $spacing-4;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    box-shadow: $shadow-md;
-  }
-
-  &__quick-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: $spacing-2;
-  }
-
-  &__quick-icon {
-    width: 84rpx;
-    height: 84rpx;
-    border-radius: $radius-lg;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  &__quick-label {
-    font-size: $text-sm;
-    font-weight: $font-medium;
-    color: $text-primary;
-  }
-
-  &__section {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-2;
-  }
-
-  &__section-title-row {
+  &__todo {
+    margin-top: $spacing-3;
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 12rpx;
-    padding: 0 4rpx;
+    background-color: #fff7ed;
+    border-radius: 20rpx;
+    padding: 16rpx 20rpx;
   }
 
-  &__section-accent {
-    width: 6rpx;
-    height: 24rpx;
+  &__todo--empty {
+    background-color: $bg;
+  }
+
+  &__todo-dot {
+    width: 12rpx;
+    height: 12rpx;
     border-radius: $radius-full;
-  }
-
-  &__section-accent--purple {
-    background-color: #6d28d9;
-  }
-
-  &__section-accent--violet {
-    background-color: #7c3aed;
-  }
-
-  &__section-accent--blue {
-    background-color: #1e40af;
-  }
-
-  &__section-accent--green {
-    background-color: #059669;
-  }
-
-  &__section-accent--amber {
-    background-color: #d97706;
-  }
-
-  &__section-title {
-    font-size: $text-11;
-    font-weight: $font-bold;
-    letter-spacing: 1rpx;
-    color: $gray-800;
-  }
-
-  &__section-card {
-    background-color: $surface;
-    border-radius: $radius-lg;
-    box-shadow: $shadow-md;
-    overflow: hidden;
-    padding: 0 $spacing-4;
-  }
-
-  &__empty-text {
-    padding: 40rpx 0;
-    text-align: center;
-    font-size: $text-13;
-    color: $text-tertiary;
-    display: block;
-  }
-
-  &__activity {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: $spacing-3;
-    padding: 20rpx 0;
-    border-bottom: 1rpx solid $border-light;
-  }
-
-  &__activity:last-child {
-    border-bottom: none;
-  }
-
-  &__activity-icon {
-    width: 72rpx;
-    height: 72rpx;
-    border-radius: $radius-lg;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background-color: #f59e0b;
     flex-shrink: 0;
   }
 
-  &__activity-title {
+  &__todo--empty &__todo-dot {
+    background-color: #cbd5e1;
+  }
+
+  &__todo-text {
     flex: 1;
     min-width: 0;
-    font-size: $text-13;
-    font-weight: $font-semibold;
-    color: $gray-800;
+    font-size: $text-11;
+    font-weight: $font-medium;
+    color: #9a3412;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
 
-  &__activity-time {
-    font-size: $text-11;
-    color: $text-weak;
-    flex-shrink: 0;
+  &__todo--empty &__todo-text {
+    color: $text-secondary;
   }
 
-  &__org {
+  &__todo-go {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: $spacing-3;
-    padding: 24rpx 0;
+    gap: 2rpx;
+    flex-shrink: 0;
   }
 
-  &__org--border {
-    border-bottom: 1rpx solid $border-light;
+  &__todo-go-text {
+    font-size: $text-11;
+    font-weight: $font-bold;
+    color: #b45309;
+  }
+
+  // ---------- 快捷入口 ----------
+  &__quick-grid {
+    display: flex;
+    flex-direction: row;
+    padding: 4rpx 0 8rpx;
+  }
+
+  &__quick-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12rpx;
+  }
+
+  &__quick-icon {
+    position: relative;
+    width: 84rpx;
+    height: 84rpx;
+    border-radius: 26rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__quick-badge {
+    position: absolute;
+    top: -10rpx;
+    right: -12rpx;
+    min-width: 32rpx;
+    height: 32rpx;
+    border-radius: $radius-full;
+    background-color: #ef4444;
+    border: 4rpx solid $surface;
+    padding: 0 8rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__quick-badge-text {
+    font-size: 18rpx;
+    font-weight: $font-bold;
+    color: $text-inverse;
+    line-height: 1;
+  }
+
+  &__quick-label {
+    font-size: $text-11;
+    color: $text-secondary;
+  }
+
+  &__more {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16rpx;
+    border-top: 1rpx solid $border-light;
+    margin-top: $spacing-3;
+    padding-top: $spacing-3;
+  }
+
+  &__more-label {
+    flex-shrink: 0;
+    font-size: $text-11;
+    font-weight: $font-semibold;
+    color: $text-secondary;
+  }
+
+  &__more-tags {
+    flex: 1;
+    min-width: 0;
+    font-size: 20rpx;
+    color: $text-tertiary;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  // ---------- 我的组织 ----------
+  &__org-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 20rpx;
+    padding: 24rpx 0;
   }
 
   &__org-icon {
     width: 72rpx;
     height: 72rpx;
-    border-radius: $radius-md;
+    border-radius: 22rpx;
     background-color: $primary;
     display: flex;
     align-items: center;
@@ -372,18 +443,110 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 4rpx;
+    gap: 6rpx;
   }
 
   &__org-name-row {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: $spacing-2;
+    gap: 12rpx;
   }
 
   &__org-name {
-    font-size: $text-base;
+    font-size: $text-13;
+    font-weight: $font-semibold;
+    color: $text-primary;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__org-current {
+    flex-shrink: 0;
+    background-color: $icon-bg;
+    border-radius: $radius-full;
+    padding: 2rpx 12rpx;
+  }
+
+  &__org-current-text {
+    font-size: 18rpx;
+    font-weight: $font-bold;
+    color: $primary;
+  }
+
+  &__org-meta {
+    font-size: 20rpx;
+    color: $text-tertiary;
+  }
+
+  &__org-switch {
+    flex-shrink: 0;
+    border: 1rpx solid #dbe7ff;
+    border-radius: $radius-md;
+    padding: 10rpx 20rpx;
+  }
+
+  &__org-switch-text {
+    font-size: $text-11;
+    font-weight: $font-semibold;
+    color: $primary;
+  }
+
+  // ---------- 最近动态 ----------
+  &__feed-more {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 2rpx;
+    flex-shrink: 0;
+  }
+
+  &__feed-more-text {
+    font-size: $text-11;
+    font-weight: $font-semibold;
+    color: $primary;
+  }
+
+  &__empty {
+    padding: 40rpx 0;
+    text-align: center;
+    font-size: $text-13;
+    color: $text-tertiary;
+    display: block;
+  }
+
+  &__feed-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 20rpx;
+    padding: 20rpx 0;
+    border-bottom: 1rpx solid $border-light;
+  }
+
+  &__feed-row:last-child {
+    border-bottom: none;
+  }
+
+  &__feed-icon {
+    width: 64rpx;
+    height: 64rpx;
+    border-radius: 20rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__feed-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__feed-title {
+    display: block;
+    font-size: $text-13;
     font-weight: $font-semibold;
     color: $gray-800;
     overflow: hidden;
@@ -391,79 +554,71 @@
     text-overflow: ellipsis;
   }
 
-  &__org-current {
-    background-color: $icon-bg;
-    border-radius: $radius-full;
-    padding: 2rpx 12rpx;
-  }
-
-  &__org-current-text {
-    font-size: $text-xs;
-    font-weight: $font-medium;
-    color: $primary;
-  }
-
-  &__org-meta {
-    font-size: $text-11;
-    color: $text-secondary;
-  }
-
-  &__org-actions {
+  &__feed-meta {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: $spacing-2;
-    flex-shrink: 0;
+    gap: 10rpx;
+    margin-top: 6rpx;
   }
 
-  &__org-switch {
-    background-color: $icon-bg;
-    border-radius: $radius-md;
-    padding: 8rpx 20rpx;
+  &__feed-tag {
+    border-radius: 8rpx;
+    padding: 2rpx 10rpx;
   }
 
-  &__org-switch-text {
-    font-size: $text-sm;
-    font-weight: $font-medium;
-    color: $primary;
+  &__feed-tag-text {
+    font-size: 18rpx;
+    font-weight: $font-semibold;
   }
 
-  &__org-leave {
-    width: 56rpx;
-    height: 56rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  &__feed-time {
+    font-size: 20rpx;
+    color: $text-tertiary;
   }
 
-  &__info-item {
+  // ---------- 设置与服务 ----------
+  &__set-row {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: $spacing-3;
-    height: 104rpx;
-  }
-
-  &__info-item--border {
+    gap: 20rpx;
+    padding: 24rpx 0;
     border-bottom: 1rpx solid $border-light;
   }
 
-  &__info-label {
-    font-size: $text-base;
-    font-weight: $font-bold;
-    color: $gray-900;
+  &__set-row--last {
+    border-bottom: none;
   }
 
-  &__info-spacer {
+  &__set-icon {
+    width: 60rpx;
+    height: 60rpx;
+    border-radius: 18rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__set-label {
+    flex-shrink: 0;
+    font-size: $text-13;
+    color: $text-primary;
+  }
+
+  &__set-value {
     flex: 1;
+    min-width: 0;
+    text-align: right;
+    font-size: 20rpx;
+    color: $text-tertiary;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
-  &__info-value {
-    font-size: $text-base;
-    font-weight: $font-bold;
-    color: $gray-900;
-  }
-
+  // ---------- 编辑弹窗 ----------
   &__edit-menu {
     display: flex;
     flex-direction: column;
@@ -579,22 +734,5 @@
     font-size: $text-base;
     font-weight: $font-medium;
     color: $text-inverse;
-  }
-
-  &__logout {
-    margin-top: $spacing-4;
-    height: 104rpx;
-    background-color: $surface;
-    border-radius: $radius-md;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: $shadow-sm;
-  }
-
-  &__logout-text {
-    font-size: $text-lg;
-    font-weight: $font-semibold;
-    color: $danger;
   }
 }

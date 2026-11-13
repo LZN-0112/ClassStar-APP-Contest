@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
@@ -10,8 +11,17 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
+  const isProduction = configService.get('NODE_ENV') === 'production';
+
+  // 关闭时优雅停机（Prisma / Redis 等连接可正常释放）
+  app.enableShutdownHooks();
+
+  // 部署在 Nginx 之后时，取真实客户端 IP（否则全站共享 127.0.0.1 的限流额度）
+  if (isProduction) {
+    app.set('trust proxy', Number(configService.get('TRUST_PROXY') || 1));
+  }
 
   // 安全 HTTP 头
   app.use(
@@ -54,16 +64,28 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  // 启用跨域
+  // 启用跨域：生产环境仅允许 CORS_ORIGINS 白名单（英文逗号分隔），开发环境放开
+  const corsOrigins = (configService.get('CORS_ORIGINS') || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
   app.enableCors({
-    origin: true,
+    origin: (origin, callback) => {
+      // 无 Origin 头的请求（App、小程序、服务端调用）不受浏览器同源策略限制
+      if (!origin || !isProduction || corsOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(null, false);
+    },
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token', 'x-xsrf-token'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 
   // Swagger API 文档（仅在非生产环境）
-  if (configService.get('NODE_ENV') !== 'production') {
+  if (!isProduction) {
     const config = new DocumentBuilder()
       .setTitle('校园班级事务智能管理助手 API')
       .setDescription('后端接口文档')

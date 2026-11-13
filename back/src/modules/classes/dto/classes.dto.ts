@@ -6,10 +6,14 @@ import {
   IsArray,
   IsBoolean,
   IsIn,
+  IsInt,
+  Min,
+  ValidateIf,
   ValidateNested,
   IsMobilePhone,
   Length,
   Matches,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -48,6 +52,44 @@ export class CreateClassDto {
   @IsOptional()
   @IsString()
   major?: string;
+
+  @ApiPropertyOptional({ description: '群主显示身份，如 班长、团支书、社长；不传时按组织类型默认' })
+  @IsOptional()
+  @IsString()
+  @Length(1, 20, { message: '身份名称长度需在 1-20 个字符之间' })
+  role?: string;
+}
+
+export class UpdateClassDto {
+  @ApiPropertyOptional({ description: '班级/组织名称' })
+  @IsOptional()
+  @IsString()
+  @Length(1, 100, { message: '班级名称长度需在 1-100 个字符之间' })
+  name?: string;
+
+  @ApiPropertyOptional({ description: '班级公告' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000, { message: '公告最多 2000 个字符' })
+  announcement?: string;
+
+  @ApiPropertyOptional({ description: '组织简介' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500, { message: '简介最多 500 个字符' })
+  description?: string;
+
+  @ApiPropertyOptional({ description: '年级' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  grade?: string;
+
+  @ApiPropertyOptional({ description: '专业/方向' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  major?: string;
 }
 
 export class JoinClassDto {
@@ -61,6 +103,33 @@ export class JoinClassDto {
   @ApiPropertyOptional({ description: '学号（班级已导入名单时必填）' })
   @IsOptional()
   @IsString()
+  studentId?: string;
+
+  @ApiPropertyOptional({ description: '真实姓名（用于与班级名单核对，未传时使用账号姓名）' })
+  @IsOptional()
+  @IsString()
+  @Length(2, 50, { message: '真实姓名长度需在 2-50 位之间' })
+  realName?: string;
+}
+
+export class VerifyMemberDto {
+  @ApiProperty({ description: '核实状态', enum: ['CONFIRMED', 'PENDING', 'UNVERIFIED'] })
+  @IsString()
+  @IsIn(['CONFIRMED', 'PENDING', 'UNVERIFIED'])
+  status: 'CONFIRMED' | 'PENDING' | 'UNVERIFIED';
+}
+
+export class UpdateMemberProfileDto {
+  @ApiPropertyOptional({ description: '真实姓名' })
+  @IsOptional()
+  @IsString()
+  @Length(2, 50, { message: '真实姓名长度需在 2-50 位之间' })
+  realName?: string;
+
+  @ApiPropertyOptional({ description: '学号' })
+  @IsOptional()
+  @IsString()
+  @Length(1, 30, { message: '学号长度需在 1-30 位之间' })
   studentId?: string;
 }
 
@@ -78,6 +147,32 @@ class ImportMemberItem {
   @IsOptional()
   @IsString()
   studentId?: string;
+}
+
+export class GetMembersQueryDto {
+  @ApiPropertyOptional({ description: '搜索关键词（姓名/学号）' })
+  @IsOptional()
+  @IsString()
+  keyword?: string;
+
+  @ApiPropertyOptional({ description: '角色筛选' })
+  @IsOptional()
+  @IsString()
+  role?: string;
+
+  @ApiPropertyOptional({ description: '页码，从 1 开始', minimum: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'page 必须为整数' })
+  @Min(1, { message: 'page 最小为 1' })
+  page?: number;
+
+  @ApiPropertyOptional({ description: '每页条数，最大 200', minimum: 1, maximum: 200 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'pageSize 必须为整数' })
+  @Min(1, { message: 'pageSize 最小为 1' })
+  pageSize?: number;
 }
 
 export class ImportMembersDto {
@@ -120,9 +215,24 @@ export class UpdateMemberRoleLevelDto {
   role?: string;
 }
 
+export class UpdateMemberDisplayRoleDto {
+  @ApiProperty({ description: '显示角色名称，如 团支书、学习委员、学生' })
+  @IsString()
+  @IsNotEmpty({ message: '身份名称不能为空' })
+  @Length(1, 20, { message: '身份名称长度需在 1-20 个字符之间' })
+  role: string;
+}
+
 export class TransferOwnerDto {
-  @ApiProperty({ description: '新群主用户ID' })
+  @ApiPropertyOptional({ description: '新群主用户ID（推荐字段）' })
+  @ValidateIf((o) => !o.newOwnerUserId)
   @IsString()
   @IsNotEmpty({ message: '新群主用户ID不能为空' })
-  newOwnerUserId: string;
+  userId?: string;
+
+  @ApiPropertyOptional({ description: '新群主用户ID（旧字段，兼容保留）', deprecated: true })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty({ message: '新群主用户ID不能为空' })
+  newOwnerUserId?: string;
 }

@@ -35,7 +35,7 @@ export class TasksService {
 
   async verifyCommittee(userId: string, classId: string) {
     const member = await this.verifyClassAccess(userId, classId);
-    if (!member.is_committee) {
+    if (member.role_level !== 'owner' && member.role_level !== 'admin') {
       throw new ForbiddenException('当前身份无权执行该操作');
     }
     return member;
@@ -87,7 +87,10 @@ export class TasksService {
       ownerId: task.owner_id,
       ownerName: task.users?.name || null,
       deadline: task.deadline,
+      location: task.location,
+      content: task.content,
       progress: task.progress,
+      priority: task.priority,
       status: task.status,
       createdAt: task.created_at,
       updatedAt: task.updated_at,
@@ -113,7 +116,10 @@ export class TasksService {
           title: this.escapeHtml(dto.title),
           owner_id: ownerId,
           deadline: dto.deadline ? new Date(dto.deadline) : null,
+          location: dto.location || null,
+          content: dto.content || null,
           progress,
+          priority: dto.priority ?? 0,
           status,
         },
         include: { users: { select: { name: true } } },
@@ -156,6 +162,15 @@ export class TasksService {
     const statMap = new Map(
       stats.map((s) => [s.status, s._count.status]),
     );
+    const todo = statMap.get(TaskStatus.TODO) || 0;
+    const inProgress = statMap.get(TaskStatus.IN_PROGRESS) || 0;
+    const done = statMap.get(TaskStatus.DONE) || 0;
+
+    // 完成进度 = 已完成任务数 / 任务总数，无任务时为 0
+    const completionRate =
+      total > 0
+        ? Math.min(Math.max(Math.round((done / total) * 100), 0), 100)
+        : 0;
 
     return {
       list: tasks.map((t) => this.toTaskDto(t)),
@@ -163,9 +178,10 @@ export class TasksService {
       page,
       pageSize,
       stats: {
-        todo: statMap.get(TaskStatus.TODO) || 0,
-        inProgress: statMap.get(TaskStatus.IN_PROGRESS) || 0,
-        done: statMap.get(TaskStatus.DONE) || 0,
+        todo,
+        inProgress,
+        done,
+        completionRate,
       },
     };
   }
@@ -203,7 +219,8 @@ export class TasksService {
     const member = await this.prisma.class_members.findFirst({
       where: { user_id: userId, class_id: classId },
     });
-    const isCommittee = member?.is_committee ?? false;
+    const isCommittee =
+      member?.role_level === 'owner' || member?.role_level === 'admin';
     const isOwner = task.owner_id === userId;
 
     if (!isCommittee && !isOwner) {
@@ -237,7 +254,10 @@ export class TasksService {
           title: dto.title !== undefined ? this.escapeHtml(dto.title) : undefined,
           owner_id: dto.ownerId,
           deadline: dto.deadline !== undefined ? new Date(dto.deadline) : undefined,
+          location: dto.location !== undefined ? dto.location || null : undefined,
+          content: dto.content !== undefined ? dto.content || null : undefined,
           status,
+          priority: dto.priority !== undefined ? dto.priority : undefined,
           progress,
         },
         include: { users: { select: { name: true } } },

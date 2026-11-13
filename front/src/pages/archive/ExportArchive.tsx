@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import BackButton from '@/components/navigation/BackButton';
+import { useStatusBarStyle } from '@/hooks/useStatusBarStyle';
 import PhoneFrame from '@/components/layout/PhoneFrame';
 import { api } from '@/lib/api';
+import { saveBlobFile } from '@/lib/save-file';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 export default function ExportArchive() {
+  useStatusBarStyle(true); // 深色渐变头部 → 白色状态栏图标
   const [searchParams] = useSearchParams();
   const { user } = useCurrentUser();
   const classId = user?.classId || '';
@@ -40,14 +43,16 @@ export default function ExportArchive() {
           }
         }
       }
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(res.data as Blob);
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(link.href);
-      toast.success('导出成功');
+      const mimeType =
+        passChosenFormat === 'pdf'
+          ? 'application/pdf'
+          : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      const result = await saveBlobFile(fileName, res.data as Blob, mimeType);
+      if (!result.ok) {
+        toast.error('导出失败，请稍后重试');
+        return;
+      }
+      toast.success(result.path ? `已导出到：${result.path}` : '导出成功');
     } catch (err: any) {
       const message = err?.response?.data?.message || '导出失败';
       toast.error(Array.isArray(message) ? message[0] : message);
@@ -96,7 +101,7 @@ export default function ExportArchive() {
         >
           <BackButton
             variant="dark"
-            className="absolute left-[-4px] top-[0px] z-10"
+            className="absolute left-[-4px] top-[12px] z-10"
           />
           <div className="h-8 w-10" />
           <div

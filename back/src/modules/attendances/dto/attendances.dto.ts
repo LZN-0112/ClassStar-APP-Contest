@@ -8,17 +8,21 @@ import {
   IsNumber,
   IsInt,
   Min,
+  Max,
+  MaxLength,
 } from 'class-validator';
 
 export class CreateAttendanceDto {
   @ApiProperty({ description: '签到标题' })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   title: string;
 
   @ApiPropertyOptional({ description: '签到类型/标签' })
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   type?: string;
 
   @ApiProperty({ description: '开始时间' })
@@ -38,27 +42,34 @@ export class CreateAttendanceDto {
   @ApiPropertyOptional({ description: '签到地点' })
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   location?: string;
 
   @ApiPropertyOptional({ description: '纬度' })
   @IsOptional()
   @IsNumber()
+  @Min(-90)
+  @Max(90)
   latitude?: number;
 
   @ApiPropertyOptional({ description: '经度' })
   @IsOptional()
   @IsNumber()
+  @Min(-180)
+  @Max(180)
   longitude?: number;
 
   @ApiPropertyOptional({ description: '定位有效半径（米）' })
   @IsOptional()
   @IsInt()
   @Min(1)
+  @Max(10000)
   checkRadius?: number;
 
   @ApiPropertyOptional({ description: '签到口令（code 模式必填）' })
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   code?: string;
 }
 
@@ -70,21 +81,27 @@ export class CheckInDto {
   @ApiPropertyOptional({ description: '签到地点' })
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   location?: string;
 
   @ApiPropertyOptional({ description: '纬度' })
   @IsOptional()
   @IsNumber()
+  @Min(-90)
+  @Max(90)
   latitude?: number;
 
   @ApiPropertyOptional({ description: '经度' })
   @IsOptional()
   @IsNumber()
+  @Min(-180)
+  @Max(180)
   longitude?: number;
 
   @ApiPropertyOptional({ description: '口令（code 模式）' })
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   code?: string;
 
   @ApiPropertyOptional({ description: '水印拍照照片 URL（face 模式）' })
@@ -97,6 +114,7 @@ export class LeaveApplicationDto {
   @ApiProperty({ description: '请假原因' })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(500)
   reason: string;
 }
 

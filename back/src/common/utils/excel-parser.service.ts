@@ -83,6 +83,58 @@ export class ExcelParserService {
     return { rows, headerRow };
   }
 
+  /**
+   * 生成学生名单导入模板（.xlsx）
+   * - Sheet1「学生名单」：学号 / 姓名 / 手机号 三列表头，冻结首行
+   * - Sheet2「填写说明」：字段规则与示例（解析时只读取第一个工作表）
+   */
+  async buildStudentTemplate(): Promise<Buffer> {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = '班务星';
+    workbook.created = new Date();
+
+    const sheet = workbook.addWorksheet('学生名单');
+    sheet.columns = [
+      { header: '学号', key: 'studentNo', width: 20 },
+      { header: '姓名', key: 'name', width: 14 },
+      { header: '手机号', key: 'phone', width: 20 },
+    ];
+    const header = sheet.getRow(1);
+    header.height = 26;
+    header.eachCell((cell) => {
+      cell.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0062FF' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    });
+    sheet.views = [{ state: 'frozen', ySplit: 1 }];
+    // 学号、手机号按文本存储，避免被 Excel 转成数值或科学计数法
+    sheet.getColumn(1).numFmt = '@';
+    sheet.getColumn(3).numFmt = '@';
+
+    const guide = workbook.addWorksheet('填写说明');
+    guide.getColumn(1).width = 80;
+    const lines = [
+      '学生名单导入填写说明',
+      '',
+      '1. 姓名必填，2-4 个汉字；学号、手机号选填，建议填写以便后续核对。',
+      '2. 学号 6-20 位字母或数字；手机号为 11 位数字，且需与学号属于同一名学生。',
+      '3. 请勿修改第一行表头（学号 / 姓名 / 手机号），从第 2 行开始逐行填写，一行一名学生。',
+      '4. 示例：20250101 | 张三 | 13800138000',
+      '5. 请保存为 .xlsx 格式后上传，单个文件不超过 10MB。',
+    ];
+    lines.forEach((text, index) => {
+      const cell = guide.getRow(index + 1).getCell(1);
+      cell.value = text;
+      cell.font = index === 0
+        ? { bold: true, size: 14 }
+        : { size: 11, color: { argb: 'FF4B5563' } };
+      cell.alignment = { wrapText: true, vertical: 'top' };
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
+  }
+
   /** 查找表头行：扫描前 10 行，找包含姓名/学号关键词的行 */
   private findHeaderRow(worksheet: ExcelJS.Worksheet): number {
     const maxScan = Math.min(worksheet.rowCount, 10);

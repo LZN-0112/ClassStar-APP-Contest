@@ -31,6 +31,8 @@ export default function GpsCheckIn({ classId, attendanceId, attendance, onSucces
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   };
 
+  const hasCenter = attendance.latitude != null && attendance.longitude != null;
+
   const handleLocate = () => {
     if (!navigator.geolocation) {
       toast.error('您的浏览器不支持定位功能');
@@ -43,7 +45,7 @@ export default function GpsCheckIn({ classId, attendanceId, attendance, onSucces
         const lng = pos.coords.longitude;
         setUserLat(lat);
         setUserLng(lng);
-        if (attendance.latitude != null && attendance.longitude != null) {
+        if (hasCenter) {
           const dist = calcDistance(
             Number(attendance.latitude),
             Number(attendance.longitude),
@@ -51,6 +53,8 @@ export default function GpsCheckIn({ classId, attendanceId, attendance, onSucces
             lng,
           );
           setDistance(Math.round(dist));
+        } else {
+          setDistance(null);
         }
         setLocating(false);
       },
@@ -83,11 +87,12 @@ export default function GpsCheckIn({ classId, attendanceId, attendance, onSucces
     }
   };
 
-  const inRange = distance != null && distance <= (attendance.checkRadius || 500);
+  const radius = attendance.checkRadius ?? 500;
+  const inRange = !hasCenter || (distance != null && distance <= radius);
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2 p-4 bg-[#F0F9FF] rounded-lg border border-[#BAE6FD]">
+      <div className="flex flex-col gap-2 p-4 bg-[#F0F9FF] rounded-xl border border-[#BAE6FD]">
         <div className="flex items-center gap-2 text-[#0369A1] text-sm font-medium">
           <MapPin className="w-4 h-4" />
           <span>定位签到</span>
@@ -95,8 +100,11 @@ export default function GpsCheckIn({ classId, attendanceId, attendance, onSucces
         <div className="text-xs text-[#4B5563]">
           {attendance.location ? `签到地点：${attendance.location}` : '请在签到地点范围内完成定位签到'}
         </div>
-        {attendance.checkRadius && (
-          <div className="text-xs text-[#4B5563]">有效范围：{attendance.checkRadius} 米</div>
+        {hasCenter && <div className="text-xs text-[#4B5563]">有效范围：{radius} 米</div>}
+        {!hasCenter && (
+          <div className="rounded-lg bg-[#FFFFFF] px-2.5 py-2 text-[11px] text-[#B45309]">
+            发起人未设置签到点坐标，本次不校验距离，班委将结合签到记录核对
+          </div>
         )}
       </div>
 
@@ -134,13 +142,23 @@ export default function GpsCheckIn({ classId, attendanceId, attendance, onSucces
           {locating ? '定位中...' : '获取定位'}
         </button>
       ) : (
-        <button
-          onClick={handleCheckIn}
-          disabled={loading || !inRange}
-          className="w-full h-[48px] flex items-center justify-center bg-[#0062FF] text-white font-medium rounded-lg disabled:opacity-50 active:opacity-80"
-        >
-          {loading ? '签到中...' : '立即签到'}
-        </button>
+        <>
+          <button
+            onClick={handleCheckIn}
+            disabled={loading || !inRange}
+            className="w-full h-[48px] flex items-center justify-center bg-[#0062FF] text-white font-medium rounded-xl disabled:opacity-50 active:opacity-80"
+          >
+            {loading ? '签到中...' : '立即签到'}
+          </button>
+          <button
+            onClick={handleLocate}
+            disabled={locating || loading}
+            className="w-full h-[44px] flex items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] bg-white text-[#0062FF] text-sm font-medium disabled:opacity-50 active:bg-[#F8FAFC]"
+          >
+            <Navigation className="w-4 h-4" />
+            {locating ? '重新定位中...' : '定位不准？重新定位'}
+          </button>
+        </>
       )}
     </div>
   );

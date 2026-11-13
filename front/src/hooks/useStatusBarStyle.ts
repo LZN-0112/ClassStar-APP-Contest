@@ -10,4 +10,11 @@ export function useStatusBarStyle(light: boolean): void {
   useEffect(() => {
     void setStatusBarStyle(light);
   }, [light]);
+
+  // 离开页面时恢复深色图标，避免未调用本 hook 的浅色页面继承上一页的白色图标
+  useEffect(() => {
+    return () => {
+      void setStatusBarStyle(false);
+    };
+  }, []);
 }

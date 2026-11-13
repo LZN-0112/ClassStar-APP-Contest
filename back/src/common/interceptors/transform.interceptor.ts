@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { SSE_METADATA } from '@nestjs/common/constants';
 
 export interface Response<T> {
   code: number;
@@ -22,6 +23,11 @@ export class TransformInterceptor<T>
     context: ExecutionContext,
     next: CallHandler,
   ): Observable<Response<T>> {
+    // SSE 流由 Nest 直接按事件序列化，不能再包装成统一响应结构
+    if (Reflect.getMetadata(SSE_METADATA, context.getHandler())) {
+      return next.handle() as unknown as Observable<Response<T>>;
+    }
+
     return next.handle().pipe(
       map((data) => ({
         code: 0,

@@ -1,160 +1,362 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Wallet } from 'lucide-react';
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Camera,
+  Check,
+  Loader2,
+  ShieldAlert,
+  Wallet,
+  X,
+} from 'lucide-react';
 import PageLayout from '@/components/layout/PageLayout';
+import { api, resolveFileUrl } from '@/lib/api';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { toast } from 'sonner';
 
 type FeeType = 'income' | 'expense';
 
-export default function FeeRecord() {
+const CATEGORIES: Record<'class' | 'group', Record<FeeType, string[]>> = {
+  class: {
+    income: ['班费收缴', '活动返款', '其他收入'],
+    expense: ['活动支出', '学习用品', '班级建设', '其他支出'],
+  },
+  group: {
+    income: ['团费收缴', '活动返款', '其他收入'],
+    expense: ['活动支出', '材料采购', '其他支出'],
+  },
+};
+
+const MAX_BILL_SIZE = 5 * 1024 * 1024;
+
+interface FeeRecordProps {
+  defaultFeeType?: 'class' | 'group';
+}
+
+export default function FeeRecord({ defaultFeeType = 'class' }: FeeRecordProps) {
   const navigate = useNavigate();
+  const { user } = useCurrentUser();
+  const classId = user?.classId;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isLeague = defaultFeeType === 'group';
+  const title = isLeague ? '团费' : '班费';
+  const categoryOptions = CATEGORIES[defaultFeeType];
+
   const [type, setType] = useState<FeeType>('income');
-  const [form, setForm] = useState({
-    amount: '',
-    category: '',
-    note: '',
-  });
+  const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState(categoryOptions.income[0]);
+  const [note, setNote] = useState('');
+  const [billKey, setBillKey] = useState('');
+  const [billPreviewUrl, setBillPreviewUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleChange = (key: keyof typeof form, value: string) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+  const canManage =
+    user?.roleLevel === 'owner' ||
+    user?.roleLevel === 'admin' ||
+    user?.isCommittee === true;
+
+  const switchType = (next: FeeType) => {
+    setType(next);
+    setCategory(categoryOptions[next][0]);
   };
 
-  const handleSubmit = () => {
-    navigate('/fee-ledger', { replace: true });
+  const handleBillChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || !classId) return;
+    if (!/^image\/(jpeg|png)$/.test(file.type)) {
+      toast.error('仅支持 jpg / png 格式的凭证图片');
+      return;
+    }
+    if (file.size > MAX_BILL_SIZE) {
+      toast.error('凭证图片不能超过 5MB');
+      return;
+    }
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await api.post('/fee/upload-bill', formData, {
+        params: { classId },
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 60000,
+      });
+      const data = res.data?.data ?? res.data;
+      const key = data?.billKey as string | undefined;
+      const url = data?.billUrl as string | undefined;
+      if (!key) throw new Error('上传失败');
+      setBillKey(key);
+      setBillPreviewUrl(url || '');
+      toast.success('凭证已上传');
+    } catch (err: any) {
+      toast.error(err?.message || '凭证上传失败，请重试');
+    } finally {
+      setUploading(false);
+    }
   };
+
+  const handleSubmit = async () => {
+    if (!classId) {
+      toast.error('未找到班级信息');
+      return;
+    }
+    const amountNum = Number(amount);
+    if (!Number.isFinite(amountNum) || amountNum <= 0) {
+      toast.error('请输入大于 0 的金额');
+      return;
+    }
+    if (amountNum > 999999) {
+      toast.error('单笔金额不能超过 999999 元');
+      return;
+    }
+
+    const remarkParts = [
+      category ? `【${category}】` : '',
+      note.trim(),
+    ].filter(Boolean);
+    const remark = remarkParts.join('') || category || undefined;
+
+    setSubmitting(true);
+    try {
+      await api.post('/fee/add', {
+        classId,
+        feeType: defaultFeeType,
+        type,
+        amount: Math.round(amountNum * 100) / 100,
+        remark,
+        billKey: billKey || undefined,
+      });
+      toast.success(
+        type === 'income' ? `收入已记入${title}账本` : `支出已记入${title}账本`,
+      );
+      navigate('/fee-ledger', {
+        replace: true,
+        state: { type: isLeague ? 'league' : 'class' },
+      });
+    } catch (err: any) {
+      toast.error(err?.message || '保存失败，请重试');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!canManage) {
+    return (
+      <PageLayout
+        title={`${title}记账`}
+        variant="a"
+        decor={<Wallet className="h-[120px] w-[120px] text-white" strokeWidth={1.5} />}
+      >
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 py-16">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#FEF2F2]">
+            <ShieldAlert className="h-8 w-8 text-[#DC2626]" strokeWidth={1.5} />
+          </div>
+          <div className="text-center">
+            <div className="text-[16px] font-heading font-bold text-[#1A1A1A]">仅班委可记账</div>
+            <div className="mt-1.5 text-[12px] font-body text-[#64748B]">
+              你可以查看{title}明细，如需记账请联系班委
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/fee-ledger')}
+            className="rounded-full bg-[#0062FF] px-6 py-2.5 text-[14px] font-body font-semibold text-white"
+          >
+            查看班费明细
+          </button>
+        </div>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout
-      title="班费记账"
+      title={`${title}记账`}
       variant="a"
       decor={<Wallet className="h-[120px] w-[120px] text-white" strokeWidth={1.5} />}
     >
-      <div className="flex flex-1 flex-col gap-[20px]">
-        <div
-          data-pencil-name="Type Switch"
-          className="box-border w-full h-[44px] shrink-0 flex flex-row gap-0 p-[4px] justify-start items-start bg-[#F1F5F9] rounded-xl"
-        >
-          <button
-            type="button"
-            onClick={() => setType('income')}
-            className={`box-border [flex:1_1_0] h-[36px] flex flex-col gap-0 justify-center items-center rounded-[10px] ${
-              type === 'income' ? 'bg-[#FFFFFF]' : 'bg-[#00000000]'
-            }`}
-          >
-            <div
-              className={`text-[14px]/[normal] box-border font-body font-semibold text-left [white-space:nowrap] ${
-                type === 'income' ? 'text-[#22C55E]' : 'text-[#64748B]'
-              }`}
-            >
-              收入
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => setType('expense')}
-            className={`box-border [flex:1_1_0] h-[36px] flex flex-col gap-0 justify-center items-center rounded-[10px] ${
-              type === 'expense' ? 'bg-[#FFFFFF]' : 'bg-[#00000000]'
-            }`}
-          >
-            <div
-              className={`text-[14px]/[normal] box-border font-body font-semibold text-left [white-space:nowrap] ${
-                type === 'expense' ? 'text-[#EF4444]' : 'text-[#64748B]'
-              }`}
-            >
-              支出
-            </div>
-          </button>
+      <div className="flex w-full flex-1 flex-col gap-4">
+        {/* 收支类型 */}
+        <div className="grid w-full grid-cols-2 gap-2">
+          {[
+            { value: 'income' as FeeType, label: '收入', icon: ArrowDownLeft, color: '#16A34A', bg: '#ECFDF5' },
+            { value: 'expense' as FeeType, label: '支出', icon: ArrowUpRight, color: '#DC2626', bg: '#FEF2F2' },
+          ].map((item) => {
+            const active = type === item.value;
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => switchType(item.value)}
+                className={`flex h-[52px] items-center justify-center gap-2 rounded-xl border text-[15px] font-body font-semibold transition-all ${
+                  active
+                    ? 'border-transparent text-white shadow-[0_8px_20px_-10px_#0062FF]'
+                    : 'border-[#E2E8F0] bg-white text-[#64748B]'
+                }`}
+                style={{ backgroundColor: active ? item.color : undefined }}
+              >
+                <Icon className="h-5 w-5" strokeWidth={2.2} />
+                {item.label}
+              </button>
+            );
+          })}
         </div>
 
-        <div
-          data-pencil-name="Input Field"
-          className="box-border w-full h-[56px] shrink-0 flex flex-col gap-0 p-[0px_16px] justify-center items-start bg-[#FFFFFF] [border:1px_solid_#E2E8F0] rounded-lg"
-        >
-          <input
-            type="number"
-            value={form.amount}
-            onChange={(e) => handleChange('amount', e.target.value)}
-            placeholder="请输入金额"
-            className="w-full bg-transparent text-[14px] font-body font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none"
-          />
+        {/* 金额 */}
+        <div className="rounded-2xl bg-white p-5 shadow-soft">
+          <div className="text-[12px] font-body font-semibold text-[#64748B]">
+            {type === 'income' ? '收入金额' : '支出金额'}
+          </div>
+          <div className="mt-2 flex items-end gap-2 border-b border-[#EEF2F7] pb-3">
+            <span className="pb-1 font-heading text-[24px] font-bold text-[#1A1A1A]">¥</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.00"
+              className="min-w-0 flex-1 bg-transparent font-heading text-[34px]/[1.1] font-bold text-[#1A1A1A] outline-none placeholder:text-[#CBD5E1]"
+            />
+            {amount && (
+              <button
+                type="button"
+                aria-label="清空金额"
+                onClick={() => setAmount('')}
+                className="mb-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#F1F5F9] text-[#64748B]"
+              >
+                <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+              </button>
+            )}
+          </div>
+          <div className="mt-2 text-[11px] font-caption text-[#94A3B8]">
+            支持两位小数，保存后可在账本中修改或删除
+          </div>
         </div>
 
-        <div
-          data-pencil-name="Input Field"
-          className="box-border w-full h-[56px] shrink-0 flex flex-col gap-0 p-[0px_16px] justify-center items-start bg-[#FFFFFF] [border:1px_solid_#E2E8F0] rounded-lg"
-        >
-          <input
-            type="text"
-            value={form.category}
-            onChange={(e) => handleChange('category', e.target.value)}
-            placeholder="请选择分类"
-            className="w-full bg-transparent text-[14px] font-body font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none"
-          />
+        {/* 分类 */}
+        <div className="rounded-2xl bg-white p-4 shadow-soft">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="text-[13px] font-body font-semibold text-[#1A1A1A]">收支分类</div>
+            <div className="text-[11px] font-caption text-[#94A3B8]">用于账本统计与查找</div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {categoryOptions[type].map((item) => {
+              const active = category === item;
+              return (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => setCategory(item)}
+                  className={`flex h-8 items-center gap-1 rounded-full px-3.5 text-[12px] font-body font-semibold transition-colors ${
+                    active
+                      ? 'bg-[#0062FF] text-white'
+                      : 'bg-[#F1F5F9] text-[#64748B]'
+                  }`}
+                >
+                  {active && <Check className="h-3.5 w-3.5" strokeWidth={2.5} />}
+                  {item}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div
-          data-pencil-name="Textarea"
-          className="box-border w-full h-[100px] shrink-0 flex flex-col gap-0 p-4 justify-start items-start bg-[#FFFFFF] [border:1px_solid_#E2E8F0] rounded-lg"
-        >
+        {/* 备注 */}
+        <div className="rounded-2xl bg-white p-4 shadow-soft">
+          <div className="mb-2 text-[13px] font-body font-semibold text-[#1A1A1A]">备注说明</div>
           <textarea
-            value={form.note}
-            onChange={(e) => handleChange('note', e.target.value)}
-            placeholder="请输入备注..."
-            className="w-full h-full resize-none bg-transparent text-[14px] font-body font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={
+              type === 'income'
+                ? `如：3 月${title}收取，每人 ${isLeague ? 10 : 50} 元`
+                : '如：购买运动会物资'
+            }
+            rows={3}
+            maxLength={200}
+            className="w-full resize-none rounded-xl bg-[#F8FAFC] p-3 text-[13px] font-body leading-5 text-[#1A1A1A] outline-none placeholder:text-[#94A3B8]"
           />
+          <div className="mt-1 text-right text-[10px] font-data text-[#94A3B8]">{note.length}/200</div>
         </div>
 
-        <button
-          type="button"
-          data-pencil-name="Upload Area"
-          className="box-border w-full h-[100px] shrink-0 flex flex-col gap-2 justify-center items-center bg-[#F8FAFC] [border:1px_solid_#E2E8F0] rounded-xl"
-        >
-          <svg
-            data-pencil-name="Icon-camera"
-            viewBox="0 0 24 24"
-            preserveAspectRatio="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="box-border w-[28px] h-[28px] shrink-0 overflow-visible"
-          >
-            <path
-              d="M23 19a2 2 0 0 1-2 2h-18a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z m-11-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8"
-              fill="none"
-            ></path>
-            <path
-              d="M23 19a2 2 0 0 1-2 2h-18a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z m-11-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8"
-              fill="none"
-              stroke="#94A3B8"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              vectorEffect="non-scaling-stroke"
-            ></path>
-          </svg>
-          <div
-            data-pencil-name="Text"
-            className="text-[11px]/[normal] box-border text-[#94A3B8] font-body font-medium text-left [white-space:nowrap]"
-          >
-            上传凭证
+        {/* 上传凭证 */}
+        <div className="rounded-2xl bg-white p-4 shadow-soft">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="text-[13px] font-body font-semibold text-[#1A1A1A]">收支凭证</div>
+            <div className="text-[11px] font-caption text-[#94A3B8]">选填 · jpg/png ≤ 5MB</div>
           </div>
-        </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png"
+            className="hidden"
+            onChange={handleBillChange}
+          />
+          {billKey ? (
+            <div className="relative overflow-hidden rounded-xl border border-[#E2E8F0]">
+              <img
+                src={resolveFileUrl(billPreviewUrl)}
+                alt="收支凭证"
+                className="h-32 w-full object-cover"
+              />
+              <button
+                type="button"
+                aria-label="移除凭证"
+                onClick={() => {
+                  setBillKey('');
+                  setBillPreviewUrl('');
+                }}
+                className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white"
+              >
+                <X className="h-4 w-4" strokeWidth={2.5} />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => fileInputRef.current?.click()}
+              className="flex h-[84px] w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#CBD5E1] bg-[#F8FAFC] text-[12px] font-body font-medium text-[#64748B] active:bg-[#F1F5F9] disabled:opacity-60"
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin text-[#0062FF]" />
+                  正在上传...
+                </>
+              ) : (
+                <>
+                  <Camera className="h-5 w-5 text-[#0062FF]" strokeWidth={2} />
+                  拍照或从相册选择凭证
+                </>
+              )}
+            </button>
+          )}
+        </div>
 
-        <div
-          data-pencil-name="Spacer"
-          className="box-border w-full h-[20px] shrink-0 flex flex-row gap-0 justify-start items-start bg-[#00000000]"
-        ></div>
+        <div className="mt-1 h-2" />
 
         <button
           type="button"
+          disabled={submitting || uploading}
           onClick={handleSubmit}
-          data-pencil-name="Button Primary"
-          className="box-border w-full h-[52px] shrink-0 [box-shadow:0px_4px_16px_0px_#0000001A] flex flex-col gap-0 justify-center items-center bg-[#0062FF] rounded-xl"
+          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(-98.571deg,_#0062FF_14.645%,_#3B82F6_85.355%)] text-[16px] font-body font-semibold text-white shadow-[0_8px_20px_-8px_#0062FF99] active:scale-[0.99] disabled:opacity-60"
         >
-          <div
-            data-pencil-name="Text"
-            className="text-[16px]/[normal] box-border w-full text-center text-[#FFFFFF] font-body font-semibold [white-space:nowrap]"
-          >
-            保存记录
-          </div>
+          {submitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              保存中...
+            </>
+          ) : (
+            '保存记录'
+          )}
         </button>
+        <div className="pb-1 text-center text-[10px] font-caption text-[#94A3B8]">
+          记录保存后全班可在账本中查看，班委可随时修改
+        </div>
       </div>
     </PageLayout>
   );

@@ -5,6 +5,8 @@ type IconComponentType = React.ElementType<{ className?: string }>;
 export interface InteractiveMenuItem {
   label: string;
   icon: IconComponentType;
+  /** 是否展示红点角标 */
+  badge?: boolean;
 }
 
 export interface InteractiveMenuProps {
@@ -102,8 +104,11 @@ const InteractiveMenu: React.FC<InteractiveMenuProps> = ({ items, accentColor, d
             ref={(el) => (itemRefs.current[index] = el)}
             style={{ '--lineWidth': '0px' } as React.CSSProperties} 
           >
-            <div className="menu__icon">
+            <div className="menu__icon relative">
               <IconComponent className="icon" />
+              {item.badge && (
+                <span className="absolute -right-1 -top-0.5 h-2 w-2 rounded-full bg-[#EF4444]" />
+              )}
             </div>
             <strong
               className={`menu__text ${isTextActive ? 'active' : ''}`}

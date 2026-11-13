@@ -85,6 +85,7 @@ export default function PublishMessage() {
             value={form.title}
             onChange={(e) => handleChange('title', e.target.value)}
             placeholder="请输入通知标题"
+            maxLength={200}
             className="w-full bg-transparent font-body text-[14px] font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none"
           />
         </div>
@@ -111,6 +112,7 @@ export default function PublishMessage() {
             value={form.location}
             onChange={(e) => handleChange('location', e.target.value)}
             placeholder="请输入地点"
+            maxLength={200}
             className="w-full bg-transparent font-body text-[14px] font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none"
           />
         </div>
@@ -124,6 +126,7 @@ export default function PublishMessage() {
             onChange={(e) => handleChange('content', e.target.value)}
             placeholder="请输入通知内容..."
             rows={5}
+            maxLength={5000}
             className="h-full w-full resize-none bg-transparent font-body text-[14px] font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none"
           />
         </div>

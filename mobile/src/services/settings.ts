@@ -37,7 +37,8 @@ export const settingsApi = {
 
   /**
    * 获取当前用户最近动态
-   * GET /settings/recent-activities
+   * GET /settings/recent-activities?classId=xxx
    */
-  getRecentActivities: () => request.get('/settings/recent-activities')
+  getRecentActivities: (classId?: string) =>
+    request.get('/settings/recent-activities', classId ? { classId } : undefined)
 }

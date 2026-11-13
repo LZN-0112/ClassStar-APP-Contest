@@ -3,6 +3,7 @@ import {
   Get,
   Put,
   Body,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -50,7 +51,10 @@ export class SettingsController {
 
   @Get('recent-activities')
   @ApiOperation({ summary: '获取当前用户最近动态' })
-  getRecentActivities(@CurrentUser('userId') userId: string) {
-    return this.settingsService.getRecentActivities(userId);
+  getRecentActivities(
+    @CurrentUser('userId') userId: string,
+    @Query('classId') classId?: string,
+  ) {
+    return this.settingsService.getRecentActivities(userId, classId);
   }
 }

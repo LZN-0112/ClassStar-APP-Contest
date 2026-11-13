@@ -1,70 +1,36 @@
-import { useState } from 'react';
-import { QrCode } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
-import { api } from '@/lib/api';
-import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+import { QrCode, ScanLine } from 'lucide-react';
 
-interface QrCheckInProps {
-  classId: string;
-  attendanceId: string;
-  onSuccess: () => void;
-}
-
-export default function QrCheckIn({ classId, attendanceId, onSuccess }: QrCheckInProps) {
-  const [loading, setLoading] = useState(false);
-
-  // 生成二维码内容
-  const qrValue = `attendance:${classId}:${attendanceId}`;
-
-  const handleCheckIn = async () => {
-    setLoading(true);
-    try {
-      await api.post(`/classes/${classId}/attendances/${attendanceId}/check-in`, {
-        method: 'qr',
-      });
-      toast.success('签到成功！');
-      onSuccess();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : '签到失败');
-    } finally {
-      setLoading(false);
-    }
-  };
+/**
+ * 二维码签到入口：由学生打开扫一扫扫描班委展示的二维码完成签到。
+ * 扫描成功后的签到逻辑由 ScanPage 统一处理。
+ */
+export default function QrCheckIn() {
+  const navigate = useNavigate();
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2 p-4 bg-[#F0FDF4] rounded-lg border border-[#BBF7D0]">
-        <div className="flex items-center gap-2 text-[#15803D] text-sm font-medium">
-          <QrCode className="w-4 h-4" />
-          <span>二维码签到</span>
+      <div className="flex items-center gap-3 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] p-4">
+        <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl bg-white">
+          <ScanLine className="h-7 w-7 text-[#16A34A]" strokeWidth={1.8} />
         </div>
-        <div className="text-xs text-[#4B5563]">请扫描下方二维码完成签到</div>
-      </div>
-
-      {/* 二维码展示区 */}
-      <div className="flex flex-col items-center gap-4 p-6 bg-[#FFFFFF] border border-[#E5E7EB] rounded-lg">
-        <div className="p-4 bg-white rounded-lg">
-          <QRCodeSVG
-            value={qrValue}
-            size={220}
-            level="H"
-            marginSize={4}
-            fgColor="#000000"
-            bgColor="#FFFFFF"
-          />
-        </div>
-        <div className="text-sm text-[#4B5563] text-center">
-          使用手机扫描上方二维码
+        <div className="min-w-0 flex flex-col gap-1">
+          <div className="flex items-center gap-1.5 text-[14px] font-semibold text-[#15803D]">
+            <QrCode className="h-4 w-4" />
+            二维码签到
+          </div>
+          <div className="text-[12px] leading-[18px] text-[#4B5563]">
+            扫描班委在签到现场展示的二维码即可完成签到
+          </div>
         </div>
       </div>
 
-      {/* 确认签到按钮 */}
       <button
-        onClick={handleCheckIn}
-        disabled={loading}
-        className="w-full h-[48px] flex items-center justify-center bg-[#0062FF] text-white font-medium rounded-lg disabled:opacity-50 active:opacity-80"
+        onClick={() => navigate('/scan')}
+        className="w-full h-[52px] flex items-center justify-center gap-2 bg-[#0062FF] text-white text-[15px] font-semibold rounded-xl shadow-[0_8px_20px_-8px_#0062FFB3] active:opacity-80"
       >
-        {loading ? '签到中...' : '确认签到'}
+        <ScanLine className="w-5 h-5" />
+        打开扫一扫
       </button>
     </div>
   );

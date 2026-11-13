@@ -5,7 +5,10 @@ import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { FileSpreadsheet, Database, MessageCircle, MessageSquare } from 'lucide-react';
+import { FileSpreadsheet, Database, MessageCircle, MessageSquare, Download } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 type Step = 'select' | 'uploading' | 'importing' | 'result';
 
@@ -16,6 +19,16 @@ interface ImportResult {
   sync: boolean;
   duplicateStudentNos: string[];
   errors: { row: number; studentNo: string; reason: string }[];
+}
+
+/** Blob 转 base64（去掉 dataURL 前缀），供原生端写入文件 */
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+    reader.onerror = () => reject(new Error('读取模板文件失败'));
+    reader.readAsDataURL(blob);
+  });
 }
 
 export default function ImportStudents() {
@@ -29,14 +42,15 @@ export default function ImportStudents() {
   const [syncMode, setSyncMode] = useState(true);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [downloadingTemplate, setDownloadingTemplate] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const ext = file.name.split('.').pop()?.toLowerCase();
-    if (!['xlsx', 'xls'].includes(ext || '')) {
-      toast.error('仅支持 .xlsx、.xls 格式');
+    if (ext !== 'xlsx') {
+      toast.error('仅支持 .xlsx 格式，老版 .xls 请先另存为 .xlsx');
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
@@ -45,6 +59,43 @@ export default function ImportStudents() {
     }
 
     setSelectedFile(file);
+  };
+
+  const handleDownloadTemplate = async () => {
+    if (downloadingTemplate) return;
+    setDownloadingTemplate(true);
+    const fileName = '学生名单导入模板.xlsx';
+    try {
+      const res = await api.get('/class/student-excel-template', { responseType: 'blob' });
+      if (Capacitor.isNativePlatform()) {
+        const base64 = await blobToBase64(res.data as Blob);
+        const { uri } = await Filesystem.writeFile({
+          path: fileName,
+          data: base64,
+          directory: Directory.Cache,
+        });
+        await Share.share({
+          title: fileName,
+          url: uri,
+          dialogTitle: '保存或分享模板',
+        });
+      } else {
+        const url = URL.createObjectURL(res.data as Blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : '';
+      // 用户在系统分享面板取消时不算失败
+      if (!/cancel/i.test(msg)) toast.error('模板下载失败，请稍后重试');
+    } finally {
+      setDownloadingTemplate(false);
+    }
   };
 
   const handleUpload = async () => {
@@ -56,6 +107,7 @@ export default function ImportStudents() {
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
+      if (classId) formData.append('classId', classId);
 
       const uploadRes = await api.post('/class/upload-student-excel', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -129,14 +181,28 @@ export default function ImportStudents() {
               <FileSpreadsheet className="h-6 w-6 text-[#0062FF]" strokeWidth={2} />
               <div className="flex flex-col gap-0.5">
                 <div className="text-[15px] text-[#1A1A1A] font-body font-semibold text-left">Excel 导入</div>
-                <div className="text-[12px] text-[#9CA3AF] font-caption text-left">上传表格文件</div>
+                <div className="text-[12px] text-[#9CA3AF] font-caption text-left">上传 .xlsx 表格文件</div>
               </div>
             </div>
             <svg viewBox="0 0 24 24" className="w-5 h-5 text-[#9CA3AF]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 18 15 12 9 6" />
             </svg>
           </button>
-          <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFileChange} />
+          <input ref={fileInputRef} type="file" accept=".xlsx" className="hidden" onChange={handleFileChange} />
+
+          {/* 模板下载：按模板填写可避免表头/列顺序不识别 */}
+          <div className="flex w-full items-center justify-between -mt-2 px-1">
+            <span className="text-[11px] text-[#9CA3AF] font-caption">首次导入建议先下载模板填写</span>
+            <button
+              type="button"
+              onClick={handleDownloadTemplate}
+              disabled={downloadingTemplate}
+              className="flex items-center gap-1 text-[12px] text-[#0062FF] font-body font-medium active:opacity-70 disabled:opacity-50"
+            >
+              <Download className="h-3.5 w-3.5" strokeWidth={2} />
+              {downloadingTemplate ? '下载中...' : '下载模板'}
+            </button>
+          </div>
 
           {/* 已选择文件后显示上传确认 */}
           {selectedFile && (
@@ -189,56 +255,65 @@ export default function ImportStudents() {
             </>
           )}
 
-          {/* 教务系统导入 */}
+          {/* 教务系统导入（暂未开放） */}
           <button
             type="button"
-            onClick={() => toast.info('教务系统导入功能开发中')}
-            className="box-border w-full h-[64px] shrink-0 flex flex-row gap-3 p-[16px] justify-between items-center bg-[#FFFFFF] border border-[#E5E7EB] rounded-xl active:bg-[#F9FAFB] transition-colors"
+            disabled
+            className="box-border w-full h-[64px] shrink-0 flex flex-row gap-3 p-[16px] justify-between items-center bg-[#FAFAFA] border border-[#E5E7EB] rounded-xl cursor-default"
           >
             <div className="flex flex-row gap-3 items-center">
-              <Database className="h-6 w-6 text-[#0062FF]" strokeWidth={2} />
+              <Database className="h-6 w-6 text-[#9CA3AF]" strokeWidth={2} />
               <div className="flex flex-col gap-0.5">
-                <div className="text-[15px] text-[#1A1A1A] font-body font-semibold text-left">教务系统导入</div>
-                <div className="text-[12px] text-[#9CA3AF] font-caption text-left">从学校系统同步</div>
+                <div className="flex flex-row items-center gap-1.5">
+                  <span className="text-[15px] text-[#9CA3AF] font-body font-semibold text-left">教务系统导入</span>
+                  <span className="rounded-md bg-[#F3F4F6] px-1.5 py-0.5 text-[10px] font-body text-[#6B7280]">即将上线</span>
+                </div>
+                <div className="text-[12px] text-[#C0C4CC] font-caption text-left">从学校系统同步</div>
               </div>
             </div>
-            <svg viewBox="0 0 24 24" className="w-5 h-5 text-[#9CA3AF]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 24 24" className="w-5 h-5 text-[#D1D5DB]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 18 15 12 9 6" />
             </svg>
           </button>
 
-          {/* QQ 群导入 */}
+          {/* QQ 群导入（暂未开放） */}
           <button
             type="button"
-            onClick={() => toast.info('QQ 群导入功能开发中')}
-            className="box-border w-full h-[64px] shrink-0 flex flex-row gap-3 p-[16px] justify-between items-center bg-[#FFFFFF] border border-[#E5E7EB] rounded-xl active:bg-[#F9FAFB] transition-colors"
+            disabled
+            className="box-border w-full h-[64px] shrink-0 flex flex-row gap-3 p-[16px] justify-between items-center bg-[#FAFAFA] border border-[#E5E7EB] rounded-xl cursor-default"
           >
             <div className="flex flex-row gap-3 items-center">
-              <MessageCircle className="h-6 w-6 text-[#12B7F5]" strokeWidth={2} />
+              <MessageCircle className="h-6 w-6 text-[#9CA3AF]" strokeWidth={2} />
               <div className="flex flex-col gap-0.5">
-                <div className="text-[15px] text-[#1A1A1A] font-body font-semibold text-left">QQ 群导入</div>
-                <div className="text-[12px] text-[#9CA3AF] font-caption text-left">从 QQ 群成员导入</div>
+                <div className="flex flex-row items-center gap-1.5">
+                  <span className="text-[15px] text-[#9CA3AF] font-body font-semibold text-left">QQ 群导入</span>
+                  <span className="rounded-md bg-[#F3F4F6] px-1.5 py-0.5 text-[10px] font-body text-[#6B7280]">即将上线</span>
+                </div>
+                <div className="text-[12px] text-[#C0C4CC] font-caption text-left">从 QQ 群成员导入</div>
               </div>
             </div>
-            <svg viewBox="0 0 24 24" className="w-5 h-5 text-[#9CA3AF]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 24 24" className="w-5 h-5 text-[#D1D5DB]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 18 15 12 9 6" />
             </svg>
           </button>
 
-          {/* 微信群导入 */}
+          {/* 微信群导入（暂未开放） */}
           <button
             type="button"
-            onClick={() => toast.info('微信群导入功能开发中')}
-            className="box-border w-full h-[64px] shrink-0 flex flex-row gap-3 p-[16px] justify-between items-center bg-[#FFFFFF] border border-[#E5E7EB] rounded-xl active:bg-[#F9FAFB] transition-colors"
+            disabled
+            className="box-border w-full h-[64px] shrink-0 flex flex-row gap-3 p-[16px] justify-between items-center bg-[#FAFAFA] border border-[#E5E7EB] rounded-xl cursor-default"
           >
             <div className="flex flex-row gap-3 items-center">
-              <MessageSquare className="h-6 w-6 text-[#07C160]" strokeWidth={2} />
+              <MessageSquare className="h-6 w-6 text-[#9CA3AF]" strokeWidth={2} />
               <div className="flex flex-col gap-0.5">
-                <div className="text-[15px] text-[#1A1A1A] font-body font-semibold text-left">微信群导入</div>
-                <div className="text-[12px] text-[#9CA3AF] font-caption text-left">从微信群成员导入</div>
+                <div className="flex flex-row items-center gap-1.5">
+                  <span className="text-[15px] text-[#9CA3AF] font-body font-semibold text-left">微信群导入</span>
+                  <span className="rounded-md bg-[#F3F4F6] px-1.5 py-0.5 text-[10px] font-body text-[#6B7280]">即将上线</span>
+                </div>
+                <div className="text-[12px] text-[#C0C4CC] font-caption text-left">从微信群成员导入</div>
               </div>
             </div>
-            <svg viewBox="0 0 24 24" className="w-5 h-5 text-[#9CA3AF]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 24 24" className="w-5 h-5 text-[#D1D5DB]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 18 15 12 9 6" />
             </svg>
           </button>

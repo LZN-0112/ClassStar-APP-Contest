@@ -27,6 +27,7 @@ import {
   FeeCategory,
   CreateFeeBudgetDto,
   QueryFeeBudgetDto,
+  BatchPaymentDto,
 } from './dto/fee.dto';
 
 @ApiTags('班费/团费账本')
@@ -58,6 +59,16 @@ export class FeeController {
     @CurrentUser('userId') userId: string,
   ) {
     return this.feeService.addRecord(dto, userId);
+  }
+
+  @Post('batch-add')
+  @ApiOperation({ summary: '批量登记缴费（班委权限）' })
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async batchAdd(
+    @Body() dto: BatchPaymentDto,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.feeService.batchRegisterPayment(dto, userId);
   }
 
   @Get('list')

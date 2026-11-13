@@ -11,4 +11,10 @@ export class AppController {
   getHealth(): string {
     return this.appService.getHealth();
   }
+
+  @Public()
+  @Get('health/deep')
+  getHealthDeep() {
+    return this.appService.getHealthDeep();
+  }
 }

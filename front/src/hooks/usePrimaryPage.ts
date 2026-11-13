@@ -7,7 +7,7 @@ import { useLocation } from 'react-router-dom';
 export const PRIMARY_ROUTES = [
   '/home',
   '/class-home',
-  '/messages',
+  '/ai-assistant',
   '/data-dashboard',
   '/personal-center',
 ] as const;

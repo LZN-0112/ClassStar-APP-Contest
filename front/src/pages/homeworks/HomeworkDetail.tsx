@@ -1,238 +1,269 @@
-import { useState, useRef, useEffect, type ChangeEvent } from 'react';
-import { useParams } from 'react-router-dom';
-import { Image, Camera, Mic, FileText, X, CheckCircle } from 'lucide-react';
-import PageLayout from '@/components/layout/PageLayout';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
-  getHomeworkById,
-  getMySubmission,
-  submitHomework,
-  type HomeworkItem,
-  type SubmissionRecord,
-  type SubmissionAttachment,
-} from '@/stores/homeworkStore';
+  FileText,
+  Clock3,
+  CheckCircle2,
+  AlertCircle,
+  Paperclip,
+  ClipboardCheck,
+  Send,
+  Timer,
+  RefreshCw,
+  Users,
+  ChevronDown,
+} from 'lucide-react';
+import PageLayout from '@/components/layout/PageLayout';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { api, resolveFileUrl } from '@/lib/api';
+import { toast } from 'sonner';
 
-type Attachment = {
+interface Submission {
   id: string;
-  file: File;
-  preview?: string;
-  type: 'image' | 'audio' | 'file';
+  content: string | null;
+  attachments: unknown;
+  status: string;
+  submitted_at: string;
+}
+
+interface DelayApplication {
+  id: string;
+  reason: string;
+  expected_deadline: string;
+  status: string;
+  created_at: string;
+}
+
+interface HomeworkDetailData {
+  id: string;
+  subject: string;
+  title: string;
+  content: string | null;
+  deadline: string;
+  publisher: { id: string; name: string } | null;
+  mySubmission: Submission | null;
+  myDelayApplication: DelayApplication | null;
+  submissionCount: number;
+  totalMembers: number;
+  createdAt: string;
+}
+
+interface DelayReviewItem {
+  id: string;
+  studentName: string;
+  reason: string;
+  expectedDeadline: string;
+  status: string;
+  createdAt: string;
+}
+
+const SUBJECT_STYLE: Record<string, string> = {
+  语文: 'bg-[#FEF2F2] text-[#DC2626]',
+  数学: 'bg-[#EFF6FF] text-[#2563EB]',
+  英语: 'bg-[#F5F3FF] text-[#7C3AED]',
+  物理: 'bg-[#ECFEFF] text-[#0891B2]',
+  化学: 'bg-[#F0FDF4] text-[#16A34A]',
+  生物: 'bg-[#F0FDFA] text-[#0F766E]',
+  历史: 'bg-[#FFFBEB] text-[#D97706]',
+  地理: 'bg-[#F0F9FF] text-[#0284C7]',
+  政治: 'bg-[#FDF2F8] text-[#DB2777]',
 };
 
-export default function HomeworkDetail() {
-  const { id } = useParams<{ id: string }>();
-  const [hw, setHw] = useState<HomeworkItem | null>(null);
-  const [submission, setSubmission] = useState<SubmissionRecord | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [content, setContent] = useState('');
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
+const delayStatusText: Record<string, string> = {
+  pending: '待审批',
+  approved: '已通过',
+  rejected: '已驳回',
+};
 
-  // 摄像头相关
-  const [showCamera, setShowCamera] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+function formatDateTime(dateStr: string): string {
+  const d = new Date(dateStr);
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${month}月${day}日 ${hours}:${minutes}`;
+}
 
-  // 录音相关
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordTime, setRecordTime] = useState(0);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const recordStreamRef = useRef<MediaStream | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+/** 剩余/逾期时间 */
+function formatRemaining(dateStr: string, now: number): string {
+  const diff = new Date(dateStr).getTime() - now;
+  if (diff <= 0) {
+    const days = Math.ceil(-diff / 86400000);
+    return days <= 1 ? '已逾期' : `已逾期 ${days} 天`;
+  }
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  const minutes = Math.floor((diff % 3600000) / 60000);
+  if (days > 0) return `剩 ${days} 天 ${hours} 小时`;
+  if (hours > 0) return `剩 ${hours} 小时 ${minutes} 分`;
+  return `剩 ${Math.max(1, minutes)} 分钟`;
+}
 
-  const imgRef = useRef<HTMLInputElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  // 加载作业数据和提交记录
-  useEffect(() => {
-    if (id) {
-      const homework = getHomeworkById(id);
-      if (homework) {
-        setHw(homework);
-        const sub = getMySubmission(id);
-        if (sub) setSubmission(sub);
+function parseAttachments(raw: unknown): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.filter((item): item is string => typeof item === 'string');
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item): item is string => typeof item === 'string');
       }
+      return [raw];
+    } catch {
+      return [raw];
     }
-  }, [id]);
+  }
+  return [];
+}
+
+export default function HomeworkDetail() {
+  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const { user } = useCurrentUser();
+  const [data, setData] = useState<HomeworkDetailData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [now, setNow] = useState(() => Date.now());
+
+  const classId = user?.classId;
+  const isManager = Boolean(
+    user?.isCommittee || user?.roleLevel === 'owner' || user?.roleLevel === 'admin',
+  );
 
   useEffect(() => {
-    return () => {
-      if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
-      if (recordStreamRef.current) recordStreamRef.current.getTracks().forEach((t) => t.stop());
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    const timer = window.setInterval(() => setNow(Date.now()), 30000);
+    return () => window.clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    if (!showCamera && streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
-  }, [showCamera]);
-
-  const genId = () => Math.random().toString(36).slice(2, 10);
-
-  const addFile = (file: File, preview?: string, type: 'image' | 'audio' | 'file' = 'file') => {
-    setAttachments((prev) => [...prev, { id: genId(), file, preview, type }]);
-  };
-
-  const removeAttachment = (id: string) => {
-    setAttachments((prev) => {
-      const item = prev.find((a) => a.id === id);
-      if (item?.preview) URL.revokeObjectURL(item.preview);
-      return prev.filter((a) => a.id !== id);
-    });
-  };
-
-  const handleImageSelect = (e: ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      Array.from(files).forEach((file) => {
-        const url = URL.createObjectURL(file);
-        addFile(file, url, 'image');
-      });
-    }
-    e.target.value = '';
-  };
-
-  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      Array.from(files).forEach((file) => addFile(file, undefined, 'file'));
-    }
-    e.target.value = '';
-  };
-
-  const openCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
-        audio: false,
-      });
-      streamRef.current = stream;
-      setShowCamera(true);
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {});
-        }
-      }, 100);
-    } catch {
-      alert('无法访问摄像头，请检查权限设置');
-    }
-  };
-
-  const takePhoto = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0);
-    canvas.toBlob((blob) => {
-      if (blob) {
-        const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
-        const url = URL.createObjectURL(file);
-        addFile(file, url, 'image');
-      }
-    }, 'image/jpeg', 0.8);
-    setShowCamera(false);
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
-  };
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      recordStreamRef.current = stream;
-      const recorder = new MediaRecorder(stream);
-      chunksRef.current = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-      recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        const file = new File([blob], `record_${Date.now()}.webm`, { type: 'audio/webm' });
-        addFile(file, undefined, 'audio');
-        if (recordStreamRef.current) {
-          recordStreamRef.current.getTracks().forEach((t) => t.stop());
-          recordStreamRef.current = null;
-        }
-      };
-      recorder.start();
-      mediaRecorderRef.current = recorder;
-      setIsRecording(true);
-      setRecordTime(0);
-      timerRef.current = setInterval(() => setRecordTime((t) => t + 1), 1000);
-    } catch {
-      alert('无法访问麦克风，请检查权限设置');
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-    }
-    setIsRecording(false);
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-  };
-
-  const formatTime = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-  };
-
-  const handleSubmit = () => {
-    if (!content.trim() && attachments.length === 0) {
-      alert('请输入内容或添加附件');
+  const load = useCallback(() => {
+    if (!classId || !id) {
+      setLoading(false);
       return;
     }
-    if (!hw) return;
+    setLoading(true);
+    setError('');
+    api
+      .get(`/classes/${classId}/homeworks/${id}`)
+      .then((res) => setData(res.data?.data || res.data))
+      .catch((e) => setError(e.message || '作业加载失败'))
+      .finally(() => setLoading(false));
+  }, [classId, id]);
 
-    // 将 File 对象转为可序列化的附件数据
-    const storeAttachments: SubmissionAttachment[] = attachments.map((a) => ({
-      id: a.id,
-      name: a.file.name,
-      type: a.type,
-      preview: a.preview,
-    }));
+  useEffect(() => {
+    load();
+  }, [load]);
 
-    const record = submitHomework(hw.id, content.trim(), storeAttachments);
-    setSubmission(record);
+  const attachments = useMemo(
+    () => parseAttachments(data?.mySubmission?.attachments),
+    [data?.mySubmission?.attachments],
+  );
 
-    attachments.forEach((a) => {
-      if (a.preview) URL.revokeObjectURL(a.preview);
-    });
-    setShowModal(false);
-    setContent('');
-    setAttachments([]);
+  const [delayList, setDelayList] = useState<DelayReviewItem[]>([]);
+  const [reviewingId, setReviewingId] = useState('');
+  const [showProcessed, setShowProcessed] = useState(false);
+
+  const loadDelays = useCallback(() => {
+    if (!classId || !id) return;
+    api
+      .get(`/classes/${classId}/homeworks/${id}/delays`)
+      .then((res) => setDelayList(res.data?.data || res.data || []))
+      .catch(() => setDelayList([]));
+  }, [classId, id]);
+
+  useEffect(() => {
+    if (isManager) loadDelays();
+  }, [isManager, loadDelays]);
+
+  const handleReview = async (applicationId: string, status: 'approved' | 'rejected') => {
+    if (!classId || !id || reviewingId) return;
+    setReviewingId(applicationId);
+    try {
+      await api.post(`/classes/${classId}/homeworks/${id}/delay/${applicationId}/review`, {
+        status,
+      });
+      toast.success(status === 'approved' ? '已通过延时申请' : '已驳回延时申请');
+      loadDelays();
+    } catch (e: any) {
+      toast.error(e.message || '操作失败，请重试');
+    } finally {
+      setReviewingId('');
+    }
   };
 
-  const isSubmitted = !!submission;
+  const pendingDelays = delayList.filter((item) => item.status === 'pending');
+  const processedDelays = delayList.filter((item) => item.status !== 'pending');
 
-  // 格式化截止时间
-  const formatDeadline = (deadline: string) => {
-    if (!deadline) return '';
-    const d = new Date(deadline);
-    const month = d.getMonth() + 1;
-    const day = d.getDate();
-    const hour = d.getHours();
-    return `${month}月${day}日 ${String(hour).padStart(2, '0')}:00截止`;
+  const delayStatus = data?.myDelayApplication?.status;
+  /** 延时通过后以新截止时间为准 */
+  const effectiveDeadline =
+    delayStatus === 'approved' && data?.myDelayApplication
+      ? data.myDelayApplication.expected_deadline
+      : data?.deadline || '';
+
+  const overdue = data ? now > new Date(effectiveDeadline).getTime() : false;
+  const canSubmit = Boolean(data) && !overdue;
+  const canApplyDelay =
+    Boolean(data) &&
+    !data?.mySubmission &&
+    delayStatus !== 'pending' &&
+    !(delayStatus === 'approved' && !overdue);
+
+  const myStatus = (() => {
+    if (!data) return '';
+    if (isManager) return overdue ? '已截止' : '进行中';
+    if (data.mySubmission) return '已提交';
+    if (delayStatus === 'pending') return '延时审核中';
+    return overdue ? '已逾期' : '待提交';
+  })();
+
+  const statusStyle: Record<string, string> = {
+    已提交: 'bg-[#F0FDF4] text-[#16A34A]',
+    延时审核中: 'bg-[#FFFBEB] text-[#D97706]',
+    已逾期: 'bg-[#FEF2F2] text-[#DC2626]',
+    待提交: 'bg-[#EFF6FF] text-[#0062FF]',
+    进行中: 'bg-[#EFF6FF] text-[#0062FF]',
+    已截止: 'bg-[#F1F5F9] text-[#64748B]',
   };
 
-  if (!hw) {
+  const timeProgress = (() => {
+    if (!data) return { ratio: 0, color: '#0062FF' };
+    const start = new Date(data.createdAt).getTime();
+    const end = new Date(effectiveDeadline).getTime();
+    const total = end - start;
+    const ratio = total > 0 ? Math.min(1, Math.max(0, (end - now) / total)) : 0;
+    const color = ratio > 0.5 ? '#0062FF' : ratio > 0.2 ? '#F59E0B' : '#EF4444';
+    return { ratio, color };
+  })();
+
+  const submitPercent = data?.totalMembers
+    ? Math.min(100, Math.round((data.submissionCount / data.totalMembers) * 100))
+    : 0;
+
+  if (loading) {
     return (
       <PageLayout title="作业详情" variant="a">
-        <div className="flex items-center justify-center py-16 text-[#9CA3AF]">
-          作业不存在
+        <div className="flex flex-col gap-3">
+          <div className="h-[196px] animate-pulse rounded-2xl bg-[#F1F5F9]" />
+          <div className="h-[180px] animate-pulse rounded-2xl bg-[#F1F5F9]" />
+        </div>
+      </PageLayout>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <PageLayout title="作业详情" variant="a">
+        <div className="flex flex-col items-center justify-center gap-3 py-20 text-[#6B7280]">
+          <AlertCircle className="h-10 w-10 text-[#EF4444] opacity-70" />
+          <span className="text-[14px]">{error || '作业不存在'}</span>
+          <button
+            type="button"
+            onClick={load}
+            className="flex items-center gap-1 rounded-full bg-[#F1F5F9] px-4 py-2 text-[13px] font-medium text-[#334155]"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            重新加载
+          </button>
         </div>
       </PageLayout>
     );
@@ -240,265 +271,337 @@ export default function HomeworkDetail() {
 
   return (
     <PageLayout title="作业详情" variant="a">
-      {/* 作业详情卡片 */}
-      <div className="w-full bg-white/70 backdrop-blur-md rounded-2xl p-4 mb-3 shadow-[0_2px_12px_0px_#00000008]">
-        <div className="w-full bg-[#EBF4FF] rounded-xl p-3 mb-3">
-          <div className="text-[16px] font-bold text-[#1A1A1A] mb-2">{hw.title}</div>
-          <div className="flex gap-2 flex-wrap">
-            <span className="text-[12px] text-[#4B5563] bg-white/60 px-3 py-1 rounded-full">
-              预计需 15 分钟
+      <div className="flex min-h-full flex-col gap-3">
+        {/* 头部信息卡 */}
+        <div className="rounded-2xl bg-white p-4 shadow-[0px_2px_8px_0px_#0000000D] ring-1 ring-[#F1F5F9]">
+          <div className="flex items-center justify-between gap-2">
+            <span
+              className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
+                SUBJECT_STYLE[data.subject] || 'bg-[#F1F5F9] text-[#475569]'
+              }`}
+            >
+              {data.subject}
             </span>
-            <span className="text-[12px] text-[#4B5563] bg-white/60 px-3 py-1 rounded-full">
-              {formatDeadline(hw.deadline)}
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                statusStyle[myStatus] || statusStyle['待提交']
+              }`}
+            >
+              {myStatus}
             </span>
           </div>
-        </div>
-        <p className="text-[15px] text-[#1A1A1A] leading-relaxed whitespace-pre-wrap mb-3">
-          {hw.requirement}
-        </p>
-        <div className="text-[12px] text-[#9CA3AF]">
-          {hw.createdBy} 布置于 {hw.createdAt}
-        </div>
-      </div>
 
-      {/* 已提交记录卡片 */}
-      {isSubmitted && submission && (
-        <div className="w-full bg-white/70 backdrop-blur-md rounded-2xl p-4 mb-3 shadow-[0_2px_12px_0px_#00000008]">
-          <div className="flex items-center gap-2 mb-3">
-            <CheckCircle className="w-5 h-5 text-[#22C55E]" />
-            <span className="text-[15px] font-semibold text-[#22C55E]">已提交</span>
-            <span className="text-[12px] text-[#9CA3AF] ml-auto">{submission.submittedAt}</span>
+          <h1 className="mt-2.5 text-[19px] font-semibold leading-snug text-[#0F172A]">
+            {data.title}
+          </h1>
+          <div className="mt-1.5 text-[11px] text-[#94A3B8]">
+            {data.publisher?.name || '班委'} 发布 · {formatDateTime(data.createdAt)}
           </div>
-          {submission.content && (
-            <div className="text-[14px] text-[#1A1A1A] leading-relaxed whitespace-pre-wrap mb-2 bg-[#F9FAFB] rounded-lg p-3">
-              {submission.content}
-            </div>
-          )}
-          {submission.attachments.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {submission.attachments.map((att) => (
-                <div key={att.id}>
-                  {att.type === 'image' && att.preview ? (
-                    <div className="w-16 h-16 rounded-lg overflow-hidden border border-[#E5E7EB]">
-                      <img src={att.preview} alt={att.name} className="w-full h-full object-cover" />
-                    </div>
-                  ) : att.type === 'audio' ? (
-                    <div className="flex items-center gap-1.5 px-3 py-2 bg-[#F3F4F6] rounded-lg text-[12px] text-[#4B5563]">
-                      <Mic className="w-3.5 h-3.5 text-[#0062FF]" />
-                      <span>{att.name}</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5 px-3 py-2 bg-[#F3F4F6] rounded-lg text-[12px] text-[#4B5563]">
-                      <FileText className="w-3.5 h-3.5" />
-                      <span className="max-w-[100px] truncate">{att.name}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* 优秀作答卡片 */}
-      <div className="w-full bg-white/70 backdrop-blur-md rounded-2xl px-4 py-3 mb-4 shadow-[0_2px_12px_0px_#00000008] flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-amber-400 flex items-center justify-center">
-            <span className="text-white text-sm font-bold">★</span>
-          </div>
-          <span className="text-[15px] font-semibold text-[#1A1A1A]">优秀作答</span>
-        </div>
-        <span className="text-[13px] text-[#9CA3AF]">如何被选为优秀作答 ›</span>
-      </div>
-
-      {/* 底部留白 */}
-      <div className="h-[72px]" />
-
-      {/* 底部固定按钮栏 */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 px-5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-3">
-        <div className="flex gap-3 bg-white/80 backdrop-blur-md rounded-2xl px-4 py-3 shadow-[0_4px_20px_0px_#00000010] border border-white/50">
-          <button
-            type="button"
-            className="flex-1 h-[48px] rounded-xl border border-[#E5E7EB] bg-white text-[15px] font-medium text-[#4B5563] active:bg-gray-50 transition-colors"
-          >
-            有疑问
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (isSubmitted && submission) {
-                setContent(submission.content);
-              }
-              setShowModal(true);
-            }}
-            className="flex-1 h-[48px] rounded-xl bg-[#0062FF] text-[15px] font-semibold text-white shadow-[0_4px_16px_0px_#0000001A] active:opacity-90 transition-opacity"
-          >
-            {isSubmitted ? '去改正' : '去提交'}
-          </button>
-        </div>
-      </div>
-
-      {/* 提交弹窗 */}
-      {showModal && (
-        <>
-          <div
-            className="fixed inset-0 z-50 bg-black/40 animate-[fadeIn_0.2s_ease]"
-            onClick={() => setShowModal(false)}
-          />
-          <div
-            className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl max-h-[85vh] flex flex-col animate-[slideUp_0.25s_ease]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#F3F4F6] shrink-0">
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                className="w-8 h-8 flex items-center justify-center text-[#9CA3AF]"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              <span className="text-[16px] font-semibold text-[#1A1A1A]">
-                {isSubmitted ? '改正练习' : '提交练习'}
+          <div className="mt-3 rounded-xl bg-[#F8FAFC] p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="flex min-w-0 items-center gap-1 text-[11px] text-[#64748B]">
+                <Clock3 className="h-3.5 w-3.5 shrink-0 text-[#94A3B8]" />
+                <span className="truncate">
+                  {delayStatus === 'approved' ? '已延时至 ' : '截止 '}
+                  {formatDateTime(effectiveDeadline)}
+                </span>
               </span>
-              <div className="w-8" />
+              <span
+                className="shrink-0 text-[11px] font-semibold"
+                style={{ color: overdue ? '#DC2626' : timeProgress.color }}
+              >
+                {myStatus === '已提交'
+                  ? '已完成'
+                  : myStatus === '延时审核中' && !overdue
+                    ? '审核中'
+                    : formatRemaining(effectiveDeadline, now)}
+              </span>
             </div>
-
-            <div className="flex-1 overflow-y-auto">
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="请填写提交内容"
-                className="w-full min-h-[120px] px-5 py-4 text-[15px] text-[#1A1A1A] placeholder-[#9CA3AF] resize-none outline-none bg-transparent"
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#E2E8F0]">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${Math.round(timeProgress.ratio * 100)}%`,
+                  backgroundColor: overdue ? '#DC2626' : timeProgress.color,
+                }}
               />
+            </div>
+          </div>
+        </div>
 
-              {attachments.length > 0 && (
-                <div className="px-5 pb-2 flex flex-wrap gap-2">
-                  {attachments.map((att) => (
-                    <div key={att.id} className="relative">
-                      {att.type === 'image' && att.preview ? (
-                        <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-[#E5E7EB]">
-                          <img src={att.preview} alt={att.file.name} className="w-full h-full object-cover" />
-                          <button
-                            type="button"
-                            onClick={() => removeAttachment(att.id)}
-                            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#EF4444] text-white flex items-center justify-center shadow"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ) : att.type === 'audio' ? (
-                        <div className="flex items-center gap-1.5 px-3 py-2 bg-[#F3F4F6] rounded-lg text-[12px] text-[#4B5563]">
-                          <Mic className="w-3.5 h-3.5 text-[#0062FF]" />
-                          <span className="max-w-[100px] truncate">{att.file.name}</span>
-                          <button type="button" onClick={() => removeAttachment(att.id)} className="text-[#9CA3AF]">
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5 px-3 py-2 bg-[#F3F4F6] rounded-lg text-[12px] text-[#4B5563]">
-                          <FileText className="w-3.5 h-3.5" />
-                          <span className="max-w-[100px] truncate">{att.file.name}</span>
-                          <button type="button" onClick={() => removeAttachment(att.id)} className="text-[#9CA3AF]">
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+        {/* 作业内容 */}
+        <div className="rounded-2xl bg-white p-4 shadow-[0px_2px_8px_0px_#0000000D] ring-1 ring-[#F1F5F9]">
+          <div className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-[#1E293B]">
+            <FileText className="h-4 w-4 text-[#0062FF]" />
+            作业内容
+          </div>
+          <div className="whitespace-pre-wrap text-[13px] leading-6 text-[#475569]">
+            {data.content?.trim() || '暂无详细说明'}
+          </div>
+        </div>
+
+        {/* 班委：完成情况 + 延时审批 */}
+        {isManager && (
+          <div className="rounded-2xl bg-white p-4 shadow-[0px_2px_8px_0px_#0000000D] ring-1 ring-[#F1F5F9]">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-[13px] font-semibold text-[#1E293B]">
+                <Users className="h-4 w-4 text-[#0062FF]" />
+                班级完成情况
+              </span>
+              <span className="text-[12px] font-semibold tabular-nums text-[#0062FF]">
+                {data.submissionCount}/{data.totalMembers}
+              </span>
+            </div>
+            <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-[#EFF6FF]">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  submitPercent >= 100 ? 'bg-[#16A34A]' : 'bg-[#0062FF]'
+                }`}
+                style={{ width: `${submitPercent}%` }}
+              />
+            </div>
+            <div className="mt-1.5 flex items-center justify-between text-[11px] text-[#94A3B8]">
+              <span>未交 {Math.max(0, data.totalMembers - data.submissionCount)} 人</span>
+              <span className="tabular-nums">{submitPercent}%</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/offline-check')}
+              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#EFF6FF] py-2.5 text-[13px] font-medium text-[#0062FF]"
+            >
+              <ClipboardCheck className="h-4 w-4" />
+              离线核对提交情况
+            </button>
+
+            <div className="my-3 h-px bg-[#F1F5F9]" />
+
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-[13px] font-semibold text-[#1E293B]">
+                <Timer className="h-4 w-4 text-[#F59E0B]" />
+                延时申请
+              </span>
+              {pendingDelays.length > 0 ? (
+                <span className="rounded-full bg-[#FEF3C7] px-2 py-0.5 text-[10px] font-semibold text-[#B45309]">
+                  待审批 {pendingDelays.length}
+                </span>
+              ) : (
+                <span className="text-[11px] text-[#94A3B8]">共 {delayList.length} 条</span>
               )}
             </div>
 
-            <div className="flex gap-3 px-5 py-3 border-t border-[#F3F4F6] shrink-0">
-              <button
-                type="button"
-                onClick={() => imgRef.current?.click()}
-                className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-full border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#4B5563] active:bg-gray-50 transition-colors"
-              >
-                <Image className="w-4 h-4" />
-                图片
-              </button>
-              <button
-                type="button"
-                onClick={openCamera}
-                className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-full border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#4B5563] active:bg-gray-50 transition-colors"
-              >
-                <Camera className="w-4 h-4" />
-                拍照
-              </button>
-              <button
-                type="button"
-                onClick={isRecording ? stopRecording : startRecording}
-                className={`flex-1 flex items-center justify-center gap-1.5 h-10 rounded-full border text-[13px] font-medium transition-colors ${
-                  isRecording
-                    ? 'border-[#EF4444] bg-[#EF4444] text-white animate-pulse'
-                    : 'border-[#E5E7EB] bg-white text-[#4B5563] active:bg-gray-50'
+            {delayList.length === 0 && (
+              <div className="mt-2 text-[12px] text-[#94A3B8]">暂无延时申请</div>
+            )}
+
+            <div className="mt-2 flex flex-col gap-2">
+              {pendingDelays.map((item) => (
+                <div key={item.id} className="rounded-xl bg-[#F8FAFC] p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[12px] font-semibold text-[#1E293B]">
+                      {item.studentName}
+                    </span>
+                    <span className="text-[11px] text-[#64748B]">
+                      申请延至 {formatDateTime(item.expectedDeadline)}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 text-[12px] leading-5 text-[#64748B]">{item.reason}</div>
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleReview(item.id, 'rejected')}
+                      disabled={Boolean(reviewingId)}
+                      className="h-[32px] flex-1 rounded-lg bg-white text-[12px] font-medium text-[#64748B] ring-1 ring-[#E2E8F0] disabled:opacity-60"
+                    >
+                      驳回
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleReview(item.id, 'approved')}
+                      disabled={Boolean(reviewingId)}
+                      className="h-[32px] flex-1 rounded-lg bg-[#0062FF] text-[12px] font-semibold text-white disabled:opacity-60"
+                    >
+                      通过
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {processedDelays.length > 0 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setShowProcessed((v) => !v)}
+                  className="mt-2 flex w-full items-center justify-center gap-1 rounded-lg py-1.5 text-[11px] text-[#94A3B8]"
+                >
+                  已处理 {processedDelays.length} 条
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform ${showProcessed ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {showProcessed && (
+                  <div className="mt-1 flex flex-col gap-1.5">
+                    {processedDelays.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between gap-2 rounded-xl bg-[#F8FAFC] px-3 py-2"
+                      >
+                        <div className="min-w-0">
+                          <div className="truncate text-[12px] font-medium text-[#334155]">
+                            {item.studentName}
+                          </div>
+                          <div className="text-[11px] text-[#94A3B8]">
+                            延至 {formatDateTime(item.expectedDeadline)}
+                          </div>
+                        </div>
+                        <span
+                          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                            item.status === 'approved'
+                              ? 'bg-[#F0FDF4] text-[#16A34A]'
+                              : 'bg-[#F1F5F9] text-[#64748B]'
+                          }`}
+                        >
+                          {delayStatusText[item.status] || item.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* 我的提交 */}
+        {data.mySubmission ? (
+          <div className="rounded-2xl bg-white p-4 shadow-[0px_2px_8px_0px_#0000000D] ring-1 ring-[#F1F5F9]">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="flex items-center gap-2 text-[13px] font-semibold text-[#1E293B]">
+                <CheckCircle2 className="h-4 w-4 text-[#22C55E]" />
+                我的提交
+              </span>
+              <span className="rounded-full bg-[#F0FDF4] px-2 py-0.5 text-[10px] font-semibold text-[#16A34A]">
+                已提交
+              </span>
+            </div>
+            {data.mySubmission.content && (
+              <div className="mb-3 whitespace-pre-wrap rounded-xl bg-[#F8FAFC] p-3 text-[13px] leading-6 text-[#475569]">
+                {data.mySubmission.content}
+              </div>
+            )}
+            {attachments.length > 0 && (
+              <div className="mb-3 grid grid-cols-3 gap-2">
+                {attachments.map((url, index) => (
+                  <a
+                    key={`${url}-${index}`}
+                    href={resolveFileUrl(url)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="aspect-square overflow-hidden rounded-lg bg-[#F1F5F9]"
+                  >
+                    <img
+                      src={resolveFileUrl(url)}
+                      alt={`附件${index + 1}`}
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </a>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-1 text-[11px] text-[#94A3B8]">
+              <Clock3 className="h-3.5 w-3.5" />
+              提交于 {formatDateTime(data.mySubmission.submitted_at)}
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl bg-white p-4 shadow-[0px_2px_8px_0px_#0000000D] ring-1 ring-[#F1F5F9]">
+            <div className="flex items-center gap-2 text-[13px] font-semibold text-[#1E293B]">
+              <Paperclip className="h-4 w-4 text-[#94A3B8]" />
+              尚未提交
+            </div>
+            <div className="mt-1.5 text-[12px] leading-5 text-[#94A3B8]">
+              {overdue ? '作业已截止，可申请延时后补交' : '请在截止时间前完成提交'}
+            </div>
+          </div>
+        )}
+
+        {/* 我的延时申请 */}
+        {data.myDelayApplication && (
+          <div className="rounded-2xl bg-white p-4 shadow-[0px_2px_8px_0px_#0000000D] ring-1 ring-[#F1F5F9]">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="flex items-center gap-2 text-[13px] font-semibold text-[#1E293B]">
+                <Timer className="h-4 w-4 text-[#F59E0B]" />
+                我的延时申请
+              </span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                  data.myDelayApplication.status === 'approved'
+                    ? 'bg-[#F0FDF4] text-[#16A34A]'
+                    : data.myDelayApplication.status === 'rejected'
+                      ? 'bg-[#F1F5F9] text-[#64748B]'
+                      : 'bg-[#FFFBEB] text-[#D97706]'
                 }`}
               >
-                <Mic className="w-4 h-4" />
-                {isRecording ? `${formatTime(recordTime)}` : '录音'}
-              </button>
+                {delayStatusText[data.myDelayApplication.status] ||
+                  data.myDelayApplication.status}
+              </span>
+            </div>
+            <div className="text-[12px] leading-5 text-[#475569]">
+              申请延至 {formatDateTime(data.myDelayApplication.expected_deadline)}
+            </div>
+            {data.myDelayApplication.reason && (
+              <div className="mt-1 text-[12px] text-[#94A3B8]">
+                原因：{data.myDelayApplication.reason}
+              </div>
+            )}
+            {data.myDelayApplication.status === 'pending' && (
+              <div className="mt-2 rounded-lg bg-[#FFFBEB] px-2.5 py-2 text-[11px] text-[#B45309]">
+                等待班委审批，审批通过后将按新的截止时间提交
+              </div>
+            )}
+            {data.myDelayApplication.status === 'rejected' && (
+              <div className="mt-2 rounded-lg bg-[#F8FAFC] px-2.5 py-2 text-[11px] text-[#64748B]">
+                申请未通过，可在下方重新申请
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 学生操作栏（吸底） */}
+        {!isManager && (
+          <div className="sticky bottom-0 z-10 -mx-5 -mb-[calc(20px+env(safe-area-inset-bottom))] mt-auto bg-white/95 px-5 pt-3 pb-[calc(8px+env(safe-area-inset-bottom))] backdrop-blur">
+            {canSubmit ? (
               <button
                 type="button"
-                onClick={() => fileRef.current?.click()}
-                className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-full border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#4B5563] active:bg-gray-50 transition-colors"
+                onClick={() => navigate(`/homework-submit/${data.id}`)}
+                className="flex h-[46px] w-full items-center justify-center gap-2 rounded-xl bg-[#0062FF] text-[15px] font-semibold text-white shadow-[0px_4px_12px_0px_#0062FF33] active:opacity-90"
               >
-                <FileText className="w-4 h-4" />
-                文件
+                <Send className="h-4 w-4" />
+                {data.mySubmission ? '重新提交' : '去提交作业'}
               </button>
-            </div>
-
-            <div className="px-5 pb-6 pt-2 shrink-0">
+            ) : (
+              <div className="flex h-[46px] w-full items-center justify-center gap-2 rounded-xl bg-[#F1F5F9] text-[14px] font-medium text-[#94A3B8]">
+                <Clock3 className="h-4 w-4" />
+                作业已截止
+              </div>
+            )}
+            {canApplyDelay && (
               <button
                 type="button"
-                onClick={handleSubmit}
-                className="w-full h-[48px] rounded-xl bg-[#0062FF] text-[16px] font-semibold text-white shadow-[0_4px_16px_0px_#0000001A] active:opacity-90 transition-opacity"
+                onClick={() => navigate(`/delay-apply/${data.id}`)}
+                className="mt-2 flex h-[42px] w-full items-center justify-center gap-2 rounded-xl bg-white text-[13px] font-medium text-[#475569] ring-1 ring-[#E2E8F0]"
               >
-                {isSubmitted ? '重新提交' : '提交'}
+                <Timer className="h-4 w-4" />
+                {overdue ? '申请延时补交' : '需要更多时间？申请延时'}
               </button>
-            </div>
+            )}
           </div>
-
-          <input ref={imgRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageSelect} />
-          <input ref={fileRef} type="file" multiple className="hidden" onChange={handleFileSelect} />
-        </>
-      )}
-
-      {/* 摄像头拍照弹窗 */}
-      {showCamera && (
-        <div className="fixed inset-0 z-[60] bg-black flex flex-col">
-          <div className="flex items-center justify-between px-5 py-4 bg-black/80">
-            <button
-              type="button"
-              onClick={() => {
-                setShowCamera(false);
-                if (streamRef.current) {
-                  streamRef.current.getTracks().forEach((t) => t.stop());
-                  streamRef.current = null;
-                }
-              }}
-              className="w-8 h-8 flex items-center justify-center text-white"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <span className="text-white text-[16px] font-semibold">拍照</span>
-            <div className="w-8" />
-          </div>
-          <div className="flex-1 flex items-center justify-center bg-black relative">
-            <video ref={videoRef} className="w-full h-full object-cover" playsInline muted autoPlay />
-            <canvas ref={canvasRef} className="hidden" />
-          </div>
-          <div className="flex items-center justify-center py-6 bg-black/80">
-            <button
-              type="button"
-              onClick={takePhoto}
-              className="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center active:scale-95 transition-transform"
-            >
-              <div className="w-12 h-12 rounded-full bg-white" />
-            </button>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </PageLayout>
   );
 }

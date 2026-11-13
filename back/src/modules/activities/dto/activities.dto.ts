@@ -8,8 +8,11 @@ import {
   Max,
   IsUrl,
   IsEnum,
+  IsIn,
   Length,
   Matches,
+  IsArray,
+  ArrayMaxSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -25,11 +28,24 @@ export enum RegistrationStatus {
   REJECTED = 'rejected',
 }
 
+/** 活动分类标签，前端展示与筛选共用 */
+export const ACTIVITY_CATEGORIES = [
+  '文体活动',
+  '学习交流',
+  '志愿服务',
+  '班级事务',
+  '其他',
+] as const;
+
 export class CreateActivityDto {
   @IsString({ message: '活动名称必须是字符串' })
   @IsNotEmpty({ message: '活动名称不能为空' })
   @Length(1, 200, { message: '活动名称长度不能超过200字符' })
   title: string;
+
+  @IsOptional()
+  @IsIn(ACTIVITY_CATEGORIES as unknown as string[], { message: '活动分类不正确' })
+  category?: string;
 
   @IsDateString({}, { message: '活动日期格式不正确' })
   @IsNotEmpty({ message: '活动日期不能为空' })
@@ -58,9 +74,21 @@ export class CreateActivityDto {
   deadline?: string;
 
   @IsOptional()
+  @IsString({ message: '活动详情必须是字符串' })
+  @Length(0, 2000, { message: '活动详情长度不能超过2000字符' })
+  description?: string;
+
+  @IsOptional()
   @IsString({ message: '封面地址必须是字符串' })
   @Length(0, 500, { message: '封面地址长度不能超过500字符' })
   coverUrl?: string;
+
+  @IsOptional()
+  @IsArray({ message: '活动图片格式不正确' })
+  @ArrayMaxSize(6, { message: '活动图片最多上传6张' })
+  @IsString({ each: true, message: '活动图片地址必须是字符串' })
+  @Length(0, 500, { each: true, message: '活动图片地址长度不能超过500字符' })
+  images?: string[];
 }
 
 export class ActivityIdParamDto {

@@ -9,6 +9,7 @@ import {
   Min,
   Max,
   Length,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -33,6 +34,16 @@ export class CreateTaskDto {
   deadline?: string;
 
   @IsOptional()
+  @IsString({ message: '任务地点必须是字符串' })
+  @MaxLength(200, { message: '任务地点长度不能超过200字符' })
+  location?: string;
+
+  @IsOptional()
+  @IsString({ message: '任务内容必须是字符串' })
+  @MaxLength(2000, { message: '任务内容长度不能超过2000字符' })
+  content?: string;
+
+  @IsOptional()
   @IsEnum(TaskStatus, { message: '任务状态不正确' })
   status?: TaskStatus = TaskStatus.TODO;
 
@@ -42,6 +53,13 @@ export class CreateTaskDto {
   @Min(0, { message: '进度不能小于0' })
   @Max(100, { message: '进度不能大于100' })
   progress?: number = 0;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: '任务优先级不正确' })
+  @Min(0, { message: '任务优先级不正确' })
+  @Max(3, { message: '任务优先级不正确' })
+  priority?: number = 0;
 }
 
 export class UpdateTaskDto {
@@ -59,6 +77,16 @@ export class UpdateTaskDto {
   deadline?: string;
 
   @IsOptional()
+  @IsString({ message: '任务地点必须是字符串' })
+  @MaxLength(200, { message: '任务地点长度不能超过200字符' })
+  location?: string;
+
+  @IsOptional()
+  @IsString({ message: '任务内容必须是字符串' })
+  @MaxLength(2000, { message: '任务内容长度不能超过2000字符' })
+  content?: string;
+
+  @IsOptional()
   @IsEnum(TaskStatus, { message: '任务状态不正确' })
   status?: TaskStatus;
 
@@ -68,6 +96,13 @@ export class UpdateTaskDto {
   @Min(0, { message: '进度不能小于0' })
   @Max(100, { message: '进度不能大于100' })
   progress?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: '任务优先级不正确' })
+  @Min(0, { message: '任务优先级不正确' })
+  @Max(3, { message: '任务优先级不正确' })
+  priority?: number;
 }
 
 export class QueryTasksDto {

@@ -17,8 +17,11 @@ export default function FaceCheckIn({ classId, attendanceId, onSuccess }: FaceCh
   const [cameraError, setCameraError] = useState('');
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const startingRef = useRef(false);
 
   const startCamera = async () => {
+    if (startingRef.current || cameraActive) return;
+    startingRef.current = true;
     setCameraError('');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -36,6 +39,8 @@ export default function FaceCheckIn({ classId, attendanceId, onSuccess }: FaceCh
         : '无法访问摄像头，请检查权限设置';
       setCameraError(msg);
       toast.error(msg);
+    } finally {
+      startingRef.current = false;
     }
   };
 
@@ -125,6 +130,10 @@ export default function FaceCheckIn({ classId, attendanceId, onSuccess }: FaceCh
       setPhotoUrl(compressed);
       stopCamera();
     };
+    img.onerror = () => {
+      toast.error('照片处理失败，请重试');
+      stopCamera();
+    };
     img.src = tempCanvas.toDataURL('image/png');
   };
 
@@ -142,6 +151,9 @@ export default function FaceCheckIn({ classId, attendanceId, onSuccess }: FaceCh
       img.onload = () => {
         const compressed = compressAndWatermark(img);
         setPhotoUrl(compressed);
+      };
+      img.onerror = () => {
+        toast.error('图片读取失败，请更换图片重试');
       };
       img.src = ev.target?.result as string;
     };

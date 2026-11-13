@@ -1,186 +1,255 @@
-﻿import PhoneFrame from '@/components/layout/PhoneFrame';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Download, TrendingUp } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
+import PageLayout from '@/components/layout/PageLayout';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { api } from '@/lib/api';
+import { toast } from 'sonner';
+
+type MyStatus = 'present' | 'late' | 'leave' | 'absent' | 'pending' | 'upcoming';
+
+interface ReportSession {
+  id: string;
+  title: string;
+  method: string;
+  startTime: string;
+  endTime: string;
+  status: 'pending' | 'in-progress' | 'completed';
+  presentCount: number;
+  leaveCount: number;
+  absentCount: number;
+  total: number;
+  myStatus: MyStatus;
+}
+
+interface ReportData {
+  totalSessions: number;
+  memberCount: number;
+  myPresent: number;
+  myLeave: number;
+  myAbsent: number;
+  attendanceRate: number;
+  sessions: ReportSession[];
+}
+
+const MY_STATUS: Record<MyStatus, { text: string; className: string }> = {
+  present: { text: '正常', className: 'bg-[#DCFCE7] text-[#16A34A]' },
+  late: { text: '迟到', className: 'bg-[#FEF3C7] text-[#B45309]' },
+  leave: { text: '请假', className: 'bg-[#FEF3C7] text-[#B45309]' },
+  absent: { text: '缺勤', className: 'bg-[#FEE2E2] text-[#DC2626]' },
+  pending: { text: '待签到', className: 'bg-[#DBEAFE] text-[#1D4ED8]' },
+  upcoming: { text: '未开始', className: 'bg-[#F3F4F6] text-[#6B7280]' },
+};
+
+function formatDate(iso: string) {
+  const d = new Date(iso);
+  return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function formatTime(iso: string) {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
 
 export default function AttendanceReport() {
   const navigate = useNavigate();
+  const { user, loading: userLoading } = useCurrentUser();
+  const [report, setReport] = useState<ReportData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [error, setError] = useState('');
+
+  const fetchReport = useCallback(async () => {
+    if (!user?.classId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const res = await api.get(`/classes/${user.classId}/attendances/report`);
+      const raw = res.data.data || res.data;
+      if (!raw || typeof raw !== 'object') throw new Error('考勤报表数据异常');
+      setReport({
+        totalSessions: Number(raw.totalSessions) || 0,
+        memberCount: Number(raw.memberCount) || 0,
+        myPresent: Number(raw.myPresent) || 0,
+        myLeave: Number(raw.myLeave) || 0,
+        myAbsent: Number(raw.myAbsent) || 0,
+        attendanceRate: Number(raw.attendanceRate) || 0,
+        sessions: Array.isArray(raw.sessions) ? raw.sessions : [],
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '获取考勤报表失败');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.classId]);
+
+  useEffect(() => {
+    if (userLoading) return;
+    void fetchReport();
+  }, [userLoading, fetchReport]);
+
+  const handleExport = async () => {
+    if (!report || exporting) return;
+    setExporting(true);
+    const header = ['日期', '签到标题', '我的状态', '已签到', '请假', '缺勤', '应到'];
+    const rows = report.sessions.map((s) => [
+      formatDate(s.startTime),
+      s.title,
+      MY_STATUS[s.myStatus]?.text || s.myStatus,
+      String(s.presentCount),
+      String(s.leaveCount),
+      String(s.absentCount),
+      String(s.total),
+    ]);
+    const content = [header, ...rows]
+      .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const fileName = `考勤报表-${new Date().toISOString().slice(0, 10)}.csv`;
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const { uri } = await Filesystem.writeFile({
+          path: fileName,
+          data: `\uFEFF${content}`,
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8,
+        });
+        await Share.share({
+          title: '考勤报表',
+          text: '考勤报表',
+          url: uri,
+          dialogTitle: '导出考勤报表',
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (!/cancel/i.test(msg)) toast.error('导出失败，请重试');
+      } finally {
+        setExporting(false);
+      }
+      return;
+    }
+
+    try {
+      const blob = new Blob([`\uFEFF${content}`], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success('考勤报表已导出');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <PageLayout title="考勤报表" onBack={() => navigate(-1)}>
+        <div className="py-16 text-center text-sm text-[#9CA3AF]">加载中...</div>
+      </PageLayout>
+    );
+  }
+
+  if (error || !report) {
+    return (
+      <PageLayout title="考勤报表" onBack={() => navigate(-1)}>
+        <div className="flex flex-col items-center justify-center gap-3 py-16">
+          <TrendingUp className="w-10 h-10 text-[#CBD5E1]" strokeWidth={1.5} />
+          <div className="text-sm text-[#6B7280]">{error || '暂无考勤数据'}</div>
+          <button
+            onClick={fetchReport}
+            className="h-[36px] px-5 rounded-lg bg-[#0062FF] text-white text-sm font-medium active:opacity-80"
+          >
+            重新加载
+          </button>
+        </div>
+      </PageLayout>
+    );
+  }
+
   return (
-    <PhoneFrame>
-      <div className="flex h-full flex-col overflow-y-auto">
-        <div
-      data-pencil-name="考勤报表页"
-      className="box-border w-[393px] h-[844px] flex flex-col gap-0 justify-start items-start bg-[#FFFFFF] rounded-[40px] overflow-hidden"
-    >
-      <div
-        data-pencil-name="Phone Frame"
-        className="box-border w-[393px] h-[844px] shrink-0 flex flex-col gap-0 justify-start items-start bg-[#FFFFFF] rounded-[40px] overflow-hidden"
-      >
-        <div
-          data-pencil-name="Status Bar"
-          className="box-border w-full h-[62px] shrink-0 flex flex-row gap-0 p-[12px_24px_0px_24px] justify-between items-center bg-[#FFFFFF]"
-        >
-          <div
-            data-pencil-name="Time"
-            className="text-[14px]/[normal] box-border text-[#1A1A1A] font-data font-semibold text-left [white-space:nowrap]"
-          >
-            9:41
+    <PageLayout title="考勤报表" onBack={() => navigate(-1)}>
+      <div className="flex flex-col gap-4">
+        <div className="text-xs text-[#6B7280]">
+          已结束 {report.totalSessions} 场 · 明细 {report.sessions.length} 条 · 班级成员 {report.memberCount} 人
+        </div>
+
+        {/* 我的考勤概览 */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="flex flex-col items-center gap-1 rounded-2xl bg-white p-4 shadow-soft">
+            <div className="font-heading text-[24px] font-bold text-[#0062FF]">
+              {report.attendanceRate}%
+            </div>
+            <div className="text-[11px] text-[#6B7280]">我的出勤率</div>
           </div>
-          <div
-            data-pencil-name="Status Icons"
-            className="box-border w-fit shrink-0 h-fit flex flex-row gap-[6px] justify-start items-center"
-          >
-            <div
-              data-pencil-name="Signal"
-              className="text-[14px]/[normal] box-border text-[#1A1A1A] font-caption font-normal text-left [white-space:nowrap]"
-            >
-              ◉◉◉◉
-            </div>
-            <div
-              data-pencil-name="Battery"
-              className="text-[14px]/[normal] box-border text-[#1A1A1A] font-data font-normal text-left [white-space:nowrap]"
-            >
-              100%
-            </div>
+          <div className="flex flex-col items-center gap-1 rounded-2xl bg-white p-4 shadow-soft">
+            <div className="font-heading text-[24px] font-bold text-[#B45309]">{report.myLeave}</div>
+            <div className="text-[11px] text-[#6B7280]">请假</div>
+          </div>
+          <div className="flex flex-col items-center gap-1 rounded-2xl bg-white p-4 shadow-soft">
+            <div className="font-heading text-[24px] font-bold text-[#DC2626]">{report.myAbsent}</div>
+            <div className="text-[11px] text-[#6B7280]">缺勤</div>
           </div>
         </div>
-        <div
-          data-pencil-name="Content"
-          className="box-border w-full [flex:1_1_0] flex flex-col gap-4 p-[0px_20px] justify-start items-start"
-        >
-          <div
-            data-pencil-name="Spacer"
-            className="box-border w-full h-[20px] shrink-0 flex flex-row gap-0 justify-start items-start"
-          ></div>
-          <div
-            data-pencil-name="Title"
-            className="text-[28px]/[normal] box-border text-[#1A1A1A] font-heading font-bold text-left [white-space:nowrap]"
-          >
-            考勤报表
-          </div>
-          <div
-            data-pencil-name="Subtitle"
-            className="text-[14px]/[normal] box-border text-[#4B5563] font-body font-normal text-left [white-space:nowrap]"
-          >
-            2024-2025 第一学期
-          </div>
-          <div
-            data-pencil-name="Spacer2"
-            className="box-border w-full h-[20px] shrink-0 flex flex-row gap-0 justify-start items-start"
-          ></div>
-          <div
-            data-pencil-name="Stats"
-            className="box-border w-full h-fit shrink-0 flex flex-row gap-[12px] justify-start items-start"
-          >
-            <div
-              data-pencil-name="出勤率"
-              className="box-border [flex:1_1_0] h-[80px] [box-shadow:0px_2px_8px_0px_#0000000D] flex flex-col gap-[4px] justify-center items-center bg-[#FFFFFF] [border:1px_solid_#00000000] rounded-lg"
-            >
+
+        {/* 场次明细 */}
+        <div className="flex flex-col gap-2">
+          <div className="text-xs font-semibold text-[#6B7280]">场次明细</div>
+          {report.sessions.length === 0 ? (
+            <div className="py-12 text-center text-sm text-[#9CA3AF]">暂无签到记录</div>
+          ) : (
+            report.sessions.map((session) => (
               <div
-                data-pencil-name="Value"
-                className="text-[20px]/[normal] box-border text-[#1A1A1A] font-heading font-bold text-left [white-space:nowrap]"
+                key={session.id}
+                className="flex flex-col gap-2 rounded-2xl bg-white p-4 shadow-soft"
+                onClick={() => navigate(`/check-in-detail/${user?.classId}/${session.id}`)}
               >
-                94.2%
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-baseline gap-2 min-w-0">
+                    <span className="text-sm font-semibold text-[#1A1A1A] truncate">
+                      {session.title}
+                    </span>
+                    <span className="shrink-0 text-[11px] text-[#9CA3AF]">
+                      {formatDate(session.startTime)} {formatTime(session.startTime)}
+                    </span>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] ${
+                      MY_STATUS[session.myStatus]?.className || 'bg-[#F3F4F6] text-[#6B7280]'
+                    }`}
+                  >
+                    {MY_STATUS[session.myStatus]?.text || session.myStatus}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 text-[11px] text-[#6B7280]">
+                  <span>已签到 {session.presentCount}</span>
+                  <span>请假 {session.leaveCount}</span>
+                  <span>缺勤 {session.absentCount}</span>
+                  <span className="ml-auto">应到 {session.total}</span>
+                </div>
               </div>
-              <div
-                data-pencil-name="Label"
-                className="text-[11px]/[normal] box-border text-[#4B5563] font-caption font-normal text-left [white-space:nowrap]"
-              >
-                出勤率
-              </div>
-            </div>
-            <div
-              data-pencil-name="请假"
-              className="box-border [flex:1_1_0] h-[80px] [box-shadow:0px_2px_8px_0px_#0000000D] flex flex-col gap-[4px] justify-center items-center bg-[#FFFFFF] [border:1px_solid_#00000000] rounded-lg"
-            >
-              <div
-                data-pencil-name="Value"
-                className="text-[20px]/[normal] box-border text-[#1A1A1A] font-heading font-bold text-left [white-space:nowrap]"
-              >
-                12
-              </div>
-              <div
-                data-pencil-name="Label"
-                className="text-[11px]/[normal] box-border text-[#4B5563] font-caption font-normal text-left [white-space:nowrap]"
-              >
-                请假
-              </div>
-            </div>
-            <div
-              data-pencil-name="缺勤"
-              className="box-border [flex:1_1_0] h-[80px] [box-shadow:0px_2px_8px_0px_#0000000D] flex flex-col gap-[4px] justify-center items-center bg-[#FFFFFF] [border:1px_solid_#00000000] rounded-lg"
-            >
-              <div
-                data-pencil-name="Value"
-                className="text-[20px]/[normal] box-border text-[#1A1A1A] font-heading font-bold text-left [white-space:nowrap]"
-              >
-                8
-              </div>
-              <div
-                data-pencil-name="Label"
-                className="text-[11px]/[normal] box-border text-[#4B5563] font-caption font-normal text-left [white-space:nowrap]"
-              >
-                缺勤
-              </div>
-            </div>
-          </div>
-          <div
-            data-pencil-name="Chart"
-            className="box-border w-full h-[200px] shrink-0 flex flex-col gap-[12px] p-4 justify-start items-start bg-[#FFFFFF] [border:1px_solid_#E5E7EB] rounded-lg"
-          >
-            <div
-              data-pencil-name="Title"
-              className="text-[16px]/[normal] box-border text-[#1A1A1A] font-heading font-semibold text-left [white-space:nowrap]"
-            >
-              月度出勤趋势
-            </div>
-            <div
-              data-pencil-name="Bars"
-              className="box-border w-full h-[120px] shrink-0 flex flex-row gap-2 justify-start items-end"
-            >
-              <div
-                data-pencil-name="Bar"
-                className="box-border [flex:1_1_0] h-[80px] flex flex-row gap-0 justify-start items-start bg-[#0062FF] rounded-sm"
-              ></div>
-              <div
-                data-pencil-name="Bar"
-                className="box-border [flex:1_1_0] h-[90px] flex flex-row gap-0 justify-start items-start bg-[#0062FF] rounded-sm"
-              ></div>
-              <div
-                data-pencil-name="Bar"
-                className="box-border [flex:1_1_0] h-[75px] flex flex-row gap-0 justify-start items-start bg-[#0062FF] rounded-sm"
-              ></div>
-              <div
-                data-pencil-name="Bar"
-                className="box-border [flex:1_1_0] h-[95px] flex flex-row gap-0 justify-start items-start bg-[#0062FF] rounded-sm"
-              ></div>
-              <div
-                data-pencil-name="Bar"
-                className="box-border [flex:1_1_0] h-[88px] flex flex-row gap-0 justify-start items-start bg-[#0062FF] rounded-sm"
-              ></div>
-              <div
-                data-pencil-name="Bar"
-                className="box-border [flex:1_1_0] h-[92px] flex flex-row gap-0 justify-start items-start bg-[#0062FF] rounded-sm"
-              ></div>
-              <div
-                data-pencil-name="Bar"
-                className="box-border [flex:1_1_0] h-[85px] flex flex-row gap-0 justify-start items-start bg-[#0062FF] rounded-sm"
-              ></div>
-            </div>
-          </div>
-          <div
-            data-pencil-name="Export Button"
-            className="box-border w-full h-[52px] shrink-0 [box-shadow:0px_4px_16px_0px_#0000000D] flex flex-col gap-2 p-[0px_16px] justify-center items-center bg-[#0062FF] rounded-lg" onClick={() => navigate('/export-archive')}
-          >
-            <div
-              data-pencil-name="Label"
-              className="text-[16px]/[normal] box-border text-[#FFFFFF] font-body font-semibold text-left [white-space:nowrap]"
-            >
-              导出 Excel
-            </div>
-          </div>
+            ))
+          )}
         </div>
+
+        <button
+          onClick={handleExport}
+          disabled={report.sessions.length === 0 || exporting}
+          className="w-full h-[48px] flex items-center justify-center gap-2 bg-[#0062FF] text-white font-medium rounded-lg disabled:opacity-50 active:opacity-80"
+        >
+          <Download className="w-4 h-4" />
+          {exporting ? '导出中...' : '导出 CSV'}
+        </button>
       </div>
-    </div>
-      </div>
-    </PhoneFrame>
+    </PageLayout>
   );
 }

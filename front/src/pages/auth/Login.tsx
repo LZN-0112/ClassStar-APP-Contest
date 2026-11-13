@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
+import { requestWechatAuthCode } from '@/lib/wechat';
 import { GradientWave } from '@/components/ui/gradient-wave';
 
 export default function Login() {
@@ -29,6 +30,22 @@ export default function Login() {
     return true;
   };
 
+  const finishLogin = async (data: { accessToken: string; refreshToken: string }) => {
+    localStorage.setItem('accessToken', data.accessToken);
+    localStorage.setItem('refreshToken', data.refreshToken);
+    toast.success('登录成功');
+    // 已加入班级的用户直接进首页，未加入班级的新用户才引导去加入/创建班级
+    let nextPath = '/home';
+    try {
+      const orgsRes = await api.get('/classes/my');
+      const orgs = orgsRes.data?.data || orgsRes.data || [];
+      if (!Array.isArray(orgs) || orgs.length === 0) nextPath = '/join-class';
+    } catch {
+      // 班级列表获取失败时不阻断登录，首页会展示空班级引导
+    }
+    navigate(nextPath, { replace: true });
+  };
+
   const handleLogin = async () => {
     if (!agreed) {
       toast.error('请先勾选同意《用户协议》和《隐私政策》');
@@ -42,13 +59,33 @@ export default function Login() {
         loginType: 'password',
         password,
       });
-      const { accessToken, refreshToken } = res.data.data || res.data;
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      toast.success('登录成功');
-      navigate('/join-class');
+      await finishLogin(res.data.data || res.data);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '登录失败，请检查信息后重试');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleWechatLogin = async () => {
+    if (!agreed) {
+      toast.error('请先勾选同意《用户协议》和《隐私政策》');
+      return;
+    }
+    if (loading) return;
+    setLoading(true);
+    try {
+      const code = await requestWechatAuthCode();
+      const res = await api.post('/auth/wechat/login', { code });
+      const data = res.data?.data || res.data;
+      if (data.needBindPhone) {
+        sessionStorage.setItem('wechatBindTicket', data.bindTicket);
+        navigate('/wechat-bind', { replace: true });
+        return;
+      }
+      await finishLogin(data);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '微信登录失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -209,14 +246,15 @@ export default function Login() {
           >
             <div
               data-pencil-name="WeChat"
-              className="box-border flex h-[56px] w-[56px] shrink-0 flex-col items-center justify-center gap-0 rounded-full border-[1px_solid_#00000000] bg-[#FFFFFF] [box-shadow:0px_2px_8px_0px_#0000000D]"
+              onClick={handleWechatLogin}
+              className="box-border flex h-[56px] w-[56px] shrink-0 cursor-pointer flex-col items-center justify-center gap-0 rounded-full border-[1px_solid_#00000000] bg-[#FFFFFF] [box-shadow:0px_2px_8px_0px_#0000000D]"
             >
               <svg
                 data-pencil-name="Icon-WeChat"
                 viewBox="0 0 24 24"
                 preserveAspectRatio="none"
                 xmlns="http://www.w3.org/2000/svg"
-                className="box-border h-[24px] w-[24px] shrink-0 overflow-visible"
+                className="box-border h-[32px] w-[32px] shrink-0 overflow-visible"
               >
                 <path
                   d="M8.691 2.188c-4.8 0-8.691 3.288-8.691 7.342 0 2.212 1.17 4.203 3.002 5.55a0.59 0.59 0 0 1 0.213 0.665l-0.39 1.48c-0.019 0.07-0.048 0.141-0.048 0.213 0 0.163 0.13 0.295 0.29 0.295a0.33 0.33 0 0 0 0.167-0.054l1.903-1.114a0.86 0.86 0 0 1 0.717-0.098 10.2 10.2 0 0 0 2.837 0.403c0.276 0 0.543-0.027 0.811-0.05-0.857-2.578 0.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-0.576-3.583-4.196-6.348-8.596-6.348m-2.906 3.803c0.642 0 1.162 0.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.179c0-0.651 0.52-1.18 1.162-1.18z m5.813 0c0.642 0 1.162 0.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-0.651 0.52-1.18 1.162-1.18m5.34 2.867c-1.797-0.052-3.746 0.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22 0.942 2.453 3.666 4.229 6.884 4.229 0.826 0 1.622-0.12 2.361-0.336a0.72 0.72 0 0 1 0.598 0.082l1.584 0.926a0.3 0.3 0 0 0 0.14 0.047c0.134 0 0.24-0.111 0.24-0.247 0-0.06-0.023-0.12-0.038-0.177l-0.327-1.233a0.6 0.6 0 0 1-0.023-0.156 0.49 0.49 0 0 1 0.201-0.398c1.526-1.121 2.502-2.781 2.502-4.621 0-3.21-2.931-5.837-6.656-6.088v-0.002c-0.135-0.01-0.27-0.027-0.407-0.03z m-2.53 3.274c0.535 0 0.969 0.44 0.969 0.982a0.976 0.976 0 0 1-0.969 0.983 0.976 0.976 0 0 1-0.969-0.983c0-0.542 0.434-0.982 0.97-0.982z m4.844 0c0.535 0 0.969 0.44 0.969 0.982a0.976 0.976 0 0 1-0.969 0.983 0.976 0.976 0 0 1-0.969-0.983c0-0.542 0.434-0.982 0.969-0.982"

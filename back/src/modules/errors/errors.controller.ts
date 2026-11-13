@@ -18,6 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { ErrorsService } from './errors.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { MonitorAdminGuard } from '@/common/guards/monitor-admin.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { Public } from '@/common/decorators/public.decorator';
 import {
@@ -26,6 +27,10 @@ import {
   QueryErrorLogsDto,
   UpdateErrorSolutionDto,
 } from './dto/error.dto';
+import {
+  QueryErrorGroupsDto,
+  UpdateErrorGroupDto,
+} from './dto/error-group.dto';
 
 @ApiTags('错误日志与解决方案')
 @Controller('errors')
@@ -49,9 +54,9 @@ export class ErrorsController {
   }
 
   @Get('logs')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, MonitorAdminGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '查询错误日志列表' })
+  @ApiOperation({ summary: '查询错误日志列表（仅监控台管理员）' })
   @ApiQuery({ name: 'severity', required: false })
   @ApiQuery({ name: 'status', required: false })
   @ApiQuery({ name: 'error_type', required: false })
@@ -62,17 +67,17 @@ export class ErrorsController {
   }
 
   @Get('logs/:id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, MonitorAdminGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '获取错误日志详情' })
+  @ApiOperation({ summary: '获取错误日志详情（仅监控台管理员）' })
   getErrorLogById(@Param('id') id: string) {
     return this.errorsService.getErrorLogById(id);
   }
 
   @Put('logs/:id/status')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, MonitorAdminGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '更新错误日志状态' })
+  @ApiOperation({ summary: '更新错误日志状态（仅监控台管理员）' })
   updateErrorLogStatus(
     @Param('id') id: string,
     @Body('status') status: string,
@@ -81,38 +86,79 @@ export class ErrorsController {
   }
 
   @Get('dashboard')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, MonitorAdminGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '获取错误监控看板数据' })
+  @ApiOperation({ summary: '获取错误监控看板数据（仅监控台管理员）' })
   getDashboard() {
     return this.errorsService.getDashboard();
   }
 
-  @Post('solutions')
-  @UseGuards(JwtAuthGuard)
+  @Get('groups')
+  @UseGuards(JwtAuthGuard, MonitorAdminGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '创建解决方案' })
+  @ApiOperation({ summary: '查询错误分组（按指纹聚合，仅监控台管理员）' })
+  @ApiQuery({ name: 'source', required: false })
+  @ApiQuery({ name: 'severity', required: false })
+  @ApiQuery({ name: 'error_type', required: false })
+  @ApiQuery({ name: 'route', required: false })
+  @ApiQuery({ name: 'keyword', required: false })
+  @ApiQuery({ name: 'days', required: false })
+  @ApiQuery({ name: 'orderBy', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'pageSize', required: false })
+  getErrorGroups(@Query() dto: QueryErrorGroupsDto) {
+    return this.errorsService.getErrorGroups(dto);
+  }
+
+  @Get('groups/:groupId')
+  @UseGuards(JwtAuthGuard, MonitorAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '获取错误分组详情与最近上报记录' })
+  getErrorGroupById(@Param('groupId') groupId: string) {
+    return this.errorsService.getErrorGroupById(groupId);
+  }
+
+  @Put('groups/:groupId/status')
+  @UseGuards(JwtAuthGuard, MonitorAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '更新错误分组处理状态、备注与关联方案' })
+  updateErrorGroup(
+    @Param('groupId') groupId: string,
+    @Body() dto: UpdateErrorGroupDto,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.errorsService.updateErrorGroup(groupId, dto, userId);
+  }
+
+  @Post('solutions')
+  @UseGuards(JwtAuthGuard, MonitorAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '创建解决方案（仅监控台管理员）' })
   createSolution(@Body() dto: CreateErrorSolutionDto) {
     return this.errorsService.createSolution(dto);
   }
 
   @Get('solutions')
-  @ApiOperation({ summary: '查询解决方案列表' })
+  @UseGuards(JwtAuthGuard, MonitorAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '查询解决方案列表（仅监控台管理员）' })
   @ApiQuery({ name: 'error_type', required: false })
   getSolutions(@Query('error_type') errorType?: string) {
     return this.errorsService.getSolutions(errorType);
   }
 
   @Get('solutions/:id')
-  @ApiOperation({ summary: '获取解决方案详情' })
+  @UseGuards(JwtAuthGuard, MonitorAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '获取解决方案详情（仅监控台管理员）' })
   getSolutionById(@Param('id') id: string) {
     return this.errorsService.getSolutionById(id);
   }
 
   @Put('solutions/:id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, MonitorAdminGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '更新解决方案' })
+  @ApiOperation({ summary: '更新解决方案（仅监控台管理员）' })
   updateSolution(
     @Param('id') id: string,
     @Body() dto: UpdateErrorSolutionDto,
@@ -121,9 +167,9 @@ export class ErrorsController {
   }
 
   @Delete('solutions/:id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, MonitorAdminGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: '停用解决方案' })
+  @ApiOperation({ summary: '停用解决方案（仅监控台管理员）' })
   deleteSolution(@Param('id') id: string) {
     return this.errorsService.deleteSolution(id);
   }

@@ -4,6 +4,7 @@ import { Bell, Download, Users, CheckCircle, AlertCircle } from 'lucide-react';
 import PageLayout from '@/components/layout/PageLayout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { api } from '@/lib/api';
+import { saveBlobFile } from '@/lib/save-file';
 import { toast } from 'sonner';
 
 type AckTab = 'signed' | 'unsigned';
@@ -37,6 +38,8 @@ function formatDateTime(iso?: string) {
   return `${y}-${m}-${d} ${h}:${min}`;
 }
 
+
+
 export default function MessageStats() {
   const navigate = useNavigate();
   const { messageId: routeMessageId } = useParams<{ messageId: string }>();
@@ -48,6 +51,8 @@ export default function MessageStats() {
   const [activeTab, setActiveTab] = useState<AckTab>('unsigned');
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [reminding, setReminding] = useState(false);
 
   const classId = user?.classId;
@@ -60,13 +65,18 @@ export default function MessageStats() {
     }
 
     const fetchStats = async () => {
-      if (!classId || !messageId) return;
+      if (!classId || !messageId) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
+      setLoadError(false);
       try {
         const res = await api.get(`/classes/${classId}/messages/${messageId}/acks`);
         const data = res.data.data || res.data;
         setStats(data);
       } catch (err) {
+        setLoadError(true);
         toast.error(err instanceof Error ? err.message : '获取签收统计失败');
       } finally {
         setLoading(false);
@@ -74,7 +84,7 @@ export default function MessageStats() {
     };
 
     fetchStats();
-  }, [messageId, classId, navigate]);
+  }, [messageId, classId, navigate, reloadKey]);
 
   const displayList = activeTab === 'signed' ? stats?.ackedList || [] : stats?.unackedList || [];
 
@@ -82,9 +92,7 @@ export default function MessageStats() {
     if (!stats || stats.unackedCount === 0 || !classId || !messageId || reminding) return;
     setReminding(true);
     try {
-      await api.post(`/classes/${classId}/messages/${messageId}/remind`, {
-        remindAfterMinutes: 30,
-      });
+      await api.post(`/classes/${classId}/messages/${messageId}/remind`, {});
       toast.success(`已推送提醒给 ${stats.unackedCount} 位未签收同学`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '提醒失败');
@@ -93,19 +101,26 @@ export default function MessageStats() {
     }
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (!stats) return;
     const rows = [
       ['学号', '姓名', '状态'],
       ...stats.ackedList.map((m) => [m.studentId || '', m.name, '已签收']),
       ...stats.unackedList.map((m) => [m.studentId || '', m.name, '未签收']),
     ];
-    const csv = rows.map((r) => r.join(',')).join('\n');
+    // 转义引号并包裹字段，避免姓名/学号中的逗号、换行破坏 CSV 结构
+    const escapeCell = (value: string) => `"${String(value).replace(/"/g, '""')}"`;
+    // 添加 UTF-8 BOM，保证 Excel 打开中文不乱码
+    const csv = '\uFEFF' + rows.map((row) => row.map(escapeCell).join(',')).join('\r\n');
+    const fileName = '签收名单.csv';
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = '签收名单.csv';
-    link.click();
+
+    const result = await saveBlobFile(fileName, blob, 'text/csv');
+    if (!result.ok) {
+      toast.error('导出失败，请稍后重试');
+      return;
+    }
+    toast.success(result.path ? `已保存到：${result.path}` : '导出成功');
   };
 
   if (loading) {
@@ -114,6 +129,20 @@ export default function MessageStats() {
         <div className="flex w-full flex-1 items-center justify-center text-[14px] text-[#4B5563]">
           加载中...
         </div>
+      </PageLayout>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <PageLayout title="通知统计" variant="a" decor={<Bell className="h-[120px] w-[120px] text-white" strokeWidth={1.5} />}>
+        <button
+          type="button"
+          onClick={() => setReloadKey((k) => k + 1)}
+          className="flex w-full flex-1 items-center justify-center text-[14px] text-[#0062FF]"
+        >
+          加载失败，点击重试
+        </button>
       </PageLayout>
     );
   }
@@ -210,6 +239,11 @@ export default function MessageStats() {
                 </div>
               </div>
             ))}
+            {displayList.length === 0 && (
+              <div className="w-full py-10 text-center text-[14px] text-[#4B5563]">
+                {activeTab === 'signed' ? '暂无已签收人员' : '暂无未签收人员'}
+              </div>
+            )}
           </div>
         </div>
 

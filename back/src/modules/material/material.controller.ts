@@ -66,14 +66,29 @@ export class MaterialController {
 
   @Get('list')
   @ApiOperation({ summary: '获取文件列表' })
-  async getFileList(@Query() dto: QueryMaterialDto) {
-    return this.materialService.getFileList(dto);
+  async getFileList(
+    @Query() dto: QueryMaterialDto,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.materialService.getFileList(dto, userId);
+  }
+
+  @Get('summary')
+  @ApiOperation({ summary: '获取资料库概览（分类统计、最近更新、热门下载）' })
+  async getSummary(
+    @Query() dto: QueryMaterialDto,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.materialService.getSummary(dto.classId, userId);
   }
 
   @Get(':fileId')
   @ApiOperation({ summary: '获取文件详情' })
-  async getFileDetail(@Param('fileId') fileId: string) {
-    return this.materialService.getFileDetail(fileId);
+  async getFileDetail(
+    @Param('fileId') fileId: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.materialService.getFileDetail(fileId, userId);
   }
 
   @Get(':fileId/download')

@@ -1,0 +1,86 @@
+# 班务星 内部测试部署编排文件
+# 使用方式：
+#   1. 复制 .env.example 为 .env，填写密码与密钥
+#   2. 导入镜像：docker load -i banwuxing-backend-1.0.0.tar
+#   3. 启动：docker compose up -d
+#   4. 检查：curl http://127.0.0.1:3000/api/v1/health
+#
+# 说明：
+#   - 数据库数据存放在命名卷 mysql-data 中，容器重建不会丢失
+#   - 上传文件存放在命名卷 banwuxing-uploads 中
+#   - 后端容器启动时会自动执行 prisma migrate deploy 建表
+
+name: banwuxing
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: banwuxing-mysql
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请在 .env 中设置 MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME:-class_manage_db}
+      MYSQL_USER: ${DB_USER:-banwuxing}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?请在 .env 中设置 DB_PASSWORD}
+      TZ: Asia/Shanghai
+    ports:
+      # 默认只映射到宿主机 3306；若已被占用，在 .env 中改 MYSQL_PORT
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  backend:
+    image: banwuxing-backend:1.0.0
+    container_name: banwuxing-backend
+    restart: unless-stopped
+    # 仅当需要从源码重新构建时才使用：docker compose build
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      API_PREFIX: api/v1
+      TZ: Asia/Shanghai
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: ${DB_USER:-banwuxing}
+      DB_PASSWORD: ${DB_PASSWORD:?请在 .env 中设置 DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-class_manage_db}
+      JWT_SECRET: ${JWT_SECRET:?请在 .env 中设置 JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?请在 .env 中设置 JWT_REFRESH_SECRET}
+      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-2h}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-30d}
+      # Capacitor WebView 的来源是 http://localhost，必须保留，否则 APK 内请求会被 CORS 拦截
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+      # 无反向代理时设 0；前面有 Nginx 一层反代时设 1
+      TRUST_PROXY: ${TRUST_PROXY:-0}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # 不部署 MinIO，附件走容器内本地目录（已挂载持久化卷）
+      MINIO_LOCAL_FALLBACK: "true"
+      MINIO_LOCAL_DIR: /app/uploads
+      # 不部署 Redis，缓存自动降级为进程内存
+      MONITOR_ADMIN_PHONES: ${MONITOR_ADMIN_PHONES:-}
+    ports:
+      # 默认映射到宿主机 3000；若已被占用，在 .env 中改 BACKEND_PORT
+      - "${BACKEND_PORT:-3000}:3000"
+    volumes:
+      - banwuxing-uploads:/app/uploads
+
+volumes:
+  mysql-data:
+    name: banwuxing-mysql-data
+  banwuxing-uploads:
+    name: banwuxing-uploads

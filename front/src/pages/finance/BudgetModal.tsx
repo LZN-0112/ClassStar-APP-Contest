@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
 import { toast } from 'sonner';
+import BottomSheet from '@/components/ui/BottomSheet';
 import { api } from '@/lib/api';
 
 interface BudgetModalProps {
@@ -82,24 +82,34 @@ export default function BudgetModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
-      <div className="w-full max-w-[320px] rounded-2xl bg-white p-5">
-        {/* 标题栏 */}
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-gray-900">
-            设置{title}预算
-          </h3>
+    <BottomSheet
+      open
+      onClose={onClose}
+      title={`设置${title}预算`}
+      maxHeight="85vh"
+      locked={loading}
+      footer={
+        <div className="flex gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="h-[48px] flex-1 rounded-[14px] bg-[#F2F5F9] font-body text-[15px]/[normal] font-semibold text-[#475569] active:opacity-80"
           >
-            <X className="h-5 w-5" />
+            取消
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={loading}
+            className="h-[48px] flex-1 rounded-[14px] bg-[linear-gradient(180deg,#2E7DFF_0%,#0062FF_100%)] font-body text-[15px]/[normal] font-semibold text-white shadow-[0_10px_20px_rgba(0,98,255,0.24)] active:opacity-90 disabled:opacity-50"
+          >
+            {loading ? '保存中...' : '保存'}
           </button>
         </div>
-
+      }
+    >
         {/* 表单 */}
-        <div className="space-y-4">
+        <div className="space-y-4 px-5 pb-2">
           {/* 学年 */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-700">
@@ -159,26 +169,6 @@ export default function BudgetModal({
             />
           </div>
         </div>
-
-        {/* 按钮 */}
-        <div className="mt-5 flex gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            取消
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={loading}
-            className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? '保存中...' : '保存'}
-          </button>
-        </div>
-      </div>
-    </div>
+    </BottomSheet>
   );
 }

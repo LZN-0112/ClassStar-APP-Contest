@@ -69,9 +69,11 @@ export default function ErrorDashboard() {
   const [filterStatus, setFilterStatus] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [errorType, setErrorType] = useState<'forbidden' | 'failed' | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
+    setErrorType(null);
     try {
       const [dashRes, logsRes] = await Promise.all([
         api.get('/errors/dashboard'),
@@ -89,6 +91,8 @@ export default function ErrorDashboard() {
       setTotal(logsRes.data.data.total);
     } catch (err) {
       console.error('获取错误数据失败:', err);
+      // api 拦截器统一抛出带 status 的 Error（不含 response 对象）
+      setErrorType((err as any)?.status === 403 ? 'forbidden' : 'failed');
     } finally {
       setLoading(false);
     }
@@ -374,7 +378,25 @@ export default function ErrorDashboard() {
             )}
           </div>
         </div>
-      ) : null}
+      ) : (
+        <div className="flex flex-col items-center px-6 py-20 text-center">
+          <AlertCircle className="mb-3 h-12 w-12 text-[#9CA3AF]" />
+          <p className="text-[14px] font-medium text-[#4B5563]">
+            {errorType === 'forbidden' ? '无权限访问错误监控' : '数据加载失败'}
+          </p>
+          <p className="mt-1 text-[12px] text-[#9CA3AF]">
+            {errorType === 'forbidden' ? '该功能仅对群主/管理员开放' : '请检查网络后重试'}
+          </p>
+          {errorType === 'failed' && (
+            <button
+              onClick={fetchData}
+              className="mt-4 rounded-xl bg-[#0062FF] px-4 py-2 text-[13px] font-medium text-white active:opacity-80"
+            >
+              重试
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

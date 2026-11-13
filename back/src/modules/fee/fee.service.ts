@@ -23,6 +23,7 @@ import {
   FeeRecordType,
   CreateFeeBudgetDto,
   QueryFeeBudgetDto,
+  BatchPaymentDto,
 } from './dto/fee.dto';
 
 interface FeeRecord {
@@ -77,7 +78,32 @@ export class FeeService {
       .replace(/'/g, '&#039;');
   }
 
-  private recordToDto(record: FeeRecord) {
+  /**
+   * 将数据库中的票据标识转换为可访问地址。
+   * - 新记录：库里存的是对象名（fee-bills/xxx.png），每次读取时重新签发，避免 URL 过期。
+   * - 历史记录：库里存的是完整地址，原样返回（旧地址可能已过期，无法追溯修复）。
+   */
+  private async resolveBillUrl(billKey?: string | null): Promise<string | null> {
+    if (!billKey) return null;
+    if (/^(https?:\/\/|\/uploads\/|local:\/\/)/i.test(billKey)) {
+      return billKey;
+    }
+    const localFallback = this.configService.get('MINIO_LOCAL_FALLBACK', 'false') === 'true';
+    if (localFallback) {
+      return `/uploads/${billKey}`;
+    }
+    try {
+      return await this.minioPresignedService.getPresignedUrlByObjectName(
+        billKey,
+        this.presignExpirySeconds,
+      );
+    } catch (error: any) {
+      this.logger.warn(`票据地址签发失败: ${billKey} - ${error?.message}`);
+      return null;
+    }
+  }
+
+  private async recordToDto(record: FeeRecord) {
     return {
       id: String(record.id),
       classId: record.class_id,
@@ -85,7 +111,7 @@ export class FeeService {
       type: record.type,
       amount: Number(record.amount),
       remark: record.remark,
-      billUrl: record.bill_url,
+      billUrl: await this.resolveBillUrl(record.bill_url),
       createTime: record.create_time.toISOString(),
       updateTime: record.update_time.toISOString(),
     };
@@ -101,11 +127,11 @@ export class FeeService {
   }
 
   private async verifyCommittee(userId: string, classId: string): Promise<void> {
-    await this.verifyClassAccess(userId, classId);
     const member = await this.prisma.class_members.findFirst({
       where: { user_id: userId, class_id: classId },
+      select: { role_level: true },
     });
-    if (!member || !member.is_committee) {
+    if (!member || (member.role_level !== 'owner' && member.role_level !== 'admin')) {
       throw new ForbiddenException('当前身份无权执行该操作，仅班委可管理账目');
     }
   }
@@ -202,7 +228,7 @@ export class FeeService {
     file: Express.Multer.File,
     classId: string,
     userId: string,
-  ): Promise<{ billUrl: string }> {
+  ): Promise<{ billUrl: string; billKey: string }> {
     if (!file || !file.buffer) {
       throw new BadRequestException('请选择要上传的票据图片');
     }
@@ -211,12 +237,12 @@ export class FeeService {
     const { ext, mime } = this.validateImageBuffer(file.buffer);
 
     const objectName = `fee-bills/${Date.now()}-${createHash('sha256').update(file.buffer).digest('hex').slice(0, 16)}${ext}`;
-    const publicUrl = await this.minioService.uploadBuffer(objectName, file.buffer, {
+    await this.minioService.uploadBuffer(objectName, file.buffer, {
       'Content-Type': mime,
     });
-    const billUrl = await this.minioPresignedService.getPresignedUrl(publicUrl, this.presignExpirySeconds);
+    const billUrl = await this.resolveBillUrl(objectName);
 
-    return { billUrl };
+    return { billUrl: billUrl || '', billKey: objectName };
   }
 
   async addRecord(dto: AddFeeRecordDto, userId: string) {
@@ -238,7 +264,7 @@ export class FeeService {
           type: dto.type,
           amount: dto.amount,
           remark: this.escapeHtml(dto.remark),
-          bill_url: dto.billUrl,
+          bill_url: dto.billKey || dto.billUrl,
         },
       })) as FeeRecord;
 
@@ -258,14 +284,93 @@ export class FeeService {
         },
       );
 
-      return this.recordToDto(record);
+      return await this.recordToDto(record);
     } catch (error) {
       this.logger.error(`新增收支记录失败: ${error.message}`, error.stack);
       throw new BadRequestException(error.message || '新增失败');
     }
   }
 
+  /**
+   * 批量登记缴费：一次请求写入多条收入记录，避免逐个请求触发限流。
+   * 备注统一为「班费缴纳 - 姓名 / 团费缴纳 - 姓名」，与前端已缴判定规则保持一致。
+   */
+  async batchRegisterPayment(dto: BatchPaymentDto, userId: string) {
+    await this.verifyCommittee(userId, dto.classId);
+
+    const payerUserIds = Array.from(
+      new Set((dto.payerUserIds || []).filter((id) => typeof id === 'string' && id.length > 0)),
+    );
+    if (payerUserIds.length === 0) {
+      throw new BadRequestException('请选择已缴费学生');
+    }
+
+    const members = await this.prisma.class_members.findMany({
+      where: { class_id: dto.classId, user_id: { in: payerUserIds } },
+      include: { users: { select: { name: true } } },
+    });
+    if (members.length === 0) {
+      throw new BadRequestException('未找到有效的缴费学生');
+    }
+
+    const batchKey = `fee:batch:${createHash('sha256')
+      .update(
+        JSON.stringify({
+          classId: dto.classId,
+          feeType: dto.feeType,
+          amount: dto.amount,
+          payerUserIds: [...payerUserIds].sort(),
+        }),
+      )
+      .digest('hex')}`;
+    if (await this.redisService.exists(batchKey)) {
+      throw new BadRequestException('请勿重复提交');
+    }
+    await this.redisService.set(batchKey, '1', this.idempotencyTtl);
+
+    const label = dto.feeType === FeeCategory.GROUP ? '团费' : '班费';
+    const data = members.map((member) => ({
+      class_id: dto.classId,
+      user_id: userId,
+      type: FeeRecordType.INCOME,
+      amount: dto.amount,
+      remark: this.escapeHtml(`${label}缴纳 - ${member.users?.name || '学生'}`),
+    }));
+
+    try {
+      const model = this.getPrismaModel(dto.feeType);
+      const result = await model.createMany({ data });
+
+      await this.clearStatCache(dto.classId, dto.feeType);
+
+      await this.writeAuditLog(
+        userId,
+        dto.classId,
+        'fee.batch_create',
+        'fee_record',
+        'batch',
+        {
+          feeType: dto.feeType,
+          amount: dto.amount,
+          count: result.count,
+          payerUserIds,
+        },
+      );
+
+      return {
+        created: result.count,
+        skipped: payerUserIds.length - members.length,
+        totalAmount: Number((dto.amount * result.count).toFixed(2)),
+      };
+    } catch (error: any) {
+      await this.redisService.del(batchKey).catch(() => undefined);
+      this.logger.error(`批量登记缴费失败: ${error.message}`, error.stack);
+      throw new BadRequestException(error.message || '批量登记失败');
+    }
+  }
+
   async listRecords(dto: QueryFeeListDto, userId: string) {
+    // 班费流水对班级成员可见（普通成员只读）
     await this.verifyClassAccess(userId, dto.classId);
 
     const model = this.getPrismaModel(dto.feeType);
@@ -306,7 +411,7 @@ export class FeeService {
     const expense = Number(expenseAgg._sum.amount || 0);
 
     return {
-      list: records.map((r) => this.recordToDto(r)),
+      list: await Promise.all(records.map((r) => this.recordToDto(r))),
       pagination: {
         pageNum,
         pageSize,
@@ -355,7 +460,7 @@ export class FeeService {
       },
     );
 
-    return this.recordToDto(updated);
+    return await this.recordToDto(updated);
   }
 
   async deleteRecord(recordId: string, userId: string, feeType: FeeCategory) {
@@ -498,7 +603,8 @@ export class FeeService {
   }
 
   async exportRecords(dto: ExportFeeDto, userId: string) {
-    await this.verifyClassAccess(userId, dto.classId);
+    // 班费账目仅班委可导出
+    await this.verifyCommittee(userId, dto.classId);
 
     const rateLimitKey = this.getExportRateLimitKey(dto.classId);
     const limited = await this.redisService.exists(rateLimitKey);

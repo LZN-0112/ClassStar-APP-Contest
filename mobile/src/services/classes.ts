@@ -94,6 +94,7 @@ export interface ClassInfo {
   orgType?: string
   roleLevel?: string
   role?: string
+  memberCount?: number
 }
 
 /**

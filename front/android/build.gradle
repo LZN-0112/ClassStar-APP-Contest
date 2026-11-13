@@ -44,6 +44,14 @@ subprojects {
                 }
             }
         }
+        // 部分 Capacitor 插件声明 kotlin jvmToolchain(21)，与本项目 JDK 17 工具链冲突，统一降为 17
+        def kotlinExt = project.extensions.findByName('kotlin')
+        if (kotlinExt != null) {
+            try {
+                kotlinExt.jvmToolchain(17)
+            } catch (Exception ignored) {
+            }
+        }
     }
 }
 

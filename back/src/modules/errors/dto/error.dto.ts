@@ -1,10 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEnum,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
+  Min,
 } from 'class-validator';
 
 export enum ErrorSeverity {
@@ -62,6 +65,46 @@ export class CreateErrorLogDto {
   @IsOptional()
   @IsString()
   user_feedback?: string;
+
+  @ApiPropertyOptional({
+    description: '上报来源：app / miniapp / web / server',
+    example: 'app',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  source?: string;
+
+  @ApiPropertyOptional({ description: '客户端版本号', example: '1.2.0' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  app_version?: string;
+
+  @ApiPropertyOptional({ description: '发生错误的页面路由', example: '/homeworks' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  route?: string;
+
+  @ApiPropertyOptional({ description: 'HTTP 状态码', example: 500 })
+  @IsOptional()
+  @IsInt()
+  @Min(100)
+  @Max(599)
+  status_code?: number;
+
+  @ApiPropertyOptional({ description: '请求耗时（毫秒）', example: 5231 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  duration_ms?: number;
+
+  @ApiPropertyOptional({ description: '链路追踪 ID' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  trace_id?: string;
 }
 
 export class QueryErrorLogsDto {
@@ -79,6 +122,43 @@ export class QueryErrorLogsDto {
   @IsOptional()
   @IsString()
   error_type?: string;
+
+  @ApiPropertyOptional({ description: '上报来源筛选', example: 'app' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  source?: string;
+
+  @ApiPropertyOptional({ description: '页面路由筛选' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  route?: string;
+
+  @ApiPropertyOptional({ description: '客户端版本筛选' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  app_version?: string;
+
+  @ApiPropertyOptional({ description: '链路追踪 ID 精确查询' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  trace_id?: string;
+
+  @ApiPropertyOptional({ description: '关键词（匹配错误信息/类型）' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  keyword?: string;
+
+  @ApiPropertyOptional({ description: '仅查询最近 N 天', example: 7 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(365)
+  days?: number;
 
   @ApiPropertyOptional({ description: '页码', default: 1 })
   @IsOptional()

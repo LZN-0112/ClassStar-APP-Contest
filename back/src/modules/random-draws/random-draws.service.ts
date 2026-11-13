@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '@/common/database/prisma.service';
+import { isSystemAccount } from '@/common/utils/system-account.util';
 import { v4 as uuidv4 } from 'uuid';
 import {
   CreateRandomDrawDto,
@@ -33,7 +34,7 @@ export class RandomDrawsService {
 
   async verifyCommittee(userId: string, classId: string) {
     const member = await this.verifyClassAccess(userId, classId);
-    if (!member.is_committee) {
+    if (member.role_level !== 'owner' && member.role_level !== 'admin') {
       throw new ForbiddenException('当前身份无权执行该操作');
     }
     return member;
@@ -75,11 +76,13 @@ export class RandomDrawsService {
 
     const members = await this.prisma.class_members.findMany({
       where: { class_id: classId },
-      include: { users: { select: { id: true, name: true, student_id: true } } },
+      include: { users: { select: { id: true, name: true, student_id: true, phone: true } } },
     });
 
-    // 过滤排除人员
-    const candidates = members.filter((m) => !excludedUserIds.includes(m.user_id));
+    // 过滤排除人员；平台内置账号（系统管理员）不参与抽签
+    const candidates = members.filter(
+      (m) => !excludedUserIds.includes(m.user_id) && !isSystemAccount(m.users),
+    );
 
     if (candidates.length < mainCount + backupCount) {
       throw new BadRequestException('候选人人数不足以抽取指定数量');
@@ -167,11 +170,13 @@ export class RandomDrawsService {
 
     const members = await this.prisma.class_members.findMany({
       where: { class_id: classId },
-      include: { users: { select: { id: true, name: true, student_id: true } } },
+      include: { users: { select: { id: true, name: true, student_id: true, phone: true } } },
     });
 
-    // 过滤排除人员（静默忽略不在 members 中的 ID）
-    const candidates = members.filter((m) => !excludedUserIds.includes(m.user_id));
+    // 过滤排除人员（静默忽略不在 members 中的 ID）；平台内置账号（系统管理员）不参与抽签
+    const candidates = members.filter(
+      (m) => !excludedUserIds.includes(m.user_id) && !isSystemAccount(m.users),
+    );
 
     if (candidates.length < mainCount + backupCount) {
       throw new BadRequestException(

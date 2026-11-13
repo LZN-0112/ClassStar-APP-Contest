@@ -38,16 +38,25 @@ export class SettingsService {
   }
 
   async updateSettings(userId: string, dto: UpdateSettingsDto) {
-    const data: any = {};
-    if (dto.notificationSettings !== undefined) {
-      data.notification_settings = dto.notificationSettings;
-    }
-    if (dto.privacySettings !== undefined) {
-      data.privacy_settings = dto.privacySettings;
-    }
-    if (dto.generalSettings !== undefined) {
-      data.general_settings = dto.generalSettings;
-    }
+    const existing = await this.prisma.user_settings.findUnique({
+      where: { user_id: userId },
+    });
+
+    // 子开关按对象合并，避免单开关保存时清空其他设置
+    const mergeJson = (
+      base: unknown,
+      patch?: Record<string, any>,
+    ): Record<string, any> => ({
+      ...((base as Record<string, any>) || {}),
+      ...(patch || {}),
+    });
+
+    const notificationSettings = mergeJson(
+      existing?.notification_settings,
+      dto.notificationSettings,
+    );
+    const privacySettings = mergeJson(existing?.privacy_settings, dto.privacySettings);
+    const generalSettings = mergeJson(existing?.general_settings, dto.generalSettings);
 
     try {
       const settings = await this.prisma.user_settings.upsert({
@@ -55,11 +64,15 @@ export class SettingsService {
         create: {
           id: uuidv4(),
           user_id: userId,
-          notification_settings: dto.notificationSettings || {},
-          privacy_settings: dto.privacySettings || {},
-          general_settings: dto.generalSettings || {},
+          notification_settings: notificationSettings,
+          privacy_settings: privacySettings,
+          general_settings: generalSettings,
         },
-        update: data,
+        update: {
+          notification_settings: notificationSettings,
+          privacy_settings: privacySettings,
+          general_settings: generalSettings,
+        },
       });
 
       return {
@@ -155,26 +168,33 @@ export class SettingsService {
     }
   }
 
-  async getRecentActivities(userId: string) {
-    // 获取用户所属班级
-    const membership = await this.prisma.class_members.findFirst({
-      where: { user_id: userId },
-      select: { class_id: true },
-      orderBy: { joined_at: 'desc' },
-    });
+  async getRecentActivities(userId: string, classId?: string) {
+    // 优先使用前端当前选中的组织，未传时回退到最近加入的组织
+    const membership = classId
+      ? await this.prisma.class_members.findFirst({
+          where: { class_id: classId, user_id: userId },
+          select: { class_id: true },
+        })
+      : await this.prisma.class_members.findFirst({
+          where: { user_id: userId },
+          select: { class_id: true },
+          orderBy: { joined_at: 'desc' },
+        });
 
     if (!membership) {
       return { list: [] };
     }
 
-    const classId = membership.class_id;
-    const now = new Date();
+    const scopedClassId = membership.class_id;
 
-    // 并行查询各类最近活动
+    // 并行查询当前组织下的各类最近活动
     const [attendances, homeworks, activities, messages] = await Promise.all([
       // 最近考勤记录
       this.prisma.attendance_records.findMany({
-        where: { student_id: userId },
+        where: {
+          student_id: userId,
+          attendances: { class_id: scopedClassId },
+        },
         take: 3,
         orderBy: { created_at: 'desc' },
         include: {
@@ -183,7 +203,10 @@ export class SettingsService {
       }),
       // 最近作业提交
       this.prisma.homework_submissions.findMany({
-        where: { student_id: userId },
+        where: {
+          student_id: userId,
+          homeworks: { class_id: scopedClassId },
+        },
         take: 3,
         orderBy: { submitted_at: 'desc' },
         include: {
@@ -192,7 +215,10 @@ export class SettingsService {
       }),
       // 最近活动报名
       this.prisma.activity_registrations.findMany({
-        where: { student_id: userId },
+        where: {
+          student_id: userId,
+          activities: { class_id: scopedClassId },
+        },
         take: 3,
         orderBy: { registered_at: 'desc' },
         include: {
@@ -201,7 +227,7 @@ export class SettingsService {
       }),
       // 最近收到的通知
       this.prisma.messages.findMany({
-        where: { class_id: classId },
+        where: { class_id: scopedClassId },
         take: 3,
         orderBy: { created_at: 'desc' },
         select: { id: true, title: true, type: true, created_at: true },

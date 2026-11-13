@@ -1,17 +1,55 @@
 import BackButton from '@/components/navigation/BackButton';
 import PhoneFrame from '@/components/layout/PhoneFrame';
-import { useNavigate, useLocation } from 'react-router-dom';
+import StatusBar from '@/components/layout/StatusBar';
+import BottomSheet, { SheetRow } from '@/components/ui/BottomSheet';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
-import { ORG_TYPES, ORG_TYPE_LABEL, ORG_TYPE_COLOR, ORG_TYPE_ICON, type OrgType } from '@/utils/org';
+import { isNative } from '@/lib/capacitor';
+import { getCurrentOrgId, setCurrentOrg } from '@/hooks/useCurrentUser';
+import {
+  ORG_TYPES,
+  ORG_TYPE_LABEL,
+  ORG_TYPE_COLOR,
+  ORG_TYPE_ICON,
+  getOrgTypeMeta,
+  type OrgType,
+} from '@/utils/org';
 
 interface ClassInfo {
   id: string;
   name: string;
   code: string;
   qrCodeUrl: string;
+  orgType?: string;
+  grade?: string | null;
+  major?: string | null;
+  category?: string | null;
+  logoUrl?: string | null;
+  description?: string | null;
+  maxMembers?: number | null;
+  role?: string;
+  roleLevel?: 'owner' | 'admin' | 'member';
+  isCommittee?: boolean;
+  memberCount?: number;
+  joinedAt?: string;
 }
+
+// 创建组织时可选的显示身份，群主可按实际情况（如本人是团支书）自选
+const OWNER_ROLE_OPTIONS: Record<OrgType, string[]> = {
+  class: ['班长', '团支书', '学习委员'],
+  association: ['社长', '副社长', '部长'],
+  committee: ['部长', '副部长', '干事'],
+  club: ['负责人', '小组长'],
+};
+
+const OWNER_ROLE_DEFAULT: Record<OrgType, string> = {
+  class: '班长',
+  association: '社长',
+  committee: '部长',
+  club: '负责人',
+};
 
 export default function JoinClass() {
   const navigate = useNavigate();
@@ -20,16 +58,37 @@ export default function JoinClass() {
 
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [saveMenuOpen, setSaveMenuOpen] = useState(false);
-  const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [classCode, setClassCode] = useState('');
+  // 扫码唤起时通过 ?code= 预填班级码
+  const [searchParams] = useSearchParams();
+  const codeFromUrl = (searchParams.get('code') || '')
+    .replace(/[^A-Za-z0-9]/g, '')
+    .toUpperCase()
+    .slice(0, 20);
+
+  const [classCode, setClassCode] = useState(codeFromUrl);
+  const [realName, setRealName] = useState(() => {
+    // 优先带出账号注册时填写的真实姓名，用户可在加入时修改
+    try {
+      const cached = localStorage.getItem('currentUser');
+      return cached ? (JSON.parse(cached) as { name?: string }).name || '' : '';
+    } catch {
+      return '';
+    }
+  });
   const [studentId, setStudentId] = useState('');
+  const [needStudentId, setNeedStudentId] = useState(false);
   const [joinLoading, setJoinLoading] = useState(false);
+
+  useEffect(() => {
+    if (codeFromUrl) setClassCode(codeFromUrl);
+  }, [codeFromUrl]);
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [className, setClassName] = useState('');
   const [createOrgType, setCreateOrgType] = useState<OrgType>('class');
+  const [createRole, setCreateRole] = useState('');
   const [classGrade] = useState('');
   const [classMajor] = useState('');
   const [createLoading, setCreateLoading] = useState(false);
@@ -47,9 +106,10 @@ export default function JoinClass() {
         const list = res.data?.data || [];
         if (!cancelled) {
           setMyClasses(list);
-          // 如果页面从创建班级跳转过来，优先显示刚创建的班级；否则显示最近加入的班级
+          // 与「进入班级」页保持一致：优先显示当前选中的组织，找不到再回退到最近加入的组织
           if (!initialCreated && list.length > 0) {
-            setJoinedClass(list[0]);
+            const currentOrgId = getCurrentOrgId();
+            setJoinedClass(list.find((c: ClassInfo) => c.id === currentOrgId) || list[0]);
           }
         }
       } catch (err) {
@@ -64,58 +124,66 @@ export default function JoinClass() {
     };
   }, [initialCreated]);
 
-  const displayed = createdClass || joinedClass;
+  const matchedClass = useMemo(() => {
+    if (!classCode) return null;
+    return myClasses.find((c) => c.code?.toUpperCase() === classCode) || null;
+  }, [classCode, myClasses]);
+
+  const displayed = createdClass || matchedClass || joinedClass;
+  const displayedOrgMeta = getOrgTypeMeta(displayed?.orgType);
 
   const alreadyMember = useMemo(() => {
-    if (!classCode || classCode.length !== 6) return false;
-    return myClasses.some((c) => c.code === classCode);
+    if (!classCode) return false;
+    return myClasses.some((c) => c.code?.toUpperCase() === classCode);
   }, [classCode, myClasses]);
 
   const joinDisabled = joinLoading || alreadyMember;
 
-  const handleEnterHome = useCallback(() => {
-    navigate('/home', { replace: true });
-  }, [navigate]);
-
-  const qrNodes = (
-    <>
-      <div data-pencil-name="rect" className="box-border w-[28px] h-[28px] absolute left-[12px] top-[12px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:0]"></div>
-      <div data-pencil-name="rect" className="box-border w-[20px] h-[20px] absolute left-[16px] top-[16px] flex flex-row gap-0 justify-start items-start bg-[#FFFFFF] [z-index:1]"></div>
-      <div data-pencil-name="rect" className="box-border w-[12px] h-[12px] absolute left-[20px] top-[20px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:2]"></div>
-      <div data-pencil-name="rect" className="box-border w-[28px] h-[28px] absolute left-[80px] top-[12px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:3]"></div>
-      <div data-pencil-name="rect" className="box-border w-[20px] h-[20px] absolute left-[84px] top-[16px] flex flex-row gap-0 justify-start items-start bg-[#FFFFFF] [z-index:4]"></div>
-      <div data-pencil-name="rect" className="box-border w-[12px] h-[12px] absolute left-[88px] top-[20px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:5]"></div>
-      <div data-pencil-name="rect" className="box-border w-[28px] h-[28px] absolute left-[12px] top-[80px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:6]"></div>
-      <div data-pencil-name="rect" className="box-border w-[20px] h-[20px] absolute left-[16px] top-[84px] flex flex-row gap-0 justify-start items-start bg-[#FFFFFF] [z-index:7]"></div>
-      <div data-pencil-name="rect" className="box-border w-[12px] h-[12px] absolute left-[20px] top-[88px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:8]"></div>
-      <div data-pencil-name="rect" className="box-border w-[6px] h-[6px] absolute left-[52px] top-[44px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:9]"></div>
-      <div data-pencil-name="rect" className="box-border w-[6px] h-[6px] absolute left-[52px] top-[60px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:10]"></div>
-      <div data-pencil-name="rect" className="box-border w-[6px] h-[6px] absolute left-[52px] top-[76px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:11]"></div>
-      <div data-pencil-name="rect" className="box-border w-[6px] h-[6px] absolute left-[60px] top-[52px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:12]"></div>
-      <div data-pencil-name="rect" className="box-border w-[6px] h-[6px] absolute left-[60px] top-[68px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:13]"></div>
-      <div data-pencil-name="rect" className="box-border w-[6px] h-[6px] absolute left-[68px] top-[44px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:14]"></div>
-      <div data-pencil-name="rect" className="box-border w-[6px] h-[6px] absolute left-[68px] top-[60px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:15]"></div>
-      <div data-pencil-name="rect" className="box-border w-[6px] h-[6px] absolute left-[68px] top-[76px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:16]"></div>
-      <div data-pencil-name="rect" className="box-border w-[6px] h-[6px] absolute left-[76px] top-[52px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:17]"></div>
-      <div data-pencil-name="rect" className="box-border w-[6px] h-[6px] absolute left-[76px] top-[68px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:18]"></div>
-      <div data-pencil-name="rect" className="box-border w-[6px] h-[6px] absolute left-[84px] top-[44px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:19]"></div>
-      <div data-pencil-name="rect" className="box-border w-[6px] h-[6px] absolute left-[84px] top-[60px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:20]"></div>
-      <div data-pencil-name="rect" className="box-border w-[6px] h-[6px] absolute left-[84px] top-[76px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:21]"></div>
-      <div data-pencil-name="rect" className="box-border w-[4px] h-[4px] absolute left-[92px] top-[92px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:22]"></div>
-      <div data-pencil-name="rect" className="box-border w-[4px] h-[4px] absolute left-[92px] top-[72px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:23]"></div>
-      <div data-pencil-name="rect" className="box-border w-[4px] h-[4px] absolute left-[98px] top-[92px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:24]"></div>
-      <div data-pencil-name="rect" className="box-border w-[4px] h-[4px] absolute left-[92px] top-[78px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:25]"></div>
-      <div data-pencil-name="rect" className="box-border w-[4px] h-[4px] absolute left-[104px] top-[92px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:26]"></div>
-      <div data-pencil-name="rect" className="box-border w-[4px] h-[4px] absolute left-[92px] top-[84px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:27]"></div>
-      <div data-pencil-name="rect" className="box-border w-[4px] h-[4px] absolute left-[110px] top-[92px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:28]"></div>
-      <div data-pencil-name="rect" className="box-border w-[4px] h-[4px] absolute left-[92px] top-[90px] flex flex-row gap-0 justify-start items-start bg-[#1A1A1A] [z-index:29]"></div>
-    </>
+  const activateClass = useCallback(
+    (target: ClassInfo, fallbackRole: 'owner' | 'member') => {
+      setCurrentOrg({
+        id: target.id,
+        name: target.name,
+        code: target.code,
+        grade: target.grade ?? null,
+        major: target.major ?? null,
+        qrCodeUrl: target.qrCodeUrl ?? null,
+        orgType: target.orgType || 'class',
+        category: target.category ?? null,
+        logoUrl: target.logoUrl ?? null,
+        description: target.description ?? null,
+        maxMembers: target.maxMembers ?? null,
+        role: target.role || (fallbackRole === 'owner' ? '群主' : '成员'),
+        roleLevel: target.roleLevel || fallbackRole,
+        isCommittee: target.isCommittee ?? false,
+        memberCount: target.memberCount ?? 0,
+        joinedAt: target.joinedAt || '',
+      });
+      window.dispatchEvent(new Event('orgChanged'));
+    },
+    [],
   );
 
-  const handleQrPointerDown = (e: React.PointerEvent) => {
+  const handleEnterHome = useCallback(() => {
+    // 进入前切换到当前展示的组织，避免「这里的班级码」和「点进去的班级」不是同一个
+    if (!displayed) return;
+    if (displayed.id !== getCurrentOrgId()) {
+      activateClass(displayed, createdClass ? 'owner' : 'member');
+    }
+    navigate('/home', { replace: true });
+  }, [displayed, createdClass, activateClass, navigate]);
+
+  // 历史班级可能没有二维码，不能再用装饰性假图案冒充
+  const qrPlaceholder = (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-1 px-2 text-center text-[11px] text-[#9CA3AF]">
+      <span>二维码未生成</span>
+      <span>请联系管理员补生成</span>
+    </div>
+  );
+
+  const handleQrPointerDown = () => {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
     longPressTimer.current = setTimeout(() => {
-      setMenuPos({ x: e.clientX, y: e.clientY });
       setSaveMenuOpen(true);
     }, 600);
   };
@@ -129,35 +197,81 @@ export default function JoinClass() {
 
   const saveQrImage = () => {
     if (!displayed?.qrCodeUrl) return;
+    setSaveMenuOpen(false);
+    if (isNative) {
+      // WebView 不支持 a[download]，引导用户用系统截图保存
+      toast.info('请使用手机截屏保存二维码');
+      return;
+    }
     const link = document.createElement('a');
-    link.download = '班级二维码.png';
+    link.download = `${displayed.name || '班级'}二维码.png`;
     link.href = displayed.qrCodeUrl;
     link.click();
+  };
+
+  const copyClassCode = async () => {
+    if (!displayed?.code) return;
+    try {
+      await navigator.clipboard.writeText(displayed.code);
+    } catch {
+      const input = document.createElement('textarea');
+      input.value = displayed.code;
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+    }
+    toast.success('班级码已复制');
     setSaveMenuOpen(false);
   };
 
   const handleJoin = async () => {
-    if (!/^\d{6}$/.test(classCode)) {
-      toast.error('请输入 6 位班级邀请码');
+    if (!/^[A-Za-z0-9]{4,20}$/.test(classCode)) {
+      toast.error('请输入正确的班级码（4-20 位字母或数字）');
       return;
     }
     if (alreadyMember) {
       toast.info('已是该班级成员');
       return;
     }
+    const trimmedName = realName.trim();
+    if (trimmedName.length < 2 || trimmedName.length > 50) {
+      toast.error('请填写真实姓名（2-50 个字），方便班委核对身份');
+      return;
+    }
+    if (needStudentId && !studentId.trim()) {
+      toast.error('该班级已导入名单，请填写学号');
+      return;
+    }
     if (joinLoading) return;
     setJoinLoading(true);
     try {
-      const payload: { code: string; studentId?: string } = { code: classCode };
+      const payload: { code: string; studentId?: string; realName: string } = {
+        code: classCode,
+        realName: trimmedName,
+      };
       if (studentId.trim()) {
         payload.studentId = studentId.trim();
       }
       const res = await api.post('/classes/join', payload);
       const data = res.data.data || res.data;
-      toast.success(`成功加入班级：${data.name || data.className || ''}`);
+      const joinedName = data.name || data.className || '';
+      if (data.verifyStatus === 'PENDING') {
+        toast.success(`已加入班级：${joinedName}，姓名与名单不一致，已提交班委核对`);
+      } else {
+        toast.success(`成功加入班级：${joinedName}`);
+      }
+      setMyClasses((prev) => [data, ...prev.filter((c) => c.id !== data.id)]);
+      activateClass(data, 'member');
       navigate('/home', { replace: true });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '加入班级失败，请检查邀请码');
+      const message = err instanceof Error ? err.message : '加入班级失败，请检查邀请码';
+      if (message.includes('学号') || message.includes('名单')) {
+        setNeedStudentId(true);
+      }
+      toast.error(message);
     } finally {
       setJoinLoading(false);
     }
@@ -176,9 +290,13 @@ export default function JoinClass() {
         grade: classGrade.trim(),
         major: classMajor.trim(),
         orgType: createOrgType,
+        role: createRole.trim() || undefined,
       });
       const data = res.data.data || res.data;
       setCreatedClass(data);
+      setMyClasses((prev) => [data, ...prev.filter((c) => c.id !== data.id)]);
+      // 创建后直接切换为当前组织，避免用户「跳过后仍停留在旧班级」
+      activateClass(data, 'owner');
       setCreateModalOpen(false);
       toast.success(`${ORG_TYPE_LABEL[createOrgType]}创建成功`);
     } catch (err) {
@@ -189,72 +307,69 @@ export default function JoinClass() {
   };
 
   return (
-    <PhoneFrame className="bg-white">
-      <div
-            data-pencil-name="Status Bar"
-            className="box-border w-full h-[62px] shrink-0 flex flex-row gap-0 p-[12px_24px_0px_24px] justify-between items-center bg-[#FFFFFF]"
-          >
-            <div
-              data-pencil-name="Time"
-              className="text-[14px]/[normal] box-border text-[#1A1A1A] font-data font-semibold text-left [white-space:nowrap]"
-            >
-              9:41
+    <PhoneFrame className="bg-white" reserveSafeAreaTop safeAreaTopClassName="bg-white">
+      <StatusBar />
+      <div className="box-border w-full flex-1 flex flex-col gap-4 px-6 pb-8 bg-white">
+            <div className="flex w-full flex-row items-center">
+              <BackButton className="-ml-2" onClick={() => navigate(-1)} />
+              <div className="text-[20px]/[normal] text-[#1A1A1A] font-heading font-bold">加入或创建班级</div>
             </div>
-            <div
-              data-pencil-name="Status Icons"
-              className="box-border w-fit shrink-0 h-fit flex flex-row gap-[6px] justify-start items-center"
-            >
-              <div
-                data-pencil-name="Signal"
-                className="text-[14px]/[normal] box-border text-[#1A1A1A] font-caption font-normal text-left [white-space:nowrap]"
-              >
-                ◉◉◉◉
+            <div className="text-[13px]/[normal] text-[#6B7280] font-body">
+              输入班级码加入，或创建一个新的班级
+            </div>
+
+            {myClasses.length > 0 && (
+              <div className="flex w-full flex-col gap-2">
+                <div className="text-[12px] font-body font-medium text-[#9CA3AF]">我的班级</div>
+                <div className="flex w-full flex-row gap-2 overflow-x-auto pb-1">
+                  {myClasses.map((c) => {
+                    const active = displayed?.id === c.id;
+                    const meta = getOrgTypeMeta(c.orgType);
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => {
+                          setCreatedClass(null);
+                          setJoinedClass(c);
+                        }}
+                        className={`flex shrink-0 flex-row items-center gap-1.5 rounded-lg px-3 py-2 text-[12px] font-body font-medium transition-colors ${
+                          active ? 'bg-[#0062FF] text-white' : 'bg-[#F3F4F6] text-[#4B5563]'
+                        }`}
+                      >
+                        <span
+                          className="h-1.5 w-1.5 rounded-full"
+                          style={{ backgroundColor: active ? '#FFFFFF' : meta.color }}
+                        />
+                        {c.name}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div
-                data-pencil-name="Battery"
-                className="text-[14px]/[normal] box-border text-[#1A1A1A] font-data font-normal text-left [white-space:nowrap]"
-              >
-                100%
-              </div>
-            </div>
-          </div>
-          <div
-            data-pencil-name="Content"
-            className="box-border relative w-full [flex:1_1_0] flex flex-col gap-4 p-[0px_24px] justify-start items-start"
-          >
-            <BackButton
-              className="absolute left-[-8px] top-[16px] z-10"
-              onClick={() => navigate(-1)}
-            />
-            <div
-              data-pencil-name="Spacer"
-              className="box-border w-full h-[60px] shrink-0 flex flex-row gap-0 justify-start items-start"
-            ></div>
-            <div
-              data-pencil-name="Title"
-              className="text-[28px]/[normal] box-border text-[#1A1A1A] font-heading font-bold text-left [white-space:nowrap]"
-            >
-              加入或创建班级
-            </div>
-            <div
-              data-pencil-name="Subtitle"
-              className="text-[14px]/[normal] box-border text-[#4B5563] font-body font-normal text-left [white-space:nowrap]"
-            >
-              输入班级码加入，或创建新班级
-            </div>
-            <div
-              data-pencil-name="Spacer2"
-              className="box-border w-full h-[32px] shrink-0 flex flex-row gap-0 justify-start items-start"
-            ></div>
+            )}
+
             <input
               data-pencil-name="Class Code Input"
               type="text"
-              inputMode="numeric"
-              maxLength={6}
+              maxLength={20}
               value={classCode}
-              onChange={(e) => setClassCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="请输入 6 位班级邀请码"
-              className="box-border w-full h-[56px] shrink-0 [box-shadow:0px_2px_8px_0px_#0000000D] flex flex-col gap-2 p-[0px_16px] justify-center items-start bg-[#FFFFFF] [border:1px_solid_#E5E7EB] rounded-lg text-[14px] font-body text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none"
+              onChange={(e) =>
+                setClassCode(
+                  e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 20),
+                )
+              }
+              placeholder="请输入班级码"
+              className="box-border w-full h-[56px] shrink-0 [box-shadow:0px_2px_8px_0px_#0000000D] flex flex-col gap-2 p-[0px_16px] justify-center items-start bg-[#FFFFFF] border border-[#E5E7EB] rounded-lg text-[14px] font-body text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none focus:border-[#0062FF]"
+            />
+            <input
+              data-pencil-name="Real Name Input"
+              type="text"
+              maxLength={50}
+              value={realName}
+              onChange={(e) => setRealName(e.target.value)}
+              placeholder="请填写真实姓名（必填，用于班委核对身份）"
+              className="box-border w-full h-[56px] shrink-0 [box-shadow:0px_2px_8px_0px_#0000000D] flex flex-col gap-2 p-[0px_16px] justify-center items-start bg-[#FFFFFF] border border-[#E5E7EB] rounded-lg text-[14px] font-body text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none focus:border-[#0062FF]"
             />
             <input
               data-pencil-name="Student ID Input"
@@ -263,14 +378,34 @@ export default function JoinClass() {
               value={studentId}
               onChange={(e) => setStudentId(e.target.value.slice(0, 20))}
               placeholder="学号（如班级已导入名单请填写）"
-              className="box-border w-full h-[56px] shrink-0 [box-shadow:0px_2px_8px_0px_#0000000D] flex flex-col gap-2 p-[0px_16px] justify-center items-start bg-[#FFFFFF] [border:1px_solid_#E5E7EB] rounded-lg text-[14px] font-body text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none"
+              className={`box-border w-full h-[56px] shrink-0 [box-shadow:0px_2px_8px_0px_#0000000D] flex flex-col gap-2 p-[0px_16px] justify-center items-start bg-[#FFFFFF] rounded-lg text-[14px] font-body text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none border ${
+                needStudentId ? 'border-[#EF4444]' : 'border-[#E5E7EB] focus:border-[#0062FF]'
+              }`}
             />
-            {alreadyMember && (
+            {needStudentId && (
               <div
-                data-pencil-name="Member Hint"
-                className="box-border w-full flex flex-row gap-2 justify-start items-center text-[13px]/[normal] text-[#0062FF] font-body font-medium"
+                data-pencil-name="Student ID Hint"
+                className="box-border w-full text-[12px]/[normal] text-[#EF4444] font-body"
               >
-                <span>已是该班级成员</span>
+                该班级已导入名单，请填写学号后重新加入
+              </div>
+            )}
+            {alreadyMember && matchedClass && (
+              <div className="box-border w-full flex flex-col gap-2.5 rounded-xl bg-[#EBF3FF] p-3.5">
+                <div className="flex flex-row items-center gap-1.5 text-[13px]/[normal] text-[#0062FF] font-body font-medium">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#0062FF]" />
+                  你已加入「{matchedClass.name}」
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    activateClass(matchedClass, 'member');
+                    navigate('/home', { replace: true });
+                  }}
+                  className="h-[40px] w-full rounded-lg bg-[#0062FF] text-[13px] font-body font-semibold text-white active:scale-[0.98] transition-transform"
+                >
+                  直接进入该班级
+                </button>
               </div>
             )}
             <div
@@ -334,7 +469,21 @@ export default function JoinClass() {
                   data-pencil-name="Card Title"
                   className="text-[16px]/[normal] box-border text-[#1A1A1A] font-heading font-semibold text-left [white-space:nowrap]"
                 >
-                  {createdClass ? '创建成功，分享班级邀请' : '已加入班级'}
+                  {createdClass ? '创建成功，分享班级邀请' : '当前组织'}
+                </div>
+                <div className="flex w-full flex-row items-center justify-center gap-2">
+                  <span className="text-[14px]/[normal] box-border text-[#4B5563] font-body font-medium">
+                    {displayed.name}
+                  </span>
+                  <span
+                    className="rounded px-1.5 py-0.5 text-[10px]/[normal] font-body font-medium"
+                    style={{
+                      color: displayedOrgMeta.color,
+                      backgroundColor: `${displayedOrgMeta.color}1A`,
+                    }}
+                  >
+                    {displayedOrgMeta.label}
+                  </span>
                 </div>
                 <div
                   data-pencil-name="Class Code"
@@ -358,14 +507,16 @@ export default function JoinClass() {
                       className="w-full h-full object-contain"
                     />
                   ) : (
-                    qrNodes
+                    qrPlaceholder
                   )}
                 </div>
                 <div
                   data-pencil-name="QR Hint"
-                  className="text-[11px]/[normal] box-border text-[#4B5563] font-caption font-normal text-left [white-space:nowrap]"
+                  className="text-[11px]/[normal] box-border text-[#4B5563] font-caption font-normal text-center"
                 >
-                  扫描二维码加入班级
+                  {displayed.qrCodeUrl
+                    ? '同学用系统相机扫码即可打开 App 加入班级'
+                    : '二维码未生成，可先用班级码邀请'}
                 </div>
                 <button
                   data-pencil-name="Enter Class Button"
@@ -391,60 +542,87 @@ export default function JoinClass() {
 
       {/* QR 大图弹窗 */}
       {qrModalOpen && displayed && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-6"
-          onClick={() => setQrModalOpen(false)}
+        <BottomSheet
+          open
+          onClose={() => setQrModalOpen(false)}
+          title={`班级码：${displayed.code}`}
+          maxHeight="80vh"
+          footer={
+            <div className="flex flex-row gap-3">
+              <button
+                type="button"
+                onClick={copyClassCode}
+                className="h-[48px] flex-1 rounded-[14px] bg-[#F2F5F9] font-body text-[15px]/[normal] font-semibold text-[#475569] active:opacity-80"
+              >
+                复制班级码
+              </button>
+              <button
+                type="button"
+                onClick={() => setQrModalOpen(false)}
+                className="h-[48px] flex-1 rounded-[14px] bg-[linear-gradient(180deg,#2E7DFF_0%,#0062FF_100%)] font-body text-[15px]/[normal] font-semibold text-white shadow-[0_10px_20px_rgba(0,98,255,0.24)] active:opacity-90"
+              >
+                关闭
+              </button>
+            </div>
+          }
         >
-          <div
-            className="box-border w-[240px] h-[240px] shrink-0 bg-[#FFFFFF] [border:1px_solid_#E5E7EB] rounded-lg relative overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-            onPointerDown={handleQrPointerDown}
-            onPointerUp={handleQrPointerUp}
-            onPointerLeave={handleQrPointerUp}
-            onContextMenu={(e) => e.preventDefault()}
-          >
-            {displayed.qrCodeUrl ? (
-              <img src={displayed.qrCodeUrl} alt="班级二维码" className="w-full h-full object-contain" />
-            ) : (
-              qrNodes
-            )}
+          <div className="flex flex-col items-center gap-3 px-5 pb-2">
+            <div
+              className="box-border w-[240px] h-[240px] shrink-0 bg-[#FFFFFF] [border:1px_solid_#E5E7EB] rounded-lg relative overflow-hidden"
+              onPointerDown={handleQrPointerDown}
+              onPointerUp={handleQrPointerUp}
+              onPointerLeave={handleQrPointerUp}
+              onContextMenu={(e) => e.preventDefault()}
+            >
+              {displayed.qrCodeUrl ? (
+                <img src={displayed.qrCodeUrl} alt="班级二维码" className="w-full h-full object-contain" />
+              ) : (
+                qrPlaceholder
+              )}
+            </div>
           </div>
-        </div>
+        </BottomSheet>
       )}
 
       {/* 长按保存菜单 */}
       {saveMenuOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-[101]"
-            onClick={() => setSaveMenuOpen(false)}
-          />
-          <div
-            className="fixed z-[102] box-border min-w-[120px] flex flex-col gap-0 p-[8px_0px] justify-start items-start bg-[#FFFFFF] rounded-lg shadow-lg"
-            style={{ left: menuPos.x, top: menuPos.y }}
-          >
-            <button
-              type="button"
-              onClick={saveQrImage}
-              className="w-full px-4 py-2 text-left text-[14px] font-body text-[#1A1A1A] hover:bg-[#F3F4F6]"
-            >
-              保存图片
-            </button>
+        <BottomSheet open onClose={() => setSaveMenuOpen(false)} maxHeight="50vh">
+          <div className="flex flex-col gap-1 px-3 pb-2">
+            {displayed?.qrCodeUrl && <SheetRow title="保存图片" onClick={saveQrImage} />}
+            <SheetRow title="复制班级码" onClick={copyClassCode} />
           </div>
-        </>
+        </BottomSheet>
       )}
 
       {/* 创建班级弹窗 */}
       {createModalOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-6"
-          onClick={() => setCreateModalOpen(false)}
+        <BottomSheet
+          open
+          onClose={() => setCreateModalOpen(false)}
+          title="创建新组织"
+          maxHeight="85vh"
+          locked={createLoading}
+          footer={
+            <div className="flex w-full gap-3">
+              <button
+                type="button"
+                onClick={() => setCreateModalOpen(false)}
+                className="h-[48px] flex-1 rounded-[14px] bg-[#F2F5F9] font-body text-[15px]/[normal] font-semibold text-[#475569] active:opacity-80"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={handleCreate}
+                disabled={createLoading}
+                className="h-[48px] flex-1 rounded-[14px] bg-[linear-gradient(180deg,#2E7DFF_0%,#0062FF_100%)] font-body text-[15px]/[normal] font-semibold text-white shadow-[0_10px_20px_rgba(0,98,255,0.24)] active:opacity-90 disabled:opacity-50"
+              >
+                {createLoading ? '创建中...' : '创建'}
+              </button>
+            </div>
+          }
         >
-          <div
-            className="box-border w-full max-w-[320px] flex flex-col gap-4 p-[24px] justify-start items-start bg-[#FFFFFF] rounded-2xl shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="text-[18px] font-heading font-bold text-[#1A1A1A]">创建新组织</div>
+          <div className="box-border flex w-full flex-col gap-4 px-5 pb-2 justify-start items-start">
             {/* 组织类型选择 */}
             <div className="grid w-full grid-cols-4 gap-2">
               {ORG_TYPES.map((t) => {
@@ -454,7 +632,10 @@ export default function JoinClass() {
                   <button
                     key={t}
                     type="button"
-                    onClick={() => setCreateOrgType(t)}
+                    onClick={() => {
+                      setCreateOrgType(t);
+                      setCreateRole('');
+                    }}
                     className={`flex flex-col items-center gap-1 rounded-lg border py-2 transition-all ${
                       active
                         ? 'border-transparent text-white'
@@ -473,30 +654,45 @@ export default function JoinClass() {
               value={className}
               onChange={(e) => setClassName(e.target.value)}
               placeholder={`请输入${ORG_TYPE_LABEL[createOrgType]}名称`}
-              className="box-border w-full h-[48px] px-4 rounded-lg border-[1px_solid_#E5E7EB] bg-[#FFFFFF] text-[14px] font-body text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none"
+              className="box-border w-full h-[48px] px-4 rounded-lg border border-[#E5E7EB] bg-[#FFFFFF] text-[14px] font-body text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none focus:border-[#0062FF]"
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             />
-            <div className="flex w-full gap-3">
-              <button
-                type="button"
-                onClick={() => setCreateModalOpen(false)}
-                className="flex-1 h-[44px] rounded-lg border-[1px_solid_#E5E7EB] bg-[#FFFFFF] text-[14px] font-body font-semibold text-[#4B5563]"
-              >
-                取消
-              </button>
-              <button
-                type="button"
-                onClick={handleCreate}
-                disabled={createLoading}
-                className={`flex-1 h-[44px] rounded-lg text-[14px] font-body font-semibold text-[#FFFFFF] ${
-                  createLoading ? 'bg-[#93C5FD]' : 'bg-[#0062FF]'
-                }`}
-              >
-                {createLoading ? '创建中...' : '创建'}
-              </button>
+            {/* 群主身份：本人不一定是班长，可按实际情况选择或自定义 */}
+            <div className="flex w-full flex-col gap-2">
+              <span className="text-[12px] font-body text-[#6B7280]">
+                我的身份（选填，默认{OWNER_ROLE_DEFAULT[createOrgType]}）
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {OWNER_ROLE_OPTIONS[createOrgType].map((r) => {
+                  const active =
+                    (createRole.trim() || OWNER_ROLE_DEFAULT[createOrgType]) === r;
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setCreateRole(r)}
+                      className={`rounded-full border px-3 py-1.5 text-[12px] font-body transition-colors ${
+                        active
+                          ? 'border-[#0062FF] bg-[#EAF2FF] text-[#0062FF]'
+                          : 'border-[#E5E7EB] bg-white text-[#4B5563]'
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  );
+                })}
+              </div>
+              <input
+                type="text"
+                value={createRole}
+                maxLength={20}
+                onChange={(e) => setCreateRole(e.target.value)}
+                placeholder={`也可自定义，如 团支书、学习委员`}
+                className="box-border w-full h-[44px] px-4 rounded-lg border border-[#E5E7EB] bg-[#FFFFFF] text-[14px] font-body text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none focus:border-[#0062FF]"
+              />
             </div>
           </div>
-        </div>
+        </BottomSheet>
       )}
     </PhoneFrame>
   );

@@ -107,6 +107,26 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
+    "coverageThreshold": {
+      "global": {
+        "lines": 3
+      },
+      "./src/modules/messages/messages.service.ts": {
+        "lines": 90
+      },
+      "./src/modules/homeworks/homeworks.service.ts": {
+        "lines": 90
+      },
+      "./src/modules/attendances/attendances.service.ts": {
+        "lines": 90
+      },
+      "./src/modules/auth/auth.service.ts": {
+        "lines": 60
+      },
+      "./src/modules/auth/guards/jwt-auth.guard.ts": {
+        "lines": 85
+      }
+    },
     "testEnvironment": "node"
   }
 }

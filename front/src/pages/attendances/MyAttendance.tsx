@@ -1,11 +1,10 @@
-import PhoneFrame from '@/components/layout/PhoneFrame';
-import UnifiedHeader from '@/components/layout/UnifiedHeader';
+import PageLayout from '@/components/layout/PageLayout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { api } from '@/lib/api';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-type AttendanceStatus = 'present' | 'leave' | 'absent' | 'late';
+type AttendanceStatus = 'present' | 'leave' | 'absent' | 'late' | 'pending' | 'upcoming';
 
 interface AttendanceRecord {
   id: string;
@@ -22,6 +21,7 @@ interface AttendanceRecord {
 const FILTER_TABS: { label: string; value: 'all' | AttendanceStatus }[] = [
   { label: '全部', value: 'all' },
   { label: '正常', value: 'present' },
+  { label: '迟到', value: 'late' },
   { label: '缺勤', value: 'absent' },
   { label: '请假', value: 'leave' },
 ];
@@ -31,6 +31,8 @@ const STATUS_MAP: Record<string, { title: string; color: string; bgColor: string
   leave: { title: '请假', color: 'text-[#F59E0B]', bgColor: 'bg-[#F59E0B1A]' },
   absent: { title: '缺勤', color: 'text-[#EF4444]', bgColor: 'bg-[#EF44441A]' },
   late: { title: '迟到', color: 'text-[#F59E0B]', bgColor: 'bg-[#F59E0B1A]' },
+  pending: { title: '待签到', color: 'text-[#2563EB]', bgColor: 'bg-[#DBEAFE]' },
+  upcoming: { title: '未开始', color: 'text-[#6B7280]', bgColor: 'bg-[#F3F4F6]' },
 };
 
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
@@ -54,21 +56,35 @@ export default function MyAttendance() {
   const [activeFilter, setActiveFilter] = useState<'all' | AttendanceStatus>('all');
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
+  const fetchRecords = useCallback(() => {
     if (!user?.classId) {
       setLoading(false);
       return;
     }
-
+    setLoading(true);
+    setError('');
     api
       .get(`/classes/${user.classId}/attendances`, { params: { pageSize: 100 } })
       .then((res) => {
         const data = res.data.data || res.data;
-        const list = data.list || [];
+        const list = Array.isArray(data?.list) ? data.list : [];
         const mapped: AttendanceRecord[] = list.filter(Boolean).map((item: any) => {
           const { day, weekday } = formatDate(item.startTime);
-          const status = item.myRecord?.status || 'absent';
+          const now = Date.now();
+          const ended = item.status === 'closed' || now > new Date(item.endTime).getTime();
+          const started = now >= new Date(item.startTime).getTime();
+          let status: AttendanceStatus;
+          if (item.myRecord) {
+            status = item.myRecord.status === 'late' ? 'late' : 'present';
+          } else if (item.myLeaveApplication?.status === 'approved') {
+            status = 'leave';
+          } else if (ended) {
+            status = 'absent';
+          } else {
+            status = started ? 'pending' : 'upcoming';
+          }
           const statusInfo = STATUS_MAP[status] || STATUS_MAP.absent;
           const location = item.location ? ` · ${item.location}` : '';
           return {
@@ -85,13 +101,17 @@ export default function MyAttendance() {
         });
         setRecords(mapped);
       })
-      .catch(() => {
-        setRecords([]);
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : '获取考勤记录失败');
       })
       .finally(() => {
         setLoading(false);
       });
   }, [user?.classId]);
+
+  useEffect(() => {
+    fetchRecords();
+  }, [fetchRecords]);
 
   const filteredRecords =
     activeFilter === 'all'
@@ -99,11 +119,11 @@ export default function MyAttendance() {
       : records.filter((record) => record.status === activeFilter);
 
   return (
-    <PhoneFrame>
-      <UnifiedHeader
-        title="我的考勤"
-        variant="a"
-        decor={
+    <PageLayout
+      title="我的考勤"
+      variant="a"
+      contentClassName="px-0 pb-0 pt-0"
+      decor={
           <svg
             data-pencil-name="Icon-clock"
             viewBox="0 0 24 24"
@@ -126,10 +146,10 @@ export default function MyAttendance() {
             ></path>
           </svg>
         }
-      />
+      >
       <div
         data-pencil-name="Content"
-        className="box-border w-full flex-1 flex flex-col gap-0 justify-start items-start overflow-y-auto overscroll-y-contain bg-[#FFFFFF]"
+        className="box-border w-full flex flex-col gap-0 justify-start items-start bg-[#FFFFFF]"
       >
         <div
           data-pencil-name="Body"
@@ -137,7 +157,7 @@ export default function MyAttendance() {
         >
           <div
             data-pencil-name="Filter Tabs"
-            className="box-border w-full h-fit shrink-0 flex flex-row gap-2 justify-start items-start bg-[#00000000]"
+            className="box-border w-full h-fit shrink-0 flex flex-row flex-wrap gap-2 justify-start items-start bg-[#00000000]"
           >
             {FILTER_TABS.map((tab) => {
               const isActive = activeFilter === tab.value;
@@ -181,6 +201,17 @@ export default function MyAttendance() {
                 <div className="box-border flex h-[120px] w-full flex-col items-center justify-center rounded-[16px] bg-[#F9FAFB] text-[14px] text-[#6B7280]">
                   加载中...
                 </div>
+              ) : error ? (
+                <div className="box-border flex w-full flex-col items-center justify-center gap-3 rounded-[16px] bg-[#F9FAFB] px-4 py-8">
+                  <div className="text-center text-[14px] text-[#6B7280]">{error}</div>
+                  <button
+                    type="button"
+                    onClick={fetchRecords}
+                    className="flex h-[40px] items-center justify-center rounded-lg bg-[#0062FF] px-5 text-[13px] font-medium text-white active:opacity-80"
+                  >
+                    重新加载
+                  </button>
+                </div>
               ) : filteredRecords.length === 0 ? (
                 <div className="box-border flex h-[120px] w-full flex-col items-center justify-center rounded-[16px] bg-[#F9FAFB] text-[14px] text-[#6B7280]">
                   暂无该状态考勤记录
@@ -190,8 +221,8 @@ export default function MyAttendance() {
                   <div
                     key={record.id}
                     data-pencil-name="Card"
-                    className="box-border w-full h-[80px] shrink-0 [box-shadow:0px_2px_8px_0px_#0000000D] flex flex-row gap-[12px] p-4 justify-start items-center bg-[#FFFFFF] rounded-[16px] cursor-pointer active:opacity-80"
-                    onClick={() => navigate(`/attendance-detail/${user?.classId}/${record.id}`)}
+                    className="box-border w-full min-h-[80px] shrink-0 [box-shadow:0px_2px_8px_0px_#0000000D] flex flex-row gap-[12px] p-4 justify-start items-center bg-[#FFFFFF] rounded-[16px] cursor-pointer active:opacity-80"
+                    onClick={() => navigate(`/check-in-detail/${user?.classId}/${record.id}`)}
                   >
                     <div
                       data-pencil-name="Date"
@@ -212,17 +243,17 @@ export default function MyAttendance() {
                     </div>
                     <div
                       data-pencil-name="Info"
-                      className="box-border [flex:1_1_0] h-full flex flex-col gap-[6px] justify-center items-start bg-[#00000000]"
+                      className="box-border [flex:1_1_0] min-w-0 h-full flex flex-col gap-[6px] justify-center items-start bg-[#00000000]"
                     >
                       <div
                         data-pencil-name="Text"
-                        className={`text-[16px]/[normal] box-border font-body font-bold text-left [white-space:nowrap] ${record.color}`}
+                        className={`text-[16px]/[normal] box-border max-w-full truncate font-body font-bold text-left ${record.color}`}
                       >
                         {record.title}
                       </div>
                       <div
                         data-pencil-name="Text"
-                        className="text-[11px]/[normal] box-border text-[#4B5563] font-body font-medium text-left [white-space:nowrap]"
+                        className="text-[11px]/[normal] box-border max-w-full truncate text-[#4B5563] font-body font-medium text-left"
                       >
                         {record.time}
                       </div>
@@ -245,6 +276,6 @@ export default function MyAttendance() {
           </div>
         </div>
       </div>
-    </PhoneFrame>
+    </PageLayout>
   );
 }

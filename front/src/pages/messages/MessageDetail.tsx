@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Check, Bell } from 'lucide-react';
+import { Check, Bell, Paperclip } from 'lucide-react';
 import PageLayout from '@/components/layout/PageLayout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { api } from '@/lib/api';
+import { api, resolveFileUrl } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface MessageDetailData {
@@ -19,6 +19,19 @@ interface MessageDetailData {
   status: 'published' | 'ended';
   createdAt: string;
   publisher?: { id: string; name: string; avatar?: string };
+  attachments?: Array<{
+    id: string;
+    file_name: string;
+    file_url: string;
+    file_size?: number | null;
+  }>;
+}
+
+function formatFileSize(bytes?: number | null) {
+  if (!bytes || bytes <= 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function formatDateTime(iso?: string) {
@@ -39,6 +52,8 @@ export default function MessageDetail() {
 
   const [message, setMessage] = useState<MessageDetailData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [acking, setAcking] = useState(false);
 
   const classId = user?.classId;
@@ -52,13 +67,18 @@ export default function MessageDetail() {
     }
 
     const fetchMessage = async () => {
-      if (!classId || !messageId) return;
+      if (!classId || !messageId) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
+      setLoadError(false);
       try {
         const res = await api.get(`/classes/${classId}/messages/${messageId}`);
         const data = res.data.data || res.data;
         setMessage(data);
       } catch (err) {
+        setLoadError(true);
         toast.error(err instanceof Error ? err.message : '获取通知详情失败');
       } finally {
         setLoading(false);
@@ -69,6 +89,7 @@ export default function MessageDetail() {
       if (!classId || !messageId) return;
       try {
         await api.post(`/classes/${classId}/messages/${messageId}/read`);
+        window.dispatchEvent(new Event('unread-refresh'));
       } catch {
         // 已读标记失败不影响详情展示
       }
@@ -76,7 +97,7 @@ export default function MessageDetail() {
 
     fetchMessage();
     markAsRead();
-  }, [messageId, classId, navigate]);
+  }, [messageId, classId, navigate, reloadKey]);
 
   const handleAck = async () => {
     if (!message || message.isAcked || !classId || !messageId || acking) return;
@@ -116,6 +137,20 @@ export default function MessageDetail() {
     );
   }
 
+  if (loadError) {
+    return (
+      <PageLayout title="通知详情" variant="a" decor={<Bell className="h-[120px] w-[120px] text-white" strokeWidth={1.5} />}>
+        <button
+          type="button"
+          onClick={() => setReloadKey((k) => k + 1)}
+          className="flex w-full flex-1 items-center justify-center text-[14px] text-[#0062FF]"
+        >
+          加载失败，点击重试
+        </button>
+      </PageLayout>
+    );
+  }
+
   if (!message) {
     return (
       <PageLayout title="通知详情" variant="a" decor={<Bell className="h-[120px] w-[120px] text-white" strokeWidth={1.5} />}>
@@ -131,7 +166,7 @@ export default function MessageDetail() {
       <div className="flex w-full flex-1 flex-col gap-4">
         <div
           data-pencil-name="Title"
-          className="text-[20px]/[normal] box-border text-left font-heading font-bold text-[#1A1A1A] [white-space:nowrap]"
+          className="text-[20px]/[normal] box-border text-left font-heading font-bold text-[#1A1A1A] break-words"
         >
           {message.title}
         </div>
@@ -165,7 +200,7 @@ export default function MessageDetail() {
           </div>
           {message.requireAck && (
             <div className="text-[14px]/[normal] font-body font-medium text-[#1A1A1A]">
-              ⏰ 签收截止：{formatDateTime(message.ackDeadline) || '不限制'}
+              ⏰ 签收截止：{message.ackDeadline ? formatDateTime(message.ackDeadline) : '不限制'}
             </div>
           )}
         </div>
@@ -174,10 +209,35 @@ export default function MessageDetail() {
           data-pencil-name="Body"
           className="box-border flex w-full flex-col gap-[10px] rounded-lg border border-[#E5E7EB] bg-white p-4 shadow-soft"
         >
-          <div className="text-[14px]/[21px] font-body font-normal text-[#4B5563] whitespace-pre-wrap">
+          <div className="text-[14px]/[21px] font-body font-normal text-[#4B5563] whitespace-pre-wrap break-words">
             {message.content}
           </div>
         </div>
+
+        {message.attachments && message.attachments.length > 0 && (
+          <div className="box-border flex w-full flex-col gap-2 rounded-lg border border-[#E5E7EB] bg-white p-4 shadow-soft">
+            <div className="text-[13px]/[normal] font-body font-semibold text-[#1A1A1A]">
+              附件（{message.attachments.length}）
+            </div>
+            {message.attachments.map((file) => (
+              <a
+                key={file.id}
+                href={resolveFileUrl(file.file_url)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center gap-2 rounded-md bg-[#F8FAFC] px-3 py-2 active:opacity-80"
+              >
+                <Paperclip className="h-4 w-4 shrink-0 text-[#0062FF]" strokeWidth={2} />
+                <span className="min-w-0 flex-1 truncate text-[13px] text-[#1A1A1A]">
+                  {file.file_name}
+                </span>
+                <span className="shrink-0 text-[11px] text-[#94A3B8]">
+                  {formatFileSize(file.file_size)}
+                </span>
+              </a>
+            ))}
+          </div>
+        )}
 
         {message.requireAck && message.ackDeadline && !message.isAcked && new Date() > new Date(message.ackDeadline) && (
           <div className="box-border rounded-lg bg-[#FEE2E2] p-3">

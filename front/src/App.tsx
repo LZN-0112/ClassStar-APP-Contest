@@ -6,13 +6,16 @@ import PageTransition from '@/components/common/PageTransition';
 import LoadingScreen from '@/components/feedback/LoadingScreen';
 import ErrorBoundary from '@/components/feedback/ErrorBoundary';
 import RouteGuard from '@/components/common/RouteGuard';
+import PrivacyConsentGate from '@/components/common/PrivacyConsentGate';
 import BottomNav from '@/components/layout/BottomNav';
+import PomodoroTicker from '@/components/pomodoro/PomodoroTicker';
 
 // 入口与认证
 const Launch = lazy(() => import('@/pages/onboarding/Launch'));
 const Login = lazy(() => import('@/pages/auth/Login'));
 const Register = lazy(() => import('@/pages/auth/Register'));
 const ResetPassword = lazy(() => import('@/pages/auth/ResetPassword'));
+const WechatBind = lazy(() => import('@/pages/auth/WechatBind'));
 const UserAgreement = lazy(() => import('@/pages/auth/UserAgreement'));
 const PrivacyPolicy = lazy(() => import('@/pages/auth/PrivacyPolicy'));
 const JoinClass = lazy(() => import('@/pages/class/JoinClass'));
@@ -22,6 +25,9 @@ const Onboarding = lazy(() => import('@/pages/onboarding/Onboarding'));
 const StudentHome = lazy(() => import('@/pages/home/StudentHome'));
 const ClassHome = lazy(() => import('@/pages/class/ClassHome'));
 
+// AI 助手
+const AIAssistant = lazy(() => import('@/pages/ai-assistant/AIAssistant'));
+
 // 消息与任务
 const Messages = lazy(() => import('@/pages/messages/Messages'));
 const MessageList = lazy(() => import('@/pages/messages/MessageList'));
@@ -30,15 +36,13 @@ const PublishMessage = lazy(() => import('@/pages/messages/PublishMessage'));
 const MessageStats = lazy(() => import('@/pages/messages/MessageStats'));
 const InteractionMessages = lazy(() => import('@/pages/messages/InteractionMessages'));
 const TaskBoard = lazy(() => import('@/pages/tools/TaskBoard'));
+const TaskDetail = lazy(() => import('@/pages/tools/TaskDetail'));
 const PublishTask = lazy(() => import('@/pages/tools/PublishTask'));
 
 // 考勤
 const AttendanceList = lazy(() => import('@/pages/attendances/AttendanceList'));
 const PublishAttendance = lazy(() => import('@/pages/attendances/PublishAttendance'));
-const AttendanceDetail = lazy(() => import('@/pages/attendances/AttendanceDetail'));
-const CheckIn = lazy(() => import('@/pages/attendances/CheckIn'));
 const CheckInDetail = lazy(() => import('@/pages/attendances/CheckInDetail'));
-const CheckInMethod = lazy(() => import('@/pages/attendances/CheckInMethod'));
 const LeaveApply = lazy(() => import('@/pages/attendances/LeaveApply'));
 const LeaveApproval = lazy(() => import('@/pages/attendances/LeaveApproval'));
 const AttendanceReport = lazy(() => import('@/pages/attendances/AttendanceReport'));
@@ -71,7 +75,6 @@ const FeeLedger = lazy(() => import('@/pages/finance/FeeLedger'));
 const FeeRecord = lazy(() => import('@/pages/finance/FeeRecord'));
 const FinanceReport = lazy(() => import('@/pages/finance/FinanceReport'));
 const PaymentRegister = lazy(() => import('@/pages/finance/PaymentRegister'));
-const LeagueFeeRecord = lazy(() => import('@/pages/finance/LeagueFeeRecord'));
 const LeaguePaymentRegister = lazy(() => import('@/pages/finance/LeaguePaymentRegister'));
 
 // 离线作业核对
@@ -112,16 +115,18 @@ const ScanPage = lazy(() => import('@/pages/tools/ScanPage'));
 // 个人中心
 const PersonalCenter = lazy(() => import('@/pages/settings/PersonalCenter'));
 const AccountSecurity = lazy(() => import('@/pages/settings/AccountSecurity'));
+const ChangePassword = lazy(() => import('@/pages/settings/ChangePassword'));
 const NotificationSettings = lazy(() => import('@/pages/settings/NotificationSettings'));
 const PrivacySettings = lazy(() => import('@/pages/settings/PrivacySettings'));
 const GeneralSettings = lazy(() => import('@/pages/settings/GeneralSettings'));
 const Settings = lazy(() => import('@/pages/settings/Settings'));
-const ReminderSettings = lazy(() => import('@/pages/settings/ReminderSettings'));
+
 const HelpFeedback = lazy(() => import('@/pages/settings/HelpFeedback'));
 const About = lazy(() => import('@/pages/settings/About'));
 
 // 管理后台
 const ErrorDashboard = lazy(() => import('@/pages/admin/ErrorDashboard'));
+const MonitorApp = lazy(() => import('@/monitor/MonitorApp'));
 
 // 404
 const NotFound = lazy(() => import('@/pages/common/NotFound'));
@@ -145,6 +150,7 @@ function AnimatedRoutes() {
         <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
         <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
         <Route path="/reset-password" element={<PageTransition><ResetPassword /></PageTransition>} />
+        <Route path="/wechat-bind" element={<PageTransition><WechatBind /></PageTransition>} />
         <Route path="/user-agreement" element={<PageTransition><UserAgreement /></PageTransition>} />
         <Route path="/privacy-policy" element={<PageTransition><PrivacyPolicy /></PageTransition>} />
         <Route path="/join-class" element={<PageTransition><JoinClass /></PageTransition>} />
@@ -153,6 +159,9 @@ function AnimatedRoutes() {
         {/* 首页 */}
         <Route path="/home" element={<PageTransition><StudentHome /></PageTransition>} />
         <Route path="/class-home" element={<PageTransition><ClassHome /></PageTransition>} />
+
+        {/* AI 助手（一级页面，底部导航常驻） */}
+        <Route path="/ai-assistant" element={<PageTransition><AIAssistant /></PageTransition>} />
 
         {/* 消息与任务 */}
         <Route path="/messages" element={<PageTransition><Messages /></PageTransition>} />
@@ -163,26 +172,24 @@ function AnimatedRoutes() {
         <Route path="/message-stats/:messageId" element={<AuthRoute><MessageStats /></AuthRoute>} />
         <Route path="/interaction-messages" element={<PageTransition><InteractionMessages /></PageTransition>} />
         <Route path="/task-board" element={<PageTransition><TaskBoard /></PageTransition>} />
+        <Route path="/task-detail/:taskId" element={<PageTransition><TaskDetail /></PageTransition>} />
         <Route path="/publish-task" element={<AuthRoute><PublishTask /></AuthRoute>} />
 
         {/* 考勤 */}
-        <Route path="/attendance-list" element={<PageTransition><AttendanceList /></PageTransition>} />
+        <Route path="/attendance-list" element={<AuthRoute><AttendanceList /></AuthRoute>} />
         <Route path="/publish-attendance" element={<AuthRoute><PublishAttendance /></AuthRoute>} />
-        <Route path="/attendance-detail/:classId/:attendanceId" element={<PageTransition><AttendanceDetail /></PageTransition>} />
-        <Route path="/check-in" element={<PageTransition><CheckIn /></PageTransition>} />
-        <Route path="/check-in-detail/:classId/:attendanceId" element={<PageTransition><CheckInDetail /></PageTransition>} />
-        <Route path="/check-in-method" element={<AuthRoute><CheckInMethod /></AuthRoute>} />
-        <Route path="/leave-apply" element={<PageTransition><LeaveApply /></PageTransition>} />
-        <Route path="/leave-approval" element={<PageTransition><LeaveApproval /></PageTransition>} />
-        <Route path="/attendance-report" element={<PageTransition><AttendanceReport /></PageTransition>} />
-        <Route path="/my-attendance" element={<PageTransition><MyAttendance /></PageTransition>} />
+        <Route path="/check-in-detail/:classId/:attendanceId" element={<AuthRoute><CheckInDetail /></AuthRoute>} />
+        <Route path="/leave-apply" element={<AuthRoute><LeaveApply /></AuthRoute>} />
+        <Route path="/leave-approval" element={<AuthRoute><LeaveApproval /></AuthRoute>} />
+        <Route path="/attendance-report" element={<AuthRoute><AttendanceReport /></AuthRoute>} />
+        <Route path="/my-attendance" element={<AuthRoute><MyAttendance /></AuthRoute>} />
 
         {/* 作业 */}
         <Route path="/homework-list" element={<PageTransition><HomeworkList /></PageTransition>} />
         <Route path="/publish-homework" element={<AuthRoute><PublishHomework /></AuthRoute>} />
         <Route path="/homework-detail/:id" element={<PageTransition><HomeworkDetail /></PageTransition>} />
-        <Route path="/homework-submit" element={<AuthRoute><HomeworkSubmit /></AuthRoute>} />
-        <Route path="/delay-apply" element={<AuthRoute><DelayApply /></AuthRoute>} />
+        <Route path="/homework-submit/:homeworkId" element={<AuthRoute><HomeworkSubmit /></AuthRoute>} />
+        <Route path="/delay-apply/:homeworkId" element={<AuthRoute><DelayApply /></AuthRoute>} />
         <Route path="/my-homework" element={<AuthRoute><MyHomework /></AuthRoute>} />
 
         {/* 活动与报名 */}
@@ -204,7 +211,7 @@ function AnimatedRoutes() {
         <Route path="/fee-record" element={<AuthRoute><FeeRecord /></AuthRoute>} />
         <Route path="/finance-report" element={<PageTransition><FinanceReport /></PageTransition>} />
         <Route path="/payment-register" element={<AuthRoute><PaymentRegister /></AuthRoute>} />
-        <Route path="/league-fee-record" element={<AuthRoute><LeagueFeeRecord /></AuthRoute>} />
+        <Route path="/league-fee-record" element={<AuthRoute><FeeRecord defaultFeeType="group" /></AuthRoute>} />
         <Route path="/league-payment-register" element={<AuthRoute><LeaguePaymentRegister /></AuthRoute>} />
 
         {/* 离线作业核对 */}
@@ -247,15 +254,17 @@ function AnimatedRoutes() {
         <Route path="/settings" element={<PageTransition><Settings /></PageTransition>} />
         <Route path="/personal-center" element={<PageTransition><PersonalCenter /></PageTransition>} />
         <Route path="/account-security" element={<PageTransition><AccountSecurity /></PageTransition>} />
+        <Route path="/change-password" element={<AuthRoute><ChangePassword /></AuthRoute>} />
         <Route path="/notification-settings" element={<PageTransition><NotificationSettings /></PageTransition>} />
         <Route path="/privacy-settings" element={<PageTransition><PrivacySettings /></PageTransition>} />
         <Route path="/general-settings" element={<PageTransition><GeneralSettings /></PageTransition>} />
-        <Route path="/reminder-settings" element={<PageTransition><ReminderSettings /></PageTransition>} />
-        <Route path="/help-feedback" element={<PageTransition><HelpFeedback /></PageTransition>} />
+        
+        <Route path="/help-feedback" element={<AuthRoute><HelpFeedback /></AuthRoute>} />
         <Route path="/about" element={<PageTransition><About /></PageTransition>} />
 
         {/* 管理后台 */}
         <Route path="/error-dashboard" element={<AuthRoute><ErrorDashboard /></AuthRoute>} />
+        <Route path="/monitor/*" element={<MonitorApp />} />
 
         {/* 404 兜底 */}
         <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
@@ -265,6 +274,13 @@ function AnimatedRoutes() {
 }
 
 function NavOverlay() {
+  const location = useLocation();
+
+  // 监控台为独立桌面布局，不渲染 App 端底部导航
+  if (location.pathname.startsWith('/monitor')) {
+    return null;
+  }
+
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center sm:inset-y-0 sm:items-center sm:p-6">
       <div className="pointer-events-none flex w-full flex-col justify-end sm:h-phone sm:w-phone">
@@ -283,10 +299,13 @@ export default function App() {
   return (
     <Router>
       <ErrorBoundary>
-        <Suspense fallback={<LoadingScreen />}>
-          <AnimatedRoutes />
-        </Suspense>
-        <NavOverlay />
+        <PrivacyConsentGate>
+          <PomodoroTicker />
+          <Suspense fallback={<LoadingScreen />}>
+            <AnimatedRoutes />
+          </Suspense>
+          <NavOverlay />
+        </PrivacyConsentGate>
       </ErrorBoundary>
     </Router>
   );

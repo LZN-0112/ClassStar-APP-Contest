@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { DataService } from './data.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
-import { ClassIdQueryDto, SemesterReportQueryDto } from './dto/data.dto';
+import { DashboardQueryDto, SemesterReportQueryDto } from './dto/data.dto';
 
 @ApiTags('班级数据看板')
 @UseGuards(JwtAuthGuard)
@@ -15,10 +15,10 @@ export class DataController {
   @Get('dashboard')
   @ApiOperation({ summary: '班级数据看板聚合指标' })
   async getDashboard(
-    @Query() query: ClassIdQueryDto,
+    @Query() query: DashboardQueryDto,
     @CurrentUser('userId') userId: string,
   ) {
-    return this.dataService.getDashboard(query.classId, userId);
+    return this.dataService.getDashboard(query.classId, userId, query.range);
   }
 
   @Get('semester-report')

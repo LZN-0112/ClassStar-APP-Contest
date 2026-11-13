@@ -4,4 +4,6 @@
     <string name="title_activity_main">班务星</string>
     <string name="package_name">com.banwuxing.app</string>
     <string name="custom_url_scheme">com.banwuxing.app</string>
+    <!-- 微信开放平台移动应用 AppID（AppSecret 仅保存在后端，禁止写入客户端） -->
+    <string name="wechat_app_id">wx097234aa12798b93</string>
 </resources>

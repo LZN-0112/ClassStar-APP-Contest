@@ -1,8 +1,10 @@
 import BackButton from '@/components/navigation/BackButton';
+import { useStatusBarStyle } from '@/hooks/useStatusBarStyle';
 import PhoneFrame from '@/components/layout/PhoneFrame';
 import { toast } from 'sonner';
 
 export default function DownloadStats() {
+  useStatusBarStyle(true); // 深色渐变头部 → 白色状态栏图标
 
   return (
     <PhoneFrame>
@@ -42,7 +44,7 @@ export default function DownloadStats() {
                   data-pencil-name="Header"
                   className="box-border w-full h-[220px] shrink-0 flex flex-col gap-[12px] p-[20px] justify-start items-start bg-[#00000000] relative"
                 >
-                  <BackButton variant="dark" className="absolute left-[-4px] top-[0px] z-10" />
+                  <BackButton variant="dark" className="absolute left-[-4px] top-[12px] z-10" />
                   <div
                     data-pencil-name="Top Row"
                     className="box-border w-full h-[24px] shrink-0 flex flex-row gap-0 justify-between items-center relative [z-index:0]"

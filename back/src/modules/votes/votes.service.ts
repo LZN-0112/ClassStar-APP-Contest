@@ -40,7 +40,7 @@ export class VotesService {
 
   async verifyCommittee(userId: string, classId: string) {
     const member = await this.verifyClassAccess(userId, classId);
-    if (!member.is_committee) {
+    if (member.role_level !== 'owner' && member.role_level !== 'admin') {
       throw new ForbiddenException('当前身份无权执行该操作');
     }
     return member;
@@ -142,10 +142,18 @@ export class VotesService {
       where: { class_id: classId },
     });
 
+    // 补充当前用户的投票状态（列表页据此展示「已投票」）
+    const myRecords = await this.prisma.vote_records.findMany({
+      where: { vote_id: { in: votes.map((v) => v.id) }, student_id: userId },
+      select: { vote_id: true },
+    });
+    const myVotedIds = new Set(myRecords.map((r) => r.vote_id));
+
     const list = votes.map((vote) => {
       const participantCount = vote._count.vote_records;
       return {
         ...this.toVoteDto(vote),
+        hasVoted: myVotedIds.has(vote.id),
         participantCount,
         participationRate: this.calcRate(participantCount, memberCount),
         options: vote.vote_options.map((o) => ({

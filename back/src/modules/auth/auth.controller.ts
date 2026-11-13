@@ -3,9 +3,11 @@ import {
   Post,
   Body,
   Get,
+  Delete,
   UseGuards,
   Req,
   Res,
+  Query,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
@@ -20,8 +22,12 @@ import {
   RegisterDto,
   LoginDto,
   ResetPasswordDto,
+  ChangePasswordDto,
   RefreshTokenDto,
   UpdateStudentIdDto,
+  WechatLoginDto,
+  WechatBindPhoneDto,
+  WechatBindDto,
 } from './dto/auth.dto';
 
 @ApiTags('认证账号')
@@ -61,8 +67,54 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('login')
   @ApiOperation({ summary: '用户登录' })
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  login(@Body() dto: LoginDto, @Req() req: any) {
+    return this.authService.login(dto, this.getClientIp(req));
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Post('wechat/login')
+  @ApiOperation({ summary: '微信登录（开放平台移动应用）' })
+  wechatLogin(@Body() dto: WechatLoginDto) {
+    return this.authService.wechatLogin(dto.code);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Post('wechat/bind-phone')
+  @ApiOperation({ summary: '微信登录绑定手机号' })
+  bindWechatPhone(@Body() dto: WechatBindPhoneDto, @Req() req: any) {
+    return this.authService.bindWechatPhone(dto, this.getClientIp(req));
+  }
+
+  /**
+   * 取真实客户端 IP（反向代理场景优先 x-forwarded-for）
+   */
+  private getClientIp(req: any): string | undefined {
+    const forwarded = req.headers?.['x-forwarded-for'];
+    return (
+      (typeof forwarded === 'string'
+        ? forwarded.split(',')[0].trim()
+        : undefined) ||
+      req.ip ||
+      undefined
+    );
+  }
+
+  @Post('wechat/bind')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '已登录用户绑定微信' })
+  bindWechat(@Req() req: any, @Body() dto: WechatBindDto) {
+    return this.authService.bindWechatForUser(req.user.userId, dto.code);
+  }
+
+  @Delete('wechat/bind')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '已登录用户解除微信绑定' })
+  unbindWechat(@Req() req: any) {
+    return this.authService.unbindWechatForUser(req.user.userId);
   }
 
   @Public()
@@ -81,6 +133,14 @@ export class AuthController {
     return this.authService.resetPassword(dto);
   }
 
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '修改密码（登录态）' })
+  changePassword(@Body() dto: ChangePasswordDto, @Req() req: any) {
+    return this.authService.changePassword(req.user.userId, dto);
+  }
+
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -93,8 +153,8 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: '获取当前用户信息' })
-  getMe(@Req() req: any) {
-    return this.authService.getMe(req.user.userId);
+  getMe(@Req() req: any, @Query('classId') classId?: string) {
+    return this.authService.getMe(req.user.userId, classId);
   }
 
   @Post('update-student-id')

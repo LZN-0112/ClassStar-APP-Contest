@@ -1,4 +1,5 @@
 import BackButton from '@/components/navigation/BackButton';
+import { useStatusBarStyle } from '@/hooks/useStatusBarStyle';
 import PhoneFrame from '@/components/layout/PhoneFrame';
 import { CalendarCheck, CircleCheck, FileText, Ticket, Wallet } from 'lucide-react';
 import { ReactNode, useEffect, useState } from 'react';
@@ -106,6 +107,7 @@ function MessageCard({ icon, iconBg, iconColor, title, desc, time, unread, onCli
 }
 
 export default function InteractionMessages() {
+  useStatusBarStyle(true); // 深色渐变头部 → 白色状态栏图标
   const navigate = useNavigate();
   const { user, loading: userLoading } = useCurrentUser();
   const [messages, setMessages] = useState<MessageItem[]>([]);
@@ -127,8 +129,11 @@ export default function InteractionMessages() {
         const res = await api.get(`/classes/${classId}/messages?pageSize=100`);
         const data = res.data.data || res.data;
         const allMessages = data.list || [];
-        // 过滤出互动类型的消息（非通知类型）
-        const interactionMessages = allMessages.filter((m: MessageItem) => m.type !== 'notice');
+        // 过滤出互动类型的消息（notice、reminder、deadline_reminder 均属于通知）
+        const interactionMessages = allMessages.filter(
+          (m: MessageItem) =>
+            m.type !== 'notice' && m.type !== 'reminder' && m.type !== 'deadline_reminder',
+        );
         setMessages(interactionMessages);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : '获取互动消息失败');
@@ -166,7 +171,7 @@ export default function InteractionMessages() {
           data-pencil-name="Header"
           className="box-border w-full h-[154px] shrink-0 flex flex-col gap-[12px] p-[20px] justify-start items-start bg-[#00000000] relative"
         >
-          <BackButton variant="dark" className="absolute left-[16px] top-[0px] z-10" />
+          <BackButton variant="dark" className="absolute left-[16px] top-[12px] z-10" />
           <div className="h-8 w-10" />
           <div className="text-[28px]/[normal] box-border text-[#FFFFFF] font-heading font-bold text-left [white-space:nowrap] relative [z-index:0]">
             互动消息

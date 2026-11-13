@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { View, Text, Switch } from '@tarojs/components'
 import Taro, { useLoad } from '@tarojs/taro'
 
@@ -26,28 +26,39 @@ const ROWS: NotifyRow[] = [
 export default function NotificationSettings() {
   const { requireLogin } = useAuth()
   const [settings, setSettings] = useState<Record<string, boolean>>({})
+  // 同步镜像最新开关状态，连续切换时不会基于过期快照保存
+  const settingsRef = useRef<Record<string, boolean>>({})
 
   useLoad(() => {
     if (!requireLogin()) return
     fetchSettings()
   })
 
+  const applySettings = (next: Record<string, boolean>) => {
+    settingsRef.current = next
+    setSettings(next)
+  }
+
   const fetchSettings = async () => {
     try {
       const res: any = await settingsApi.getSettings()
-      setSettings((res?.notificationSettings as Record<string, boolean>) || {})
+      applySettings((res?.notificationSettings as Record<string, boolean>) || {})
     } catch {
       // 静默失败，保持占位 UI
     }
   }
 
   const toggle = async (key: string, val: boolean) => {
-    setSettings((prev) => ({ ...prev, [key]: val }))
+    const prev = settingsRef.current
+    // 全量提交，避免只传单个 key 时与其他开关互相覆盖
+    const next = { ...prev, [key]: val }
+    applySettings(next)
     try {
-      await settingsApi.updateSettings({ notificationSettings: { [key]: val } })
+      await settingsApi.updateSettings({ notificationSettings: next })
       Taro.showToast({ title: '设置已保存', icon: 'success' })
     } catch {
-      // 静默失败，保持 UI 可交互
+      applySettings(prev)
+      Taro.showToast({ title: '保存失败，请重试', icon: 'none' })
     }
   }
 

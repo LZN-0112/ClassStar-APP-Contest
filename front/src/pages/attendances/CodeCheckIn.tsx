@@ -58,8 +58,8 @@ export default function CodeCheckIn({ classId, attendanceId, onSuccess }: CodeCh
       onSuccess();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '签到失败');
-      setCode(['', '', '', '']);
-      inputRefs.current[0]?.focus();
+      // 保留已输入口令，便于用户修正个别数字后重试
+      inputRefs.current[3]?.focus();
     } finally {
       setLoading(false);
     }

@@ -11,6 +11,10 @@ import {
   IsUrl,
   Max,
   IsInt,
+  IsArray,
+  ArrayNotEmpty,
+  ArrayMaxSize,
+  Matches,
 } from 'class-validator';
 
 export enum FeeCategory {
@@ -47,6 +51,16 @@ export class AddFeeRecordDto {
   @IsOptional()
   @IsUrl({}, { message: '票据地址格式不正确' })
   billUrl?: string;
+
+  /**
+   * 持久化的票据对象名（如 fee-bills/xxx.png）。
+   * 推荐客户端使用该字段，服务端读取时再生成临时访问地址，避免预签名地址过期。
+   */
+  @IsOptional()
+  @IsString({ message: '票据标识必须是字符串' })
+  @Length(1, 512, { message: '票据标识长度不能超过512字符' })
+  @Matches(/^fee-bills\/[A-Za-z0-9._-]+$/, { message: '票据标识不合法' })
+  billKey?: string;
 }
 
 export class UpdateFeeRecordDto {
@@ -66,6 +80,26 @@ export class UpdateFeeRecordDto {
   @IsOptional()
   @IsUrl({}, { message: '票据地址格式不正确' })
   billUrl?: string;
+}
+
+export class BatchPaymentDto {
+  @IsString({ message: '班级ID必须是字符串' })
+  @IsNotEmpty({ message: '班级ID不能为空' })
+  classId: string;
+
+  @IsEnum(FeeCategory, { message: 'feeType必须是class或group' })
+  feeType: FeeCategory;
+
+  @IsNumber({}, { message: '金额必须是数字' })
+  @Min(0.01, { message: '金额必须大于0' })
+  @Type(() => Number)
+  amount: number;
+
+  @IsArray({ message: '缴费学生列表必须是数组' })
+  @ArrayNotEmpty({ message: '请选择已缴费学生' })
+  @ArrayMaxSize(200, { message: '单次最多登记200人' })
+  @IsString({ each: true, message: '学生ID必须是字符串' })
+  payerUserIds: string[];
 }
 
 export class QueryFeeListDto {

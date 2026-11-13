@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import BackButton from '@/components/navigation/BackButton';
+import { useStatusBarStyle } from '@/hooks/useStatusBarStyle';
 import PhoneFrame from '@/components/layout/PhoneFrame';
 import { api } from '@/lib/api';
+import { saveBlobFile } from '@/lib/save-file';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { currentIsAdminOrOwner } from '@/utils/role';
 
@@ -43,6 +45,7 @@ function formatSize(bytes?: number) {
 }
 
 export default function ArchiveDetail() {
+  useStatusBarStyle(true); // 深色渐变头部 → 白色状态栏图标
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useCurrentUser();
@@ -100,13 +103,14 @@ export default function ArchiveDetail() {
           }
         }
       }
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(res.data as Blob);
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(link.href);
+      const mimeType =
+        (res.headers['content-type'] as string | undefined) || 'application/octet-stream';
+      const result = await saveBlobFile(fileName, res.data as Blob, mimeType);
+      if (!result.ok) {
+        toast.error('下载失败，请稍后重试');
+        return;
+      }
+      toast.success(result.path ? `已保存到：${result.path}` : '下载成功');
     } catch (err: any) {
       const message =
         err?.response?.data?.message ||
@@ -156,7 +160,7 @@ export default function ArchiveDetail() {
         >
           <BackButton
             variant="dark"
-            className="absolute left-[-4px] top-[0px] z-10"
+            className="absolute left-[-4px] top-[12px] z-10"
           />
           <div className="h-8 w-10" />
           <div

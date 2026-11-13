@@ -47,6 +47,24 @@ export class AttendancesController {
     return this.attendancesService.findAll(classId, userId, { status, page, pageSize });
   }
 
+  @Get('report')
+  @ApiOperation({ summary: '考勤报表' })
+  getReport(
+    @Param('classId') classId: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.attendancesService.getReport(classId, userId);
+  }
+
+  @Get('pending-leaves')
+  @ApiOperation({ summary: '待审批请假列表' })
+  getPendingLeaves(
+    @Param('classId') classId: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.attendancesService.listPendingLeaves(classId, userId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: '签到详情' })
   findOne(
@@ -55,6 +73,16 @@ export class AttendancesController {
     @CurrentUser('userId') userId: string,
   ) {
     return this.attendancesService.findOne(classId, id, userId);
+  }
+
+  @Get(':id/leaves')
+  @ApiOperation({ summary: '签到请假申请列表' })
+  listLeaves(
+    @Param('classId') classId: string,
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.attendancesService.listLeaveApplications(classId, id, userId);
   }
 
   @Post(':id/check-in')
@@ -80,8 +108,12 @@ export class AttendancesController {
 
   @Get(':id/statistics')
   @ApiOperation({ summary: '考勤统计' })
-  getStatistics(@Param('classId') classId: string, @Param('id') id: string) {
-    return this.attendancesService.getStatistics(classId, id);
+  getStatistics(
+    @Param('classId') classId: string,
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.attendancesService.getStatistics(classId, id, userId);
   }
 
   @Post(':id/leave')

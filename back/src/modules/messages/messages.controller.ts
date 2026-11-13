@@ -13,6 +13,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { MessagesService } from './messages.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { AdminOrOwner } from '@/common/decorators/role-level.decorator';
 import {
   CreateMessageDto,
   CreateReminderDto,
@@ -47,6 +48,15 @@ export class MessagesController {
     return this.messagesService.findAll(classId, userId, { type, page, pageSize });
   }
 
+  @Get('unread-count')
+  @ApiOperation({ summary: '未读消息数（按通知/互动分组）' })
+  getUnreadCount(
+    @Param('classId') classId: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.messagesService.getUnreadCount(classId, userId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: '通知详情' })
   findOne(
@@ -78,12 +88,14 @@ export class MessagesController {
   }
 
   @Get(':id/acks')
+  @AdminOrOwner()
   @ApiOperation({ summary: '签收统计与未签收名单' })
   getAcks(@Param('classId') classId: string, @Param('id') id: string) {
     return this.messagesService.getAcks(classId, id);
   }
 
   @Post(':id/remind')
+  @AdminOrOwner()
   @ApiOperation({ summary: '再次提醒未签收成员' })
   remind(
     @Param('classId') classId: string,
@@ -94,6 +106,7 @@ export class MessagesController {
   }
 
   @Get(':id/export-acks')
+  @AdminOrOwner()
   @ApiOperation({ summary: '导出未签收名单' })
   exportAcks(@Param('classId') classId: string, @Param('id') id: string) {
     return this.messagesService.exportAcks(classId, id);

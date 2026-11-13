@@ -12,6 +12,13 @@ import {
   UpdateErrorSolutionDto,
 } from './dto/error.dto';
 import { NotificationService } from './notification.service';
+import { ErrorMetricsService } from '@/common/observability/error-metrics.service';
+import { MonitorEventsService } from '@/modules/monitor/monitor-events.service';
+import { MonitorAlertService } from '@/modules/monitor/monitor-alert.service';
+import {
+  QueryErrorGroupsDto,
+  UpdateErrorGroupDto,
+} from './dto/error-group.dto';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -21,6 +28,9 @@ export class ErrorsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
+    private readonly errorMetrics: ErrorMetricsService,
+    private readonly monitorEvents: MonitorEventsService,
+    private readonly monitorAlert: MonitorAlertService,
   ) {}
 
   async createErrorLog(
@@ -30,6 +40,14 @@ export class ErrorsService {
     ipAddress?: string,
   ) {
     const severity = dto.severity || 'minor';
+    const source = dto.source ?? null;
+    const route = dto.route ?? null;
+    const fingerprint = this.errorMetrics.buildFingerprint(
+      dto.error_type,
+      source,
+      route,
+      dto.message,
+    );
 
     const log = await this.prisma.error_logs.create({
       data: {
@@ -45,8 +63,51 @@ export class ErrorsService {
         browser_info: dto.browser_info,
         ip_address: ipAddress,
         user_feedback: dto.user_feedback,
+        source,
+        app_version: dto.app_version,
+        route,
+        status_code: dto.status_code,
+        duration_ms: dto.duration_ms,
+        trace_id: dto.trace_id,
+        fingerprint,
       },
     });
+
+    await this.errorMetrics.recordReportedGroup({
+      errorType: dto.error_type,
+      severity,
+      message: dto.message,
+      source: dto.source,
+      pagePath: dto.page_path,
+      route: dto.route,
+    });
+
+    this.monitorEvents.emitErrorCreated({
+      id: log.id,
+      errorType: log.error_type,
+      severity: log.severity,
+      message: log.message,
+      source: log.source,
+      route: log.route,
+      pagePath: log.page_path,
+      statusCode: log.status_code,
+      durationMs: log.duration_ms,
+      createdAt: log.created_at.toISOString(),
+    });
+
+    this.monitorAlert
+      .evaluateError({
+        fingerprint,
+        errorType: log.error_type,
+        severity: log.severity,
+        message: log.message,
+        source: log.source,
+        route: log.route,
+        pagePath: log.page_path,
+      })
+      .catch((error) => {
+        this.logger.warn(`告警评估失败: ${error?.message ?? error}`);
+      });
 
     if (severity === 'critical' || severity === 'major') {
       this.logger.error(
@@ -83,6 +144,23 @@ export class ErrorsService {
     if (dto.severity) where.severity = dto.severity;
     if (dto.status) where.status = dto.status;
     if (dto.error_type) where.error_type = dto.error_type;
+    if (dto.source) where.source = dto.source;
+    if (dto.route) where.route = dto.route;
+    if (dto.app_version) where.app_version = dto.app_version;
+    if (dto.trace_id) where.trace_id = dto.trace_id;
+    if (dto.keyword) {
+      where.OR = [
+        { message: { contains: dto.keyword } },
+        { error_type: { contains: dto.keyword } },
+        { route: { contains: dto.keyword } },
+        { page_path: { contains: dto.keyword } },
+      ];
+    }
+    if (dto.days) {
+      where.created_at = {
+        gte: new Date(Date.now() - dto.days * 24 * 60 * 60 * 1000),
+      };
+    }
 
     const [logs, total] = await Promise.all([
       this.prisma.error_logs.findMany({
@@ -96,6 +174,118 @@ export class ErrorsService {
     ]);
 
     return { data: logs, total, page, pageSize };
+  }
+
+  async getErrorGroups(dto: QueryErrorGroupsDto) {
+    const page = Math.max(1, dto.page || 1);
+    const pageSize = Math.min(100, Math.max(1, dto.pageSize || 20));
+    const skip = (page - 1) * pageSize;
+
+    const where: any = {};
+    if (dto.source) where.source = dto.source;
+    if (dto.severity) where.severity = dto.severity;
+    if (dto.status) where.status = dto.status;
+    if (dto.error_type) where.error_type = dto.error_type;
+    if (dto.route) where.route = dto.route;
+    if (dto.keyword) {
+      where.OR = [
+        { message: { contains: dto.keyword } },
+        { error_type: { contains: dto.keyword } },
+        { route: { contains: dto.keyword } },
+        { page_path: { contains: dto.keyword } },
+      ];
+    }
+    if (dto.days) {
+      where.last_seen_at = {
+        gte: new Date(Date.now() - dto.days * 24 * 60 * 60 * 1000),
+      };
+    }
+
+    const orderBy =
+      dto.orderBy === 'count'
+        ? { occurrence_count: 'desc' as const }
+        : { last_seen_at: 'desc' as const };
+
+    const [groups, total] = await Promise.all([
+      this.prisma.error_groups.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy,
+      }),
+      this.prisma.error_groups.count({ where }),
+    ]);
+
+    return { data: groups, total, page, pageSize };
+  }
+
+  async getErrorGroupById(groupId: string) {
+    const group = await this.prisma.error_groups.findUnique({
+      where: { id: groupId },
+      include: { error_solutions: true },
+    });
+    if (!group) throw new NotFoundException('错误分组不存在');
+
+    const logs = await this.prisma.error_logs.findMany({
+      where: { fingerprint: group.fingerprint },
+      orderBy: { created_at: 'desc' },
+      take: 50,
+    });
+
+    // 处理人只存了用户 ID，这里补上姓名，避免前端显示 ID 片段
+    const handler = group.handled_by
+      ? await this.prisma.users.findUnique({
+          where: { id: group.handled_by },
+          select: { name: true },
+        })
+      : null;
+
+    return { ...group, handled_by_name: handler?.name ?? null, logs };
+  }
+
+  async updateErrorGroup(
+    groupId: string,
+    dto: UpdateErrorGroupDto,
+    userId?: string,
+  ) {
+    const group = await this.prisma.error_groups.findUnique({
+      where: { id: groupId },
+    });
+    if (!group) throw new NotFoundException('错误分组不存在');
+
+    if (dto.solution_id) {
+      const solution = await this.prisma.error_solutions.findUnique({
+        where: { id: dto.solution_id },
+      });
+      if (!solution) throw new BadRequestException('关联的解决方案不存在');
+      if (!solution.is_active) {
+        throw new BadRequestException('关联的解决方案已停用');
+      }
+    }
+
+    const data: any = { updated_at: new Date() };
+    if (dto.status !== undefined) {
+      data.status = dto.status;
+      if (dto.status === 'pending') {
+        data.handled_at = null;
+        data.handled_by = null;
+      } else {
+        data.handled_at = new Date();
+        data.handled_by = userId ?? null;
+      }
+    }
+    if (dto.note !== undefined) {
+      data.note = dto.note.trim() ? dto.note.trim() : null;
+    }
+    if (dto.solution_id !== undefined) {
+      data.solution_id = dto.solution_id || null;
+    }
+
+    return this.prisma.error_groups.update({
+      where: { id: groupId },
+      data,
+      include: { error_solutions: true },
+    });
   }
 
   async getErrorLogById(id: string) {

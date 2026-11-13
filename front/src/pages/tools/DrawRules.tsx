@@ -20,7 +20,7 @@ const rules = [
   {
     icon: RotateCcw,
     title: '重复抽签',
-    content: '每次点击"开始抽签"将产生全新的随机结果，之前的抽签结果不会被覆盖，可在"中签记录"中查看历史结果。',
+    content: '每次点击「开始抽签」将产生全新的随机结果，之前的抽签结果不会被覆盖，可在「中签记录」中查看历史结果。',
   },
   {
     icon: AlertCircle,
@@ -34,13 +34,16 @@ export default function DrawRules() {
 
   return (
     <div className="flex min-h-[100dvh] w-full items-start justify-center overflow-x-hidden overflow-y-auto bg-gray-200 sm:items-center sm:p-6">
-      <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-background sm:h-phone sm:w-phone sm:rounded-device sm:shadow-lift">
+      <div
+        className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-background sm:h-phone sm:w-phone sm:rounded-device sm:shadow-lift"
+        style={{ backgroundImage: 'linear-gradient(180deg, #85C5F4 0%, #F1F8FE 100%)' }}
+      >
         <div className="relative flex flex-1 flex-col items-center overflow-y-auto overflow-x-hidden">
           <div className="flex w-full min-h-full flex-col items-center">
             {/* Status Bar */}
             <div
               data-pencil-name="Status Bar"
-              className="box-border flex h-[62px] w-full shrink-0 flex-row items-center justify-between gap-0 bg-[#85C5F4] p-[12px_24px_0px_24px]"
+              className="box-border flex h-[62px] w-full shrink-0 flex-row items-center justify-between gap-0 bg-transparent p-[12px_24px_0px_24px]"
             >
               <div className="box-border text-left font-data text-[14px]/[normal] font-semibold text-[#1A1A1A] [white-space:nowrap]">
                 9:41
@@ -58,7 +61,7 @@ export default function DrawRules() {
             {/* Content */}
             <div
               data-pencil-name="Content"
-              className="relative flex w-full flex-1 flex-col items-center justify-start gap-0 bg-cover bg-no-repeat [background-image:linear-gradient(180deg,#85C5F4_0%,#F1F8FE_100%)]"
+              className="relative flex w-full flex-1 flex-col items-center justify-start gap-0"
             >
               {/* Header */}
               <div

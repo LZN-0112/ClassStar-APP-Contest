@@ -39,7 +39,7 @@ export class ArchiveService {
   /**
    * 档案详情（含附件列表）
    */
-  async getArchiveDetail(archiveId: string) {
+  async getArchiveDetail(classId: string, archiveId: string) {
     const archive = await this.prisma.archives.findUnique({
       where: { id: archiveId },
       include: {
@@ -48,8 +48,8 @@ export class ArchiveService {
       },
     });
 
-    if (!archive) {
-      throw new NotFoundException('档案不存在');
+    if (!archive || archive.class_id !== classId) {
+      throw new NotFoundException('档案不存在或不属于该班级');
     }
 
     return {
@@ -76,7 +76,15 @@ export class ArchiveService {
   /**
    * 档案附件详情
    */
-  async getArchiveFile(archiveId: string, fileId: string) {
+  async getArchiveFile(classId: string, archiveId: string, fileId: string) {
+    const archive = await this.prisma.archives.findUnique({
+      where: { id: archiveId },
+      select: { class_id: true },
+    });
+    if (!archive || archive.class_id !== classId) {
+      throw new NotFoundException('档案不存在或不属于该班级');
+    }
+
     const file = await this.prisma.archive_files.findFirst({
       where: { id: fileId, archive_id: archiveId },
     });
@@ -99,7 +107,15 @@ export class ArchiveService {
   /**
    * 档案附件下载（演示数据 file_url 为空时给出友好提示）
    */
-  async downloadArchiveFile(archiveId: string, fileId: string) {
+  async downloadArchiveFile(classId: string, archiveId: string, fileId: string) {
+    const archive = await this.prisma.archives.findUnique({
+      where: { id: archiveId },
+      select: { class_id: true },
+    });
+    if (!archive || archive.class_id !== classId) {
+      throw new NotFoundException('档案不存在或不属于该班级');
+    }
+
     const file = await this.prisma.archive_files.findFirst({
       where: { id: fileId, archive_id: archiveId },
     });
@@ -121,7 +137,7 @@ export class ArchiveService {
   /**
    * 导出档案为 XLSX / PDF
    */
-  async exportArchive(archiveId: string, format: string) {
+  async exportArchive(classId: string, archiveId: string, format: string) {
     const archive = await this.prisma.archives.findUnique({
       where: { id: archiveId },
       include: {
@@ -130,8 +146,8 @@ export class ArchiveService {
       },
     });
 
-    if (!archive) {
-      throw new NotFoundException('档案不存在');
+    if (!archive || archive.class_id !== classId) {
+      throw new NotFoundException('档案不存在或不属于该班级');
     }
 
     const meta: Array<[string, string]> = [

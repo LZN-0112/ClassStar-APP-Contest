@@ -1,5 +1,3 @@
-import { useMemo } from 'react';
-
 export type RegisterButtonState =
   | 'loading'
   | 'register'
@@ -7,7 +5,10 @@ export type RegisterButtonState =
   | 'registering'
   | 'cancelling'
   | 'inProgress'
-  | 'ended';
+  | 'ended'
+  | 'full'
+  | 'closed'
+  | 'rejected';
 
 interface ActivityRegisterButtonProps {
   state: RegisterButtonState;
@@ -15,9 +16,26 @@ interface ActivityRegisterButtonProps {
   className?: string;
 }
 
-export function ActivityRegisterButton({ state, onClick, className = '' }: ActivityRegisterButtonProps) {
-  const { label, disabled, styleClass } = useMemo(() => {
+const stateHints: Partial<Record<RegisterButtonState, string>> = {
+  inProgress: '活动已开始，报名通道已关闭',
+  full: '报名名额已满',
+  closed: '报名截止时间已过',
+  rejected: '报名审核未通过，如有疑问请联系班委',
+};
+
+export function ActivityRegisterButton({
+  state,
+  onClick,
+  className = '',
+}: ActivityRegisterButtonProps) {
+  const { label, disabled, styleClass } = (() => {
     switch (state) {
+      case 'loading':
+        return {
+          label: '加载中...',
+          disabled: true,
+          styleClass: 'bg-[#9CA3AF] cursor-wait',
+        };
       case 'registering':
         return {
           label: '报名中...',
@@ -38,13 +56,31 @@ export function ActivityRegisterButton({ state, onClick, className = '' }: Activ
         };
       case 'inProgress':
         return {
-          label: '报名',
+          label: '活动进行中',
           disabled: true,
           styleClass: 'bg-[#9CA3AF] cursor-not-allowed',
         };
       case 'ended':
         return {
-          label: '活动已截止',
+          label: '活动已结束',
+          disabled: true,
+          styleClass: 'bg-[#9CA3AF] cursor-not-allowed',
+        };
+      case 'full':
+        return {
+          label: '名额已满',
+          disabled: true,
+          styleClass: 'bg-[#9CA3AF] cursor-not-allowed',
+        };
+      case 'closed':
+        return {
+          label: '报名已截止',
+          disabled: true,
+          styleClass: 'bg-[#9CA3AF] cursor-not-allowed',
+        };
+      case 'rejected':
+        return {
+          label: '报名未通过',
           disabled: true,
           styleClass: 'bg-[#9CA3AF] cursor-not-allowed',
         };
@@ -56,16 +92,18 @@ export function ActivityRegisterButton({ state, onClick, className = '' }: Activ
           styleClass: 'bg-[#0062FF] active:opacity-90 hover:opacity-95',
         };
     }
-  }, [state]);
+  })();
+
+  const hint = stateHints[state];
 
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
-      {state === 'inProgress' && (
+      {hint && (
         <p
           data-pencil-name="Activity Register Hint"
           className="text-[12px]/[normal] box-border text-center font-body font-medium text-[#64748B]"
         >
-          活动进行中将无法报名与取消报名
+          {hint}
         </p>
       )}
       <button

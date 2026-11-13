@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Upload } from 'lucide-react';
+import { FileText, Loader2, ShieldAlert } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '@/components/layout/PageLayout';
 import { api } from '@/lib/api';
@@ -8,14 +8,19 @@ import { toast } from 'sonner';
 
 export default function PublishHomework() {
   const navigate = useNavigate();
-  const { user } = useCurrentUser();
+  const { user, loading: userLoading } = useCurrentUser();
   const classId = user?.classId;
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     title: '',
     subject: '',
     deadline: '',
     content: '',
   });
+
+  const isManager = Boolean(
+    user?.isCommittee || user?.roleLevel === 'owner' || user?.roleLevel === 'admin',
+  );
 
   const handleChange = (key: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -30,25 +35,51 @@ export default function PublishHomework() {
       toast.error('请选择截止时间');
       return;
     }
+    if (new Date(form.deadline).getTime() <= Date.now()) {
+      toast.error('截止时间需晚于当前时间');
+      return;
+    }
     if (!classId) {
       toast.error('未找到班级信息');
       return;
     }
+    if (submitting) return;
 
+    setSubmitting(true);
     try {
       await api.post(`/classes/${classId}/homeworks`, {
-        title: form.title,
-        subject: form.subject || form.title,
+        title: form.title.trim(),
+        subject: form.subject.trim() || '作业',
         deadline: new Date(form.deadline).toISOString(),
-        content: form.content,
+        content: form.content.trim(),
       });
       toast.success('作业发布成功');
       navigate('/homework-list');
     } catch (error: any) {
       console.error('发布作业失败:', error);
       toast.error(error.message || '发布失败，请重试');
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  if (!userLoading && !isManager) {
+    return (
+      <PageLayout title="发布作业" variant="a">
+        <div className="flex flex-col items-center justify-center gap-3 py-24 text-[#64748B]">
+          <ShieldAlert className="h-12 w-12 text-[#F59E0B] opacity-70" />
+          <span className="text-[14px]">仅班委可发布作业</span>
+          <button
+            type="button"
+            onClick={() => navigate('/homework-list', { replace: true })}
+            className="rounded-full bg-[#EFF6FF] px-5 py-2 text-[13px] font-medium text-[#0062FF]"
+          >
+            返回作业列表
+          </button>
+        </div>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout
@@ -66,6 +97,7 @@ export default function PublishHomework() {
             value={form.title}
             onChange={(e) => handleChange('title', e.target.value)}
             placeholder="请输入作业名称"
+            maxLength={50}
             className="w-full bg-transparent font-body text-[14px] font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none"
           />
         </div>
@@ -79,6 +111,7 @@ export default function PublishHomework() {
             value={form.subject}
             onChange={(e) => handleChange('subject', e.target.value)}
             placeholder="请输入科目（选填）"
+            maxLength={20}
             className="w-full bg-transparent font-body text-[14px] font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none"
           />
         </div>
@@ -90,7 +123,6 @@ export default function PublishHomework() {
             type="datetime-local"
             value={form.deadline}
             onChange={(e) => handleChange('deadline', e.target.value)}
-            placeholder="请选择截止时间"
             className="w-full bg-transparent font-body text-[14px] font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none"
           />
         </div>
@@ -103,17 +135,9 @@ export default function PublishHomework() {
             onChange={(e) => handleChange('content', e.target.value)}
             placeholder="请输入作业要求..."
             rows={4}
+            maxLength={2000}
             className="h-full w-full resize-none bg-transparent font-body text-[14px] font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none"
           />
-        </div>
-        <div
-          data-pencil-name="Upload Area"
-          className="box-border flex h-[120px] w-full shrink-0 flex-col items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC]"
-        >
-          <Upload className="h-[32px] w-[32px] text-[#94A3B8]" strokeWidth={2} />
-          <div className="text-[14px]/[normal] box-border text-left font-body font-medium text-[#94A3B8] [white-space:nowrap]">
-            点击上传附件
-          </div>
         </div>
 
         <div data-pencil-name="Spacer" className="min-h-[20px] flex-1" />
@@ -121,11 +145,13 @@ export default function PublishHomework() {
         <button
           type="button"
           onClick={handleSubmit}
+          disabled={submitting}
           data-pencil-name="Button Primary"
-          className="box-border flex h-[52px] w-full shrink-0 flex-col items-center justify-center rounded-xl bg-[#0062FF] shadow-[0px_4px_16px_0px_#0000001A]"
+          className="box-border flex h-[52px] w-full shrink-0 flex-col items-center justify-center rounded-xl bg-[#0062FF] shadow-[0px_4px_16px_0px_#0000001A] disabled:opacity-60"
         >
-          <div className="text-[16px]/[normal] box-border text-left font-body font-semibold text-white [white-space:nowrap]">
-            发布作业
+          <div className="flex items-center gap-2 text-[16px]/[normal] box-border text-left font-body font-semibold text-white [white-space:nowrap]">
+            {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+            {submitting ? '发布中...' : '发布作业'}
           </div>
         </button>
       </div>

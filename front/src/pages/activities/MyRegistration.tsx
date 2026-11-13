@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 interface RegistrationItem {
   registrationId: string;
+  activityId: string;
   activity: string;
   time: string;
   status: string;
@@ -13,12 +14,14 @@ interface RegistrationItem {
 
 const statusColors: Record<string, { bg: string; text: string }> = {
   approved: { bg: 'bg-[#22C55E1A]', text: 'text-[#22C55E]' },
+  registered: { bg: 'bg-[#22C55E1A]', text: 'text-[#22C55E]' },
   pending: { bg: 'bg-[#F59E0B1A]', text: 'text-[#F59E0B]' },
   rejected: { bg: 'bg-[#EF44441A]', text: 'text-[#EF4444]' },
 };
 
 const statusLabels: Record<string, string> = {
   approved: '已通过',
+  registered: '已通过',
   pending: '待审核',
   rejected: '未通过',
 };
@@ -51,6 +54,7 @@ export default function MyRegistration() {
         const list = data.list || [];
         const mapped: RegistrationItem[] = list.map((item: any) => ({
           registrationId: item.registrationId,
+          activityId: item.activity?.id,
           activity: item.activity?.title || '未知活动',
           time: item.registeredAt ? formatDate(item.registeredAt) : '',
           status: item.status,
@@ -98,8 +102,11 @@ export default function MyRegistration() {
                   <div
                     key={item.registrationId}
                     data-pencil-name="Card"
-                    onClick={() => navigate('/activity-detail')}
-                    className="box-border w-full h-[80px] shrink-0 [box-shadow:0px_2px_8px_0px_#0000000D] flex flex-row gap-[12px] p-4 justify-start items-center bg-[#FFFFFF] rounded-[16px]"
+                    onClick={() =>
+                      item.activityId &&
+                      navigate(`/activity-detail/${user?.classId}/${item.activityId}`)
+                    }
+                    className="box-border w-full min-h-[92px] shrink-0 [box-shadow:0px_2px_8px_0px_#0000000D] flex flex-row gap-[12px] p-4 justify-start items-center bg-[#FFFFFF] rounded-[16px] text-left"
                   >
                     <div
                       data-pencil-name="Icon Box"
@@ -133,15 +140,15 @@ export default function MyRegistration() {
                     >
                       <div
                         data-pencil-name="Text"
-                        className="text-[14px]/[normal] box-border text-[#1A1A1A] font-body font-semibold text-left [white-space:nowrap]"
+                        className="w-full text-[14px]/[normal] box-border text-[#1A1A1A] font-body font-semibold text-left truncate"
                       >
                         {item.activity}
                       </div>
                       <div
                         data-pencil-name="Text"
-                        className="text-[11px]/[normal] box-border text-[#4B5563] font-body font-medium text-left [white-space:nowrap]"
+                        className="w-full text-[11px]/[normal] box-border text-[#4B5563] font-body font-medium text-left truncate"
                       >
-                        {item.time}
+                        报名于 {item.time}
                       </div>
                       <div
                         data-pencil-name="Tag"

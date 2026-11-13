@@ -5,8 +5,8 @@ const { v4: uuidv4 } = require('uuid');
 const prisma = new PrismaClient();
 
 async function main() {
-  const phone = process.argv[2] || '13800138000';
-  const password = process.argv[3] || 'Test123456';
+  const phone = process.argv[2] || '13531355454';
+  const password = process.argv[3] || '123456789a';
   const name = process.argv[4] || '测试用户';
 
   const existing = await prisma.users.findUnique({ where: { phone } });

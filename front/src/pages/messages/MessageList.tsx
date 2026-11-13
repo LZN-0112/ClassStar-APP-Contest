@@ -4,6 +4,8 @@ import BackButton from '@/components/navigation/BackButton';
 import { useNavigate } from 'react-router-dom';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { api } from '@/lib/api';
+import { isNative } from '@/lib/capacitor';
+import { useStatusBarStyle } from '@/hooks/useStatusBarStyle';
 import { toast } from 'sonner';
 import {
   Bell,
@@ -28,14 +30,24 @@ interface MessageItem {
 
 const typeIconMap: Record<string, React.ReactNode> = {
   notice: <Bell className="w-[24px] h-[24px] text-[#FFFFFF]" strokeWidth={2} />,
+  reminder: <Bell className="w-[24px] h-[24px] text-[#FFFFFF]" strokeWidth={2} />,
   homework: <FileText className="w-[24px] h-[24px] text-[#FFFFFF]" strokeWidth={2} />,
   activity: <Flag className="w-[24px] h-[24px] text-[#FFFFFF]" strokeWidth={2} />,
+  activity_result: <Flag className="w-[24px] h-[24px] text-[#FFFFFF]" strokeWidth={2} />,
+  activity_start: <Bell className="w-[24px] h-[24px] text-[#FFFFFF]" strokeWidth={2} />,
+  deadline_reminder: <Bell className="w-[24px] h-[24px] text-[#FFFFFF]" strokeWidth={2} />,
+  homework_urge: <Bell className="w-[24px] h-[24px] text-[#FFFFFF]" strokeWidth={2} />,
 };
 
 const typeLabelMap: Record<string, string> = {
   notice: '通知',
+  reminder: '通知',
   homework: '学业',
   activity: '活动',
+  activity_result: '报名结果',
+  activity_start: '活动提醒',
+  deadline_reminder: '截止提醒',
+  homework_urge: '作业催交',
 };
 
 const statusLabelMap: Record<string, string> = {
@@ -45,8 +57,13 @@ const statusLabelMap: Record<string, string> = {
 
 const iconBgMap: Record<string, string> = {
   notice: 'bg-[#0062FF]',
+  reminder: 'bg-[#0062FF]',
   homework: 'bg-[#22C55E]',
   activity: 'bg-[#F59E0B]',
+  activity_result: 'bg-[#F59E0B]',
+  activity_start: 'bg-[#F59E0B]',
+  deadline_reminder: 'bg-[#F59E0B]',
+  homework_urge: 'bg-[#F59E0B]',
 };
 
 function formatTime(iso?: string) {
@@ -65,6 +82,7 @@ function formatTime(iso?: string) {
 }
 
 export default function MessageList() {
+  useStatusBarStyle(false); // 白色背景 → 深色状态栏图标
   const navigate = useNavigate();
   const { user } = useCurrentUser();
   const [messages, setMessages] = useState<MessageItem[]>([]);
@@ -74,7 +92,10 @@ export default function MessageList() {
 
   useEffect(() => {
     const fetchMessages = async () => {
-      if (!classId) return;
+      if (!classId) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
         const res = await api.get('/classes/' + classId + '/messages?pageSize=100');
@@ -104,6 +125,7 @@ export default function MessageList() {
           <div
             data-pencil-name="Spacer"
             className="box-border w-full h-[20px] shrink-0 flex flex-row gap-0 justify-start items-start"
+            style={isNative ? { height: 'calc(var(--safe-top, env(safe-area-inset-top, 0px)) + 12px)' } : undefined}
           ></div>
           <div
             data-pencil-name="Header"

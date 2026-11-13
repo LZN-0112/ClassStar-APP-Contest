@@ -50,6 +50,15 @@ export class HomeworksController {
     return this.homeworksService.findAll(classId, userId, { status, page, pageSize });
   }
 
+  @Get('offline-checks')
+  @ApiOperation({ summary: '最近离线核对记录' })
+  listOfflineChecks(
+    @Param('classId') classId: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.homeworksService.listOfflineChecks(classId, userId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: '作业详情' })
   findOne(
@@ -58,6 +67,18 @@ export class HomeworksController {
     @CurrentUser('userId') userId: string,
   ) {
     return this.homeworksService.findOne(classId, id, userId);
+  }
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: '上传作业附件' })
+  @ApiConsumes('multipart/form-data')
+  uploadAttachment(
+    @Param('classId') classId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.homeworksService.uploadAttachment(classId, file, userId);
   }
 
   @Post(':id/submit')
@@ -92,6 +113,16 @@ export class HomeworksController {
     @CurrentUser('userId') userId: string,
   ) {
     return this.homeworksService.reviewDelay(classId, id, applicationId, status, userId);
+  }
+
+  @Get(':id/delays')
+  @ApiOperation({ summary: '延时申请列表（班委）' })
+  listDelays(
+    @Param('classId') classId: string,
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.homeworksService.listDelayApplications(classId, id, userId);
   }
 
   @Post('offline-check/recognize')

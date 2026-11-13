@@ -7,6 +7,8 @@ import { GradientWave } from '@/components/ui/gradient-wave';
 
 export default function Register() {
   const navigate = useNavigate();
+  const [realName, setRealName] = useState('');
+  const [nickname, setNickname] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -16,6 +18,15 @@ export default function Register() {
   const [agreed, setAgreed] = useState(false);
 
   const validate = () => {
+    const trimmedName = realName.trim();
+    if (trimmedName.length < 2 || trimmedName.length > 50) {
+      toast.error('请输入真实姓名（2-50 个字）');
+      return false;
+    }
+    if (nickname.trim().length > 30) {
+      toast.error('昵称最多 30 个字');
+      return false;
+    }
     if (!/^1[3-9]\d{9}$/.test(phone)) {
       toast.error('请输入正确的 11 位手机号');
       return false;
@@ -32,12 +43,17 @@ export default function Register() {
   };
 
   const handleRegister = async () => {
+    if (!agreed) {
+      toast.error('请先勾选同意《用户协议》和《隐私政策》');
+      return;
+    }
     if (!validate() || loading) return;
     setLoading(true);
     try {
       await api.post('/auth/register', {
         phone,
-        name: phone,
+        name: realName.trim(),
+        nickname: nickname.trim() || undefined,
         password,
         confirmPassword,
       });
@@ -119,35 +135,70 @@ export default function Register() {
           注册账号
         </div>
 
-        {/* 手机号 */}
+        {/* 表单区：按内容自然排列 */}
         <div
-          data-pencil-name="Phone Input"
-          className="box-border absolute left-[16px] right-[16px] top-[270px] z-[9] flex h-[56px] flex-col items-start justify-center gap-2 rounded-lg border-[1px_solid_#E5E7EB] bg-[#FFFFFF] p-[0px_16px] [box-shadow:0px_2px_8px_0px_#0000000D]"
+          data-pencil-name="Register Form"
+          className="box-border absolute left-[16px] right-[16px] top-[270px] z-[9] flex flex-col gap-[12px] pb-[24px]"
         >
-          <input
-            type="tel"
-            inputMode="numeric"
-            autoComplete="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="请输入手机号"
-            className="box-border h-full w-full bg-transparent text-left font-body text-[14px]/[normal] font-normal text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none"
-          />
-        </div>
+          {/* 真实姓名 */}
+          <div
+            data-pencil-name="Real Name Input"
+            className="box-border flex h-[56px] flex-col items-start justify-center gap-2 rounded-lg border-[1px_solid_#E5E7EB] bg-[#FFFFFF] p-[0px_16px] [box-shadow:0px_2px_8px_0px_#0000000D]"
+          >
+            <input
+              type="text"
+              autoComplete="name"
+              value={realName}
+              onChange={(e) => setRealName(e.target.value)}
+              placeholder="请输入真实姓名（用于班级实名）"
+              className="box-border h-full w-full bg-transparent text-left font-body text-[14px]/[normal] font-normal text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none"
+            />
+          </div>
 
-        {/* 设置密码 */}
-        <div
-          data-pencil-name="Password Input"
-          className="box-border absolute left-[16px] right-[16px] top-[350px] z-[6] flex h-[56px] flex-row items-center justify-between gap-2 rounded-lg border-[1px_solid_#E5E7EB] bg-[#FFFFFF] p-[0px_16px] [box-shadow:0px_2px_8px_0px_#0000000D]"
-        >
-          <input
-            type={showPassword ? 'text' : 'password'}
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="请输入密码"
-            className="box-border h-full flex-1 bg-transparent text-left font-body text-[14px]/[normal] font-normal text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none"
-          />
+          {/* 昵称 */}
+          <div
+            data-pencil-name="Nickname Input"
+            className="box-border flex h-[56px] flex-col items-start justify-center gap-2 rounded-lg border-[1px_solid_#E5E7EB] bg-[#FFFFFF] p-[0px_16px] [box-shadow:0px_2px_8px_0px_#0000000D]"
+          >
+            <input
+              type="text"
+              autoComplete="nickname"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="请输入昵称（选填）"
+              className="box-border h-full w-full bg-transparent text-left font-body text-[14px]/[normal] font-normal text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none"
+            />
+          </div>
+
+          {/* 手机号 */}
+          <div
+            data-pencil-name="Phone Input"
+            className="box-border flex h-[56px] flex-col items-start justify-center gap-2 rounded-lg border-[1px_solid_#E5E7EB] bg-[#FFFFFF] p-[0px_16px] [box-shadow:0px_2px_8px_0px_#0000000D]"
+          >
+            <input
+              type="tel"
+              inputMode="numeric"
+              autoComplete="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="请输入手机号"
+              className="box-border h-full w-full bg-transparent text-left font-body text-[14px]/[normal] font-normal text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none"
+            />
+          </div>
+
+          {/* 设置密码 */}
+          <div
+            data-pencil-name="Password Input"
+            className="box-border flex h-[56px] flex-row items-center justify-between gap-2 rounded-lg border-[1px_solid_#E5E7EB] bg-[#FFFFFF] p-[0px_16px] [box-shadow:0px_2px_8px_0px_#0000000D]"
+          >
+            <input
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="请输入密码"
+              className="box-border h-full flex-1 bg-transparent text-left font-body text-[14px]/[normal] font-normal text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none"
+            />
           <div
             data-pencil-name="Eye Button"
             onClick={() => setShowPassword((v) => !v)}
@@ -178,10 +229,10 @@ export default function Register() {
         </div>
 
         {/* 确认密码 */}
-        <div
-          data-pencil-name="Confirm Password Input"
-          className="box-border absolute left-[16px] right-[16px] top-[418px] z-[5] flex h-[56px] flex-row items-center justify-between gap-2 rounded-lg border-[1px_solid_#E5E7EB] bg-[#FFFFFF] p-[0px_16px] [box-shadow:0px_2px_8px_0px_#0000000D]"
-        >
+          <div
+            data-pencil-name="Confirm Password Input"
+            className="box-border flex h-[56px] flex-row items-center justify-between gap-2 rounded-lg border-[1px_solid_#E5E7EB] bg-[#FFFFFF] p-[0px_16px] [box-shadow:0px_2px_8px_0px_#0000000D]"
+          >
           <input
             type={showConfirmPassword ? 'text' : 'password'}
             autoComplete="new-password"
@@ -220,13 +271,13 @@ export default function Register() {
         </div>
 
         {/* 注册按钮 */}
-        <div
-          data-pencil-name="Register Button"
-          className={`box-border absolute left-[16px] right-[16px] top-[488px] z-[4] flex h-[52px] flex-col items-center justify-center gap-2 rounded-lg p-[0px_16px] [box-shadow:0px_4px_16px_0px_#0000000D] ${
-            loading ? 'bg-[#93C5FD]' : 'bg-[#0062FF]'
-          }`}
-          onClick={handleRegister}
-        >
+          <div
+            data-pencil-name="Register Button"
+            className={`box-border mt-[8px] flex h-[52px] flex-col items-center justify-center gap-2 rounded-lg p-[0px_16px] [box-shadow:0px_4px_16px_0px_#0000000D] ${
+              loading ? 'bg-[#93C5FD]' : 'bg-[#0062FF]'
+            }`}
+            onClick={handleRegister}
+          >
           <div
             data-pencil-name="Label"
             className="box-border text-left font-body text-[16px]/[normal] font-semibold text-[#FFFFFF] [white-space:nowrap]"
@@ -236,10 +287,10 @@ export default function Register() {
         </div>
 
         {/* 已有账号登录 */}
-        <div
-          data-pencil-name="Login Link"
-          className="box-border absolute left-[16px] right-[16px] top-[548px] z-[11] flex h-[20px] flex-row items-center justify-center"
-        >
+          <div
+            data-pencil-name="Login Link"
+            className="box-border flex h-[20px] flex-row items-center justify-center"
+          >
           <button
             type="button"
             onClick={() => navigate('/login')}
@@ -252,7 +303,7 @@ export default function Register() {
 
         <div
           data-pencil-name="Agreement"
-          className="box-border absolute left-[16px] right-[16px] top-[604px] z-[3] flex flex-row items-center justify-center gap-[8px]"
+          className="box-border flex flex-row items-center justify-center gap-[8px]"
         >
           <div
             onClick={() => setAgreed((v) => !v)}
@@ -292,10 +343,7 @@ export default function Register() {
             </span>
           </span>
         </div>
-        <div
-          data-pencil-name="Bottom Spacer"
-          className="box-border absolute left-0 top-[760px] h-[40px] w-full"
-        ></div>
+        </div>
       </div>
     </PhoneFrame>
   );

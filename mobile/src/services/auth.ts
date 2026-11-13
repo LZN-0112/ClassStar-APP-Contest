@@ -46,10 +46,10 @@ export function logout(): Promise<null> {
 
 /**
  * 获取当前用户信息
- * GET /auth/me
+ * GET /auth/me?classId=xxx
  */
-export function getUserInfo(): Promise<UserInfo> {
-  return request.get<UserInfo>('/auth/me')
+export function getUserInfo(classId?: string): Promise<UserInfo> {
+  return request.get<UserInfo>('/auth/me', classId ? { classId } : undefined)
 }
 
 /**

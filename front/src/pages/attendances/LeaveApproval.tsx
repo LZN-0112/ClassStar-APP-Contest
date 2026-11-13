@@ -1,157 +1,154 @@
-import PhoneFrame from '@/components/layout/PhoneFrame';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { CheckCircle, XCircle, Inbox } from 'lucide-react';
+import PageLayout from '@/components/layout/PageLayout';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { api } from '@/lib/api';
+import { toast } from 'sonner';
+
+interface PendingLeave {
+  id: string;
+  attendance: { id: string; title: string; startTime: string; endTime: string };
+  student: { id: string; name: string; studentId?: string; avatar?: string };
+  reason: string;
+  createdAt: string;
+}
+
+function formatTime(iso: string) {
+  const d = new Date(iso);
+  return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
 
 export default function LeaveApproval() {
   const navigate = useNavigate();
+  const { user, loading: userLoading } = useCurrentUser();
+  const [items, setItems] = useState<PendingLeave[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [actionId, setActionId] = useState('');
+
+  const fetchList = useCallback(async () => {
+    if (!user?.classId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const res = await api.get(`/classes/${user.classId}/attendances/pending-leaves`);
+      const data = res.data.data || res.data;
+      setItems(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '获取请假申请失败');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.classId]);
+
+  useEffect(() => {
+    if (userLoading) return;
+    void fetchList();
+  }, [userLoading, fetchList]);
+
+  const handleReview = async (item: PendingLeave, status: 'approved' | 'rejected') => {
+    if (!user?.classId) return;
+    setActionId(item.id);
+    try {
+      await api.post(
+        `/classes/${user.classId}/attendances/${item.attendance.id}/leave/${item.id}/review`,
+        { status },
+      );
+      toast.success(status === 'approved' ? '已同意请假' : '已驳回请假');
+      setItems((prev) => prev.filter((p) => p.id !== item.id));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '审批失败');
+    } finally {
+      setActionId('');
+    }
+  };
+
   return (
-    <PhoneFrame>
-      <div className="flex h-full flex-col overflow-y-auto">
-        <div
-      data-pencil-name="请假审批页"
-      className="box-border w-[393px] h-[844px] flex flex-col gap-0 justify-start items-start bg-[#FFFFFF] rounded-[40px] overflow-hidden"
+    <PageLayout
+      title="请假审批"
+      onBack={() => navigate(-1)}
+      right={
+        <button
+          onClick={fetchList}
+          className="-my-3 px-2 py-3 text-xs font-medium text-[#0062FF] active:opacity-80"
+        >
+          刷新
+        </button>
+      }
     >
-      <div
-        data-pencil-name="Phone Frame"
-        className="box-border w-[393px] h-[844px] shrink-0 flex flex-col gap-0 justify-start items-start bg-[#FFFFFF] rounded-[40px] overflow-hidden"
-      >
-        <div
-          data-pencil-name="Status Bar"
-          className="box-border w-full h-[62px] shrink-0 flex flex-row gap-0 p-[12px_24px_0px_24px] justify-between items-center bg-[#FFFFFF]"
-        >
-          <div
-            data-pencil-name="Time"
-            className="text-[14px]/[normal] box-border text-[#1A1A1A] font-data font-semibold text-left [white-space:nowrap]"
-          >
-            9:41
+      <div className="flex flex-col gap-3">
+        {loading ? (
+          <div className="py-16 text-center text-sm text-[#9CA3AF]">加载中...</div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-16">
+            <XCircle className="w-10 h-10 text-[#CBD5E1]" strokeWidth={1.5} />
+            <div className="text-sm text-[#6B7280]">{error}</div>
           </div>
-          <div
-            data-pencil-name="Status Icons"
-            className="box-border w-fit shrink-0 h-fit flex flex-row gap-[6px] justify-start items-center"
-          >
-            <div
-              data-pencil-name="Signal"
-              className="text-[14px]/[normal] box-border text-[#1A1A1A] font-caption font-normal text-left [white-space:nowrap]"
-            >
-              ◉◉◉◉
+        ) : items.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-16">
+            <Inbox className="w-12 h-12 text-[#CBD5E1]" strokeWidth={1.5} />
+            <div className="text-sm text-[#6B7280]">暂无待审批的请假申请</div>
+          </div>
+        ) : (
+          <>
+            <div className="text-xs font-semibold text-[#6B7280]">
+              待审批（{items.length}）
             </div>
-            <div
-              data-pencil-name="Battery"
-              className="text-[14px]/[normal] box-border text-[#1A1A1A] font-data font-normal text-left [white-space:nowrap]"
-            >
-              100%
-            </div>
-          </div>
-        </div>
-        <div
-          data-pencil-name="Content"
-          className="box-border w-full [flex:1_1_0] flex flex-col gap-4 p-[0px_20px] justify-start items-start"
-        >
-          <div
-            data-pencil-name="Spacer"
-            className="box-border w-full h-[20px] shrink-0 flex flex-row gap-0 justify-start items-start"
-          ></div>
-          <div
-            data-pencil-name="Title"
-            className="text-[28px]/[normal] box-border text-[#1A1A1A] font-heading font-bold text-left [white-space:nowrap]"
-          >
-            请假审批
-          </div>
-          <div
-            data-pencil-name="Spacer2"
-            className="box-border w-full h-[20px] shrink-0 flex flex-row gap-0 justify-start items-start"
-          ></div>
-          <div
-            data-pencil-name="List"
-            className="box-border w-full h-fit shrink-0 flex flex-col gap-[10px] justify-start items-start"
-          >
-            <div
-              data-pencil-name="赵六"
-              className="box-border w-full h-fit shrink-0 flex flex-col gap-2 p-[14px] justify-start items-start bg-[#FFFFFF] [border:1px_solid_#E5E7EB] rounded-lg"
-            >
+            {items.map((item) => (
               <div
-                data-pencil-name="Row"
-                className="box-border w-full h-fit shrink-0 flex flex-row gap-0 justify-between items-start"
+                key={item.id}
+                className="flex flex-col gap-2 rounded-2xl bg-white p-4 shadow-soft border border-[#F1F5F9]"
               >
-                <div
-                  data-pencil-name="Name"
-                  className="text-[16px]/[normal] box-border text-[#1A1A1A] font-body font-medium text-left [white-space:nowrap]"
-                >
-                  赵六
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <div className="text-sm font-semibold text-[#1A1A1A]">
+                      {item.student?.name || '未知成员'}
+                      {item.student?.studentId && (
+                        <span className="ml-2 text-[11px] font-normal text-[#9CA3AF]">
+                          {item.student.studentId}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-[#6B7280] truncate">
+                      {item.attendance?.title} · {formatTime(item.attendance?.startTime)}
+                    </div>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-[#FEF3C7] px-2 py-0.5 text-[11px] text-[#B45309]">
+                    待审批
+                  </span>
                 </div>
-                <div
-                  data-pencil-name="Status"
-                  className="text-[11px]/[normal] box-border text-[#0062FF66] font-caption font-normal text-left [white-space:nowrap]"
-                >
-                  待审批
+
+                <div className="rounded-lg bg-[#F9FAFB] p-3 text-xs leading-relaxed text-[#4B5563]">
+                  {item.reason}
                 </div>
-              </div>
-              <div
-                data-pencil-name="Reason"
-                className="text-[14px]/[normal] box-border text-[#4B5563] font-body font-normal text-left [white-space:nowrap]"
-              >
-                身体不适
-              </div>
-              <div
-                data-pencil-name="Buttons"
-                className="box-border w-full h-fit shrink-0 flex flex-row gap-[10px] justify-start items-start"
-              >
-                <div
-                  data-pencil-name="Approve"
-                  className="box-border [flex:1_1_0] h-[52px] [box-shadow:0px_4px_16px_0px_#0000000D] flex flex-col gap-2 p-[0px_16px] justify-center items-center bg-[#0062FF] rounded-lg" onClick={() => navigate('/attendance-list', { replace: true })}
-                >
-                  <div
-                    data-pencil-name="Label"
-                    className="text-[16px]/[normal] box-border text-[#FFFFFF] font-body font-semibold text-left [white-space:nowrap]"
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleReview(item, 'approved')}
+                    disabled={actionId === item.id}
+                    className="flex-1 h-[38px] flex items-center justify-center gap-1.5 bg-[#0062FF] text-white text-sm font-medium rounded-lg disabled:opacity-50 active:opacity-80"
                   >
+                    <CheckCircle className="w-4 h-4" />
                     同意
-                  </div>
-                </div>
-                <div
-                  data-pencil-name="Reject"
-                  className="box-border [flex:1_1_0] h-[52px] flex flex-col gap-2 p-[0px_16px] justify-center items-center bg-[#0062FF0D] [border:1px_solid_#E5E7EB] rounded-lg" onClick={() => navigate('/attendance-list', { replace: true })}
-                >
-                  <div
-                    data-pencil-name="Label"
-                    className="text-[16px]/[normal] box-border text-[#0062FF] font-body font-semibold text-left [white-space:nowrap]"
+                  </button>
+                  <button
+                    onClick={() => handleReview(item, 'rejected')}
+                    disabled={actionId === item.id}
+                    className="flex-1 h-[38px] flex items-center justify-center gap-1.5 bg-white text-[#DC2626] text-sm font-medium rounded-lg border border-[#E5E7EB] disabled:opacity-50 active:opacity-80"
                   >
+                    <XCircle className="w-4 h-4" />
                     驳回
-                  </div>
+                  </button>
                 </div>
               </div>
-            </div>
-            <div
-              data-pencil-name="钱七"
-              className="box-border w-full h-fit shrink-0 flex flex-col gap-2 p-[14px] justify-start items-start bg-[#FFFFFF] [border:1px_solid_#E5E7EB] rounded-lg"
-            >
-              <div
-                data-pencil-name="Row"
-                className="box-border w-full h-fit shrink-0 flex flex-row gap-0 justify-between items-start"
-              >
-                <div
-                  data-pencil-name="Name"
-                  className="text-[16px]/[normal] box-border text-[#1A1A1A] font-body font-medium text-left [white-space:nowrap]"
-                >
-                  钱七
-                </div>
-                <div
-                  data-pencil-name="Status"
-                  className="text-[11px]/[normal] box-border text-[#0062FF99] font-caption font-normal text-left [white-space:nowrap]"
-                >
-                  已通过
-                </div>
-              </div>
-              <div
-                data-pencil-name="Reason"
-                className="text-[14px]/[normal] box-border text-[#4B5563] font-body font-normal text-left [white-space:nowrap]"
-              >
-                家里有急事
-              </div>
-            </div>
-          </div>
-        </div>
+            ))}
+          </>
+        )}
       </div>
-    </div>
-      </div>
-    </PhoneFrame>
+    </PageLayout>
   );
 }

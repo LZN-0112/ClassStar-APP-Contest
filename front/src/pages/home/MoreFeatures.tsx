@@ -2,13 +2,20 @@ import BackButton from '@/components/navigation/BackButton';
 import PhoneFrame from '@/components/layout/PhoneFrame';
 import { useNavigate } from 'react-router-dom';
 import { Wallet, Dices, Vote, Clock } from 'lucide-react';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 export default function MoreFeatures() {
   const navigate = useNavigate();
+  const { user } = useCurrentUser();
+
+  const canManageFee =
+    user?.roleLevel === 'owner' ||
+    user?.roleLevel === 'admin' ||
+    user?.isCommittee === true;
 
   const features = [
     {
-      label: '班费记账',
+      label: canManageFee ? '班费记账' : '班费明细',
       icon: Wallet,
       color: '#22C55E',
       path: '/fee-ledger',

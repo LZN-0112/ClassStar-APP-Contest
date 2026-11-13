@@ -8,8 +8,12 @@ coverage/
 *.tsbuildinfo
 .gradle/
 .gradle-cache/
+.kotlin/
 *.apk
 *.aab
+front/android/app/src/main/assets/public/
+front/android/app/src/main/assets/capacitor.config.json
+front/android/local.properties
 
 .env
 .env.*

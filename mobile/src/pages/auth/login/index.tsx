@@ -45,6 +45,16 @@ export default function Login() {
         loginType: 'password'
       })
       useUserStore.getState().setToken(res.accessToken, res.refreshToken)
+      // 登录后立即拉取用户信息，避免新账号显示“同学/未加入班级”
+      try {
+        const info = await authApi.getUserInfo()
+        useUserStore.getState().setUserInfo(info)
+        if (info?.classId && !useUserStore.getState().currentClassId) {
+          useUserStore.getState().setCurrentClass(info.classId)
+        }
+      } catch {
+        // 用户信息拉取失败不阻塞登录流程
+      }
       Taro.showToast({ title: '登录成功', icon: 'success' })
       setTimeout(() => {
         Taro.reLaunch({ url: '/pages/home/index' })
