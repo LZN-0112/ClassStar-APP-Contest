@@ -223,5 +223,6 @@ AI_MODEL=qwen-plus
 ## 十一、安全与脱敏说明
 
 - 本仓库为**竞赛交付仓**，已完成脱敏：不含真实手机号、真实学生名单、真实数据库密码、AI 服务密钥、Android 签名密钥。
+- `docs/test/` 下的测试报告同样做过脱敏：测试手机号中间四位以 `****` 代替，内网 IP 替换为示例地址 `192.168.1.100`，设备序列号以占位符表示。
 - 所有配置均通过模板生成（`back/.env.example`、`back/.env.template`、`front/.env.template`），请填入自己的值。仓库内不跟踪任何 `.env` 实体文件。
 - 生产部署前请务必替换：`JWT_SECRET`、`JWT_REFRESH_SECRET`（≥ 32 位随机串）、`AI_API_KEY`、MinIO 密钥、数据库密码。
