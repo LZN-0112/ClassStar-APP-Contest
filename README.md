@@ -1,13 +1,15 @@
 # 班务星 APP · 校园班级事务智能管理助手
 
-> 面向高校班级的「通知 / 签到 / 作业 / 请假 / 班费 / 通讯录」一体化事务管理应用。
-> 双端形态：**App 为主**（Capacitor 打包的 Android 应用），**微信小程序为辅**（Taro）。
+> 面向高校班级与学生组织的「通知 / 签到 / 作业 / 请假 / 班费 / 通讯录」一体化事务管理应用，
+> 内置 **AI 班务助手**（一句话发布、班级数据问答、作业催交、语音转写）。
+> 三端形态：**App 为主**（Capacitor 打包的 Android 应用）、**Web 端**、**微信小程序为辅**（Taro）。
 
 本仓库是 **第九届传智杯全国大学生数智创新与 AI 应用大赛 · AI 创新应用挑战赛（Vibe Coding）** 的参赛交付仓库。
+选题方向：**校园垂直场景 + AI 原生交互的全栈 MVP 平台**（命题方向第 6 类：校园 / 垂直社区全栈 MVP 平台）。
 
-> **仓库说明（参赛整理版）**：为便于评审快速查看开发演进过程，本仓库在交付前将同一份代码按"功能模块"重组为一系列细粒度提交（工程脚手架 → 后端各业务模块 → Web 端页面 → 小程序端 → Android 容器 → 设计与测试文档），故提交历史的时间戳为**本次整理时间**，而非各功能最初的开发时间。**开发真实时间线以《Prompt 链证据集》中 19 段 TRAE 会话的分享链接与存档为准**（见 `docs/Prompt链证据集.md`）。本仓库不包含任何真实用户数据、真实账号口令或密钥。
+> **仓库说明（参赛整理版）**：为便于评审快速查看开发演进过程，本仓库在交付前将同一份代码按"功能模块"重组为一系列细粒度提交（工程脚手架 → 后端各业务模块 → Web 端页面 → 小程序端 → Android 容器 → 设计与测试文档 → 11 月版本同步），故提交历史的时间戳为**本次整理时间**，而非各功能最初的开发时间。**开发真实时间线以《Prompt 链证据集》中 19 段 TRAE 会话的分享链接与离线存档为准**（见 `docs/Prompt链证据集.md`），开发仓共 131 条过程提交。本仓库不包含任何真实用户数据、真实账号口令或密钥。
 
-**本 README 是「10 分钟复现指南」**——请按下面的顺序执行，即可在一台干净的机器上把整套系统跑起来。
+**本 README 是「10 分钟复现指南」**——请按下面顺序执行，即可在一台干净的机器上把整套系统跑起来。
 
 ---
 
@@ -17,7 +19,8 @@
 | --- | --- | --- | --- |
 | 前端 / App | `front/` | React 18 + Vite 6 + TypeScript + Tailwind CSS 3 + Capacitor 8 | 单页应用；用 Capacitor 打包为 Android App（**主形态**） |
 | 小程序 | `mobile/` | Taro 4.2.1 + React 18 | 微信小程序（**加分形态**） |
-| 后端 API | `back/` | NestJS 10 + Prisma 5 + TypeScript | REST 接口，统一前缀 `/api/v1` |
+| 后端 API | `back/` | NestJS 10 + Prisma 5 + TypeScript | REST 接口 167 条，统一前缀 `/api/v1`，Swagger 见 `/api/docs` |
+| AI 能力 | `back/src/modules/ai-assistant/` | 阿里云百炼 OpenAI 兼容接口（qwen-plus + qwen3-asr-flash） | 无密钥时自动降级为本地规则解析 |
 | 存储 | — | MySQL 8 / Redis / MinIO | MySQL 必需；**Redis、MinIO 为可选依赖**（缺失时自动降级） |
 
 ## 二、目录结构
@@ -25,11 +28,14 @@
 ```text
 back/      后端服务（NestJS + Prisma）
              ├─ .env.example / .env.template   配置模板（复制为 .env 使用）
-             └─ prisma/  schema.prisma（数据模型）、seed.js（演示数据）
+             ├─ Dockerfile / docker/           容器镜像与 compose 编排
+             └─ prisma/  schema.prisma（49 张表）、seed.js（演示数据）
 front/     前端 SPA（Capacitor 打包 Android）
+             ├─ android/                        Capacitor Android 容器工程
              └─ .env.template                  配置模板
 mobile/     Taro 微信小程序
-docs/       设计与测试文档
+tools/      图标与设计资源脚本
+docs/       架构、Prompt 链证据集、技术文档、测试与自检报告
 ```
 
 ## 三、环境要求
@@ -38,14 +44,15 @@ docs/       设计与测试文档
 | --- | --- | --- |
 | Node.js | ≥ 18.18（建议 20 LTS 或 22） | 必需 |
 | npm | 随 Node 附带 | 必需 |
-| MySQL | 8.x | 必需 |
+| MySQL | 8.x | 必需（Docker 方式无需本机安装） |
 | Redis | 6+ | 可选 |
 | MinIO | 近期任意版本 | 可选 |
+| Docker | 近期任意版本 | 可选（一键部署用） |
 | JDK | **17** | 仅打包 Android App 时需要（**不可用 JDK 21**） |
 
 > 三个子项目均使用 **npm**（各自带 `package-lock.json`）。
 
-## 四、10 分钟快速开始
+## 四、10 分钟快速开始（本地源码方式）
 
 下面命令以 Windows PowerShell 为例（macOS / Linux 把 `Copy-Item` 换成 `cp` 即可）。
 
@@ -57,7 +64,7 @@ docs/       设计与测试文档
 CREATE DATABASE class_manage_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-Redis / MinIO 可以先不启动，系统对二者做了降级处理（详见第七节）。
+Redis / MinIO 可以先不启动，系统对二者做了降级处理（详见第十节）。
 
 ### 步骤 1 · 启动后端（约 4 分钟）
 
@@ -69,6 +76,7 @@ npm install
 Copy-Item .env.template .env
 #    打开 back/.env，把 DB_PASSWORD 改成本机 MySQL 的密码；
 #    DATABASE_URL / DATABASE_READONLY_URL 用 ${DB_USER} 等变量占位，无需手改。
+#    AI_API_KEY 可留空——留空时 AI 助手自动使用本地规则解析，功能不中断。
 
 # 2) 生成 Prisma Client 并创建数据表
 npx prisma generate
@@ -81,7 +89,8 @@ node prisma/seed.js
 npm run start:dev
 ```
 
-后端启动后监听 `http://localhost:3000`，接口前缀为 `http://localhost:3000/api/v1`。
+后端启动后监听 `http://localhost:3000`，接口前缀为 `http://localhost:3000/api/v1`，
+Swagger 文档在 `http://localhost:3000/api/docs`。
 
 ### 步骤 2 · 启动前端（约 3 分钟）
 
@@ -109,7 +118,49 @@ npm run build:weapp
 
 构建产物在 `mobile/dist/`，用「微信开发者工具」导入该目录即可预览。
 
-## 五、演示账号（已脱敏）
+## 五、一键启动（Docker 方式，可选）
+
+若只做验收、不想装 Node 与 MySQL，可用容器方式启动后端 + 数据库（详见 `back/docker/compose.yaml`）：
+
+```powershell
+cd back/docker
+Copy-Item .env.example .env
+#    在 .env 中设置 MYSQL_ROOT_PASSWORD、DB_PASSWORD、JWT_SECRET、JWT_REFRESH_SECRET
+
+docker compose up -d --build
+curl http://127.0.0.1:3000/api/v1/health
+```
+
+容器启动时自动执行 `prisma migrate deploy` 建表；数据与上传文件均落在命名卷中，重建容器不丢失。
+前端仍按第四节步骤 2 启动。
+
+## 六、AI 班务助手（配置与降级）
+
+AI 能力位于 `back/src/modules/ai-assistant/`，共 7 个接口：
+
+| 接口 | 方法 | 作用 | 权限 |
+| --- | --- | --- | --- |
+| `/ai/assistant/status` | GET | 检查密钥与模型连通性 | 登录用户 |
+| `/ai/assistant/parse` | POST | 一句话解析为作业 / 活动草稿（只读，不写库） | 班委 |
+| `/ai/assistant/ask` | POST | 班级数据问答（只读、白名单查询、按班级与角色隔离） | 班级成员 |
+| `/ai/assistant/urge` | POST | 给未交作业的学生发催交提醒 | 班委 |
+| `/ai/assistant/asr` | POST | 语音转文字（录音 base64） | 登录用户 |
+| `/ai/assistant/records` | GET / POST | 我的 AI 发布历史（仅本人可见） | 登录用户 |
+
+配置方式（`back/.env`）：
+
+```ini
+# 留空则自动降级为本地规则解析，不影响其余功能
+AI_API_KEY=
+AI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+AI_MODEL=qwen-plus
+```
+
+- **配了密钥**：走阿里云百炼 OpenAI 兼容接口（`qwen-plus` 文本、`qwen3-asr-flash` 语音）。
+- **没配密钥**：`status` 返回 `status=offline`（原因：未配置 AI 服务密钥），`parse` 自动降级为 `localParse` 本地正则规则解析，前端顶部会显示离线提示，功能仍可完整演示。
+- 所有 AI 写操作都只生成**草稿**，最终落库仍需用户确认，避免模型直接改数据。
+
+## 七、演示账号（已脱敏）
 
 执行 `node prisma/seed.js` 后会写入以下演示账号，**密码统一为 `test1234`**：
 
@@ -121,27 +172,56 @@ npm run build:weapp
 
 > 以上均为**合成测试数据**，不含任何真实个人信息。
 
-## 六、10 分钟验收清单
+## 八、10 分钟验收清单
 
 1. 后端控制台出现 Nest 启动日志并监听 `3000` 端口
 2. 浏览器打开 `http://localhost:5173`，出现登录页
 3. 用 `13800138000 / test1234` 登录 → 能看到班级「软件工程 2023 级 1 班」
 4. 用 `13800138001 / test1234` 登录 → 能看到通知「欢迎使用班级事务助手」，并完成一次签到
 5. 浏览器 DevTools → Network，确认接口请求返回 2xx
+6. **AI 状态验证**：`GET /api/v1/ai/assistant/status` 返回 `status=online`（已配密钥）；未配密钥时返回 `status=offline` 且 `reason=未配置 AI 服务密钥`，此时 `parse` 走本地规则解析
+7. **AI 解析验证**：用班委账号登录 → 底部导航进入「AI 助手」→ 输入"下周五前交高数作业" → 能生成作业草稿并弹出确认，确认后作业出现在作业列表
 
-## 七、常见问题
+## 九、工程规模与关键提交锚点
+
+| 指标 | 数值 |
+| --- | --- |
+| 后端业务模块 | 19 个 |
+| 数据表 | 49 张 |
+| 后端接口 | 167 条 |
+| 前端页面组件 / 路由 | 101 个 / 94 条 |
+| Web 端 + 小程序 + Android | 一套后端，三端共用 |
+| 本交付仓提交 | 21 条（按模块重组） |
+| 开发仓过程提交 | 131 条（真实时间线见 Prompt 链证据集） |
+
+关键提交（便于定向查阅，`git show <hash>`）：
+
+| 提交 | 内容 |
+| --- | --- |
+| `90652f4` | 11 月版本同步：AI 班务助手、微信登录、实名核实、权限收口、Docker 部署 |
+| `c268100` | 认证模块：JWT 双令牌、角色与权限守卫 |
+| `b5918c0` | 组织模型：班级 / 社团统一建模与切换接口 |
+| `d17ec1d` | 考勤（二维码 / 定位签到）与作业模块 |
+| `c184bcc` | 消息、活动、投票、班费、资料、档案等 13 个后端模块 |
+| `a381c1a` | Capacitor Android 容器与沉浸式状态栏 |
+| `acb0a52` | Taro 微信小程序端 |
+| `701377e` | 架构、Prompt 链证据集与技术文档 |
+
+## 十、常见问题
 
 | 现象 | 原因与处理 |
 | --- | --- |
 | Prisma 报 `Environment variable not found: DATABASE_URL` | 没有把 `back/.env.template` 复制成 `back/.env` |
 | 后端启动报数据库连接失败 | `back/.env` 里的 `DB_PASSWORD` 与本机 MySQL 密码不一致 |
 | 前端页面打得开但接口 404 | 后端没启动，或 `3000` 端口被占用 |
+| AI 助手提示「本地规则解析」 | `back/.env` 未配置 `AI_API_KEY`，属预期降级行为 |
+| AI 接口返回 401 / 403 | 令牌过期，或当前角色无权调用（`parse` / `urge` 仅班委可用） |
 | 上传附件失败 | MinIO 未启动；`MINIO_LOCAL_FALLBACK=true` 时会上传回退到本地存储 |
 | 打包 Android 报 Java 版本错误 | 必须使用 **JDK 17**，不能用 JDK 21 |
 | 页面路由 404 / 白屏 | 本项目使用 **HashRouter**，URL 形如 `/#/xxx`。Capacitor 的 `file://` 环境下必须保持 HashRouter，请勿改成 BrowserRouter |
 
-## 八、安全与脱敏说明
+## 十一、安全与脱敏说明
 
-- 本仓库为**竞赛交付仓**，已完成脱敏：不含真实手机号、真实学生名单、真实数据库密码、Android 签名密钥。
-- 所有配置均通过模板生成（`back/.env.example`、`back/.env.template`、`front/.env.template`），请填入自己的值。
-- 生产部署前请务必替换：`JWT_SECRET`、`JWT_REFRESH_SECRET`（≥ 32 位随机串）、MinIO 密钥、数据库密码。
+- 本仓库为**竞赛交付仓**，已完成脱敏：不含真实手机号、真实学生名单、真实数据库密码、AI 服务密钥、Android 签名密钥。
+- 所有配置均通过模板生成（`back/.env.example`、`back/.env.template`、`front/.env.template`），请填入自己的值。仓库内不跟踪任何 `.env` 实体文件。
+- 生产部署前请务必替换：`JWT_SECRET`、`JWT_REFRESH_SECRET`（≥ 32 位随机串）、`AI_API_KEY`、MinIO 密钥、数据库密码。
