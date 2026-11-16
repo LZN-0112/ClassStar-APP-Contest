@@ -34,6 +34,7 @@ import { UploadsModule } from './common/uploads/uploads.module';
 import { MaterialModule } from './modules/material/material.module';
 import { ArchiveModule } from './modules/archive/archive.module';
 import { AiAssistantModule } from './modules/ai-assistant/ai-assistant.module';
+import { PushModule } from './modules/push/push.module';
 import { ObservabilityModule } from './common/observability/observability.module';
 
 @Module({
@@ -75,6 +76,7 @@ import { ObservabilityModule } from './common/observability/observability.module
     MaterialModule,
     ArchiveModule,
     AiAssistantModule,
+    PushModule,
     ObservabilityModule,
   ],
   controllers: [AppController],

@@ -16,10 +16,25 @@ import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
 
-    @SuppressLint("SetJavaScriptEnabled")
+    private static final String PUSH_PREFS = "bwx_push";
+    private static final String PREF_PUSH_CONSENT = "consent_granted";
+    private static final String PREF_PENDING_OPEN = "pending_open";
+    private static java.lang.ref.WeakReference<MainActivity> activeActivity;
+
+    /** Web 层是否已注册 window.__banwuxingPushOpen，注册后才可安全注入通知点击事件 */
+    private boolean pushReady = false;
+
+    /** 同一次通知点击可能同时经由 receiver 广播与启动 Intent 到达，做 3 秒内同内容去重 */
+    private static String lastPushOpenPayload;
+    private static long lastPushOpenAt;
+
     @Override
     public void onResume() {
         super.onResume();
+        activeActivity = new java.lang.ref.WeakReference<>(this);
+        if (pushReady) {
+            dispatchPendingPushOpen();
+        }
     }
 
     @Override
@@ -77,6 +92,116 @@ public class MainActivity extends BridgeActivity {
                 android.widget.Toast.makeText(this, "下载失败: " + e.getMessage(), android.widget.Toast.LENGTH_LONG).show();
             }
         });
+
+        // 冷启动时极光会把通知 extras 放进启动 Intent（savedInstanceState 非空说明是页面重建，不再重复处理）
+        if (savedInstanceState == null) {
+            handlePushIntent(getIntent());
+        }
+
+        initJPushIfConsented();
+    }
+
+    @Override
+    protected void onNewIntent(android.content.Intent intent) {
+        super.onNewIntent(intent);
+        // singleTask：App 在前台/后台时点击通知走这里
+        handlePushIntent(intent);
+    }
+
+    /** 从极光通知点击的启动 Intent 中取出 extras，与 receiver 广播互为兜底 */
+    private void handlePushIntent(android.content.Intent intent) {
+        if (intent == null) return;
+        String extras = intent.getStringExtra("cn.jpush.android.EXTRA");
+        if (extras == null || extras.isEmpty()) return;
+        intent.removeExtra("cn.jpush.android.EXTRA");
+        onPushNotificationOpened(this, extras);
+    }
+
+    /**
+     * 合规初始化：只有用户在隐私弹窗中点击同意后，Web 层才会写入 consent 标记并触发初始化。
+     * 已同意过的设备在 onCreate 阶段立即初始化，保证杀进程后仍能收到推送。
+     */
+    private void initJPushIfConsented() {
+        if (!getSharedPreferences(PUSH_PREFS, MODE_PRIVATE).getBoolean(PREF_PUSH_CONSENT, false)) return;
+        startJPush();
+    }
+
+    /** 记录授权并初始化极光推送（可重复调用，SDK 内部幂等） */
+    private void grantPushConsent() {
+        getSharedPreferences(PUSH_PREFS, MODE_PRIVATE).edit().putBoolean(PREF_PUSH_CONSENT, true).apply();
+        startJPush();
+    }
+
+    private void startJPush() {
+        try {
+            boolean debuggable = (getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+            cn.jpush.android.api.JPushInterface.setDebugMode(debuggable);
+            cn.jpush.android.api.JPushInterface.init(getApplicationContext());
+        } catch (Throwable t) {
+            android.util.Log.e("JPUSH", "init failed", t);
+        }
+        // Android 13+ 需要运行时通知权限，否则推送到达但不会在通知栏展示
+        if (Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 0x4A50);
+        }
+    }
+
+    /**
+     * 通知点击回调（由 PushMessageReceiver 调用）：
+     * 页面已就绪时直接注入 JS 跳转，否则先落盘，等 Web 层就绪后领取，避免冷启动丢失路由。
+     */
+    static void onPushNotificationOpened(Context context, String extrasJson) {
+        if (extrasJson == null || extrasJson.isEmpty()) return;
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (extrasJson.equals(lastPushOpenPayload) && now - lastPushOpenAt < 3000) return;
+        lastPushOpenPayload = extrasJson;
+        lastPushOpenAt = now;
+        MainActivity activity = activeActivity == null ? null : activeActivity.get();
+        if (activity != null && activity.deliverPushOpen(extrasJson)) return;
+        context.getSharedPreferences(PUSH_PREFS, MODE_PRIVATE)
+                .edit().putString(PREF_PENDING_OPEN, extrasJson).apply();
+    }
+
+    private boolean deliverPushOpen(String extrasJson) {
+        if (!pushReady) return false;
+        try {
+            // 校验为合法 JSON，避免把异常内容拼进 evaluateJavascript
+            new org.json.JSONObject(extrasJson);
+        } catch (Throwable t) {
+            return true;
+        }
+        runOnUiThread(() -> {
+            try {
+                bridge.getWebView().evaluateJavascript(
+                        "window.__banwuxingPushOpen && window.__banwuxingPushOpen(" + extrasJson + ")", null);
+            } catch (Throwable ignored) {
+            }
+        });
+        return true;
+    }
+
+    private void dispatchPendingPushOpen() {
+        android.content.SharedPreferences sp = getSharedPreferences(PUSH_PREFS, MODE_PRIVATE);
+        String pending = sp.getString(PREF_PENDING_OPEN, null);
+        if (pending == null) return;
+        sp.edit().remove(PREF_PENDING_OPEN).apply();
+        deliverPushOpen(pending);
+    }
+
+    private void markPushReady() {
+        pushReady = true;
+        activeActivity = new java.lang.ref.WeakReference<>(this);
+        dispatchPendingPushOpen();
+    }
+
+    private String consumePendingPushOpen() {
+        android.content.SharedPreferences sp = getSharedPreferences(PUSH_PREFS, MODE_PRIVATE);
+        String pending = sp.getString(PREF_PENDING_OPEN, null);
+        if (pending != null) {
+            sp.edit().remove(PREF_PENDING_OPEN).apply();
+        }
+        return pending == null ? "" : pending;
     }
 
     /**
@@ -88,6 +213,41 @@ public class MainActivity extends BridgeActivity {
         AndroidBridge(android.content.Context context, WebView webView) {
             this.context = context;
             this.webView = webView;
+        }
+
+        /** JS 桥：用户同意隐私政策后调用，初始化极光推送并记住授权 */
+        @JavascriptInterface
+        public void initJPush() {
+            if (context instanceof MainActivity) {
+                ((MainActivity) context).grantPushConsent();
+            }
+        }
+
+        /** JS 桥：获取极光 Registration ID；未初始化或尚未注册成功时返回空串 */
+        @JavascriptInterface
+        public String getRegistrationId() {
+            try {
+                return cn.jpush.android.api.JPushInterface.getRegistrationID(context);
+            } catch (Throwable t) {
+                return "";
+            }
+        }
+
+        /** JS 桥：Web 层已注册 window.__banwuxingPushOpen，可安全注入通知点击事件 */
+        @JavascriptInterface
+        public void setPushReady() {
+            if (context instanceof MainActivity) {
+                ((MainActivity) context).markPushReady();
+            }
+        }
+
+        /** JS 桥：领取启动期间点击的通知 extras（JSON 字符串，无则空串） */
+        @JavascriptInterface
+        public String consumePushOpen() {
+            if (context instanceof MainActivity) {
+                return ((MainActivity) context).consumePendingPushOpen();
+            }
+            return "";
         }
 
         @JavascriptInterface
@@ -123,6 +283,121 @@ public class MainActivity extends BridgeActivity {
             android.content.res.Resources res = android.content.res.Resources.getSystem();
             int resId = res.getIdentifier("navigation_bar_height", "dimen", "android");
             return resId > 0 ? res.getDimensionPixelSize(resId) : 0;
+        }
+
+        /**
+         * 分片保存：开始写入。避免把上百 MB 文件整体转成 Base64 字符串导致 WebView OOM。
+         * 与 appendBase64Chunk / endBase64File / abortBase64File 成对使用。
+         */
+        private java.io.OutputStream pendingStream;
+        private Uri pendingUri;
+        private java.io.File pendingFile;
+        private String pendingDisplayPath;
+
+        @JavascriptInterface
+        public synchronized boolean beginBase64File(String fileName, String mimeType) {
+            abortBase64File();
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    android.content.ContentValues values = new android.content.ContentValues();
+                    values.put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+                    values.put(android.provider.MediaStore.MediaColumns.MIME_TYPE, mimeType);
+                    values.put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                    values.put(android.provider.MediaStore.MediaColumns.IS_PENDING, 1);
+                    Uri uri = context.getContentResolver()
+                            .insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                    if (uri == null) {
+                        return false;
+                    }
+                    java.io.OutputStream os = context.getContentResolver().openOutputStream(uri);
+                    if (os == null) {
+                        context.getContentResolver().delete(uri, null, null);
+                        return false;
+                    }
+                    pendingUri = uri;
+                    pendingStream = os;
+                    pendingDisplayPath = Environment.DIRECTORY_DOWNLOADS + "/" + fileName;
+                    return true;
+                }
+                java.io.File dir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                if (dir == null) {
+                    return false;
+                }
+                if (!dir.exists() && !dir.mkdirs()) {
+                    return false;
+                }
+                java.io.File file = new java.io.File(dir, fileName);
+                pendingStream = new java.io.FileOutputStream(file);
+                pendingFile = file;
+                pendingDisplayPath = file.getAbsolutePath();
+                return true;
+            } catch (Throwable e) {
+                abortBase64File();
+                return false;
+            }
+        }
+
+        @JavascriptInterface
+        public synchronized boolean appendBase64Chunk(String base64Chunk) {
+            if (pendingStream == null || base64Chunk == null) {
+                return false;
+            }
+            try {
+                byte[] data = android.util.Base64.decode(base64Chunk, android.util.Base64.DEFAULT);
+                pendingStream.write(data);
+                return true;
+            } catch (Throwable e) {
+                return false;
+            }
+        }
+
+        @JavascriptInterface
+        public synchronized String endBase64File() {
+            if (pendingStream == null) {
+                return null;
+            }
+            String result = pendingDisplayPath;
+            try {
+                pendingStream.flush();
+                pendingStream.close();
+                if (pendingUri != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    android.content.ContentValues values = new android.content.ContentValues();
+                    values.put(android.provider.MediaStore.MediaColumns.IS_PENDING, 0);
+                    context.getContentResolver().update(pendingUri, values, null, null);
+                }
+            } catch (Throwable e) {
+                result = null;
+            } finally {
+                pendingStream = null;
+                pendingUri = null;
+                pendingFile = null;
+                pendingDisplayPath = null;
+            }
+            return result;
+        }
+
+        @JavascriptInterface
+        public synchronized void abortBase64File() {
+            if (pendingStream != null) {
+                try {
+                    pendingStream.close();
+                } catch (Throwable ignored) {
+                }
+            }
+            if (pendingUri != null) {
+                try {
+                    context.getContentResolver().delete(pendingUri, null, null);
+                } catch (Throwable ignored) {
+                }
+            }
+            if (pendingFile != null && pendingFile.exists()) {
+                //noinspection ResultOfMethodCallIgnored
+                pendingFile.delete();
+            }
+            pendingStream = null;
+            pendingUri = null;
+            pendingFile = null;
+            pendingDisplayPath = null;
         }
 
         /**
@@ -168,6 +443,50 @@ public class MainActivity extends BridgeActivity {
                 fos.write(data);
                 fos.close();
                 return file.getAbsolutePath();
+            } catch (Throwable e) {
+                return null;
+            }
+        }
+
+        /**
+         * 保存 Base64 图片到系统相册（Pictures/班务星）。
+         * Android 10+ 通过 MediaStore 写入，无需存储权限；
+         * 更低版本无法免权限写入相册，返回 null 由 Web 层回退到下载目录。
+         * 成功返回相册 Uri，失败返回 null。
+         */
+        @JavascriptInterface
+        public String saveImageToGallery(String fileName, String base64Data, String mimeType) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                return null;
+            }
+            try {
+                byte[] data = android.util.Base64.decode(base64Data, android.util.Base64.DEFAULT);
+                android.content.ContentValues values = new android.content.ContentValues();
+                values.put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+                values.put(android.provider.MediaStore.MediaColumns.MIME_TYPE,
+                        (mimeType == null || mimeType.isEmpty()) ? "image/png" : mimeType);
+                values.put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH,
+                        Environment.DIRECTORY_PICTURES + "/班务星");
+                values.put(android.provider.MediaStore.MediaColumns.IS_PENDING, 1);
+                Uri uri = context.getContentResolver()
+                        .insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+                if (uri == null) {
+                    return null;
+                }
+                java.io.OutputStream os = context.getContentResolver().openOutputStream(uri);
+                if (os == null) {
+                    context.getContentResolver().delete(uri, null, null);
+                    return null;
+                }
+                try {
+                    os.write(data);
+                } finally {
+                    os.close();
+                }
+                values.clear();
+                values.put(android.provider.MediaStore.MediaColumns.IS_PENDING, 0);
+                context.getContentResolver().update(uri, values, null, null);
+                return uri.toString();
             } catch (Throwable e) {
                 return null;
             }

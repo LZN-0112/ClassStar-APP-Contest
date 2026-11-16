@@ -1,44 +1,12 @@
-// StatusBar 自定义状态栏
+// StatusBar 状态栏占位
+// 仅占位系统状态栏高度，不再绘制模拟的 9:41 / 信号 / 电量
 .cx-statusbar {
   position: relative;
   flex-shrink: 0;
   background: transparent;
 
-  // 亮色模式：白色文字
-  &--light {
-    .cx-statusbar__time,
-    .cx-statusbar__signal,
-    .cx-statusbar__battery {
-      color: #ffffff;
-    }
-  }
-
-  &__inner {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    // 状态栏内容行高 28px = 56rpx
+  // 状态栏内容行占位（28px = 56rpx），避免顶部元素与胶囊按钮重叠
+  &__spacer {
     height: 56rpx;
-    padding: 0 48rpx;
-  }
-
-  &__time {
-    font-size: 28rpx;
-    font-weight: $font-semibold;
-    color: $text-primary;
-  }
-
-  &__icons {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 12rpx;
-  }
-
-  &__signal,
-  &__battery {
-    font-size: 28rpx;
-    color: $text-primary;
   }
 }

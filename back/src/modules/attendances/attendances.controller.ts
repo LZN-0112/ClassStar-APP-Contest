@@ -116,6 +116,17 @@ export class AttendancesController {
     return this.attendancesService.getStatistics(classId, id, userId);
   }
 
+  @Get(':id/selfies/:userId')
+  @ApiOperation({ summary: '查看成员拍照签到照片（仅班委）' })
+  getSelfie(
+    @Param('classId') classId: string,
+    @Param('id') id: string,
+    @Param('userId') studentUserId: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.attendancesService.getSelfie(classId, id, studentUserId, userId);
+  }
+
   @Post(':id/leave')
   @ApiOperation({ summary: '申请请假' })
   applyLeave(

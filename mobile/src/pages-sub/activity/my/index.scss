@@ -1,31 +1,31 @@
 .actmy {
   min-height: 100vh;
-  background: $bg;
-  box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom);
+  background: $surface;
 
   &__body {
-    padding: 0 $page-padding-x;
-    padding-top: 40rpx;
+    padding: $page-padding-top $page-padding-x calc(40rpx + env(safe-area-inset-bottom));
     display: flex;
     flex-direction: column;
-    gap: 24rpx;
+    gap: 40rpx;
+    box-sizing: border-box;
   }
 
   &__filters {
+    width: 100%;
     display: flex;
     flex-direction: row;
     gap: 16rpx;
   }
 
   &__filter {
-    padding: 16rpx 32rpx;
     height: 64rpx;
-    border-radius: 999rpx;
-    background: $gray-100;
+    padding: 16rpx 32rpx;
+    border-radius: $radius-full;
+    background: #f3f4f6;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
 
     &--active {
       background: $primary;
@@ -34,87 +34,126 @@
 
   &__filter-text {
     font-size: $text-11;
-    font-weight: 600;
+    font-weight: $font-semibold;
     color: $text-secondary;
+    white-space: nowrap;
 
     &--active {
-      color: #ffffff;
+      color: $text-inverse;
     }
+  }
+
+  &__group {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
   }
 
   &__group-title {
     font-size: $text-11;
-    font-weight: 600;
+    font-weight: $font-semibold;
     color: $text-secondary;
+    white-space: nowrap;
   }
 
   &__list {
+    width: 100%;
     display: flex;
     flex-direction: column;
     gap: 16rpx;
   }
 
-  &__card {
-    height: 192rpx;
-    box-shadow: $shadow-sm;
-    background: $surface;
+  &__placeholder {
+    width: 100%;
+    height: 240rpx;
     border-radius: $radius-xl;
+    background: #f9fafb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: $text-base;
+    color: $text-weak;
+  }
+
+  &__card {
+    width: 100%;
+    min-height: 192rpx;
     padding: 32rpx;
     display: flex;
     flex-direction: row;
-    gap: 24rpx;
     align-items: center;
+    gap: 24rpx;
+    background: $surface;
+    border-radius: $radius-xl;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
     box-sizing: border-box;
+
+    &:active {
+      opacity: 0.95;
+    }
   }
 
   &__thumb {
     width: 128rpx;
     height: 128rpx;
-    border-radius: $radius-lg;
+    flex-shrink: 0;
+    border-radius: $radius-md;
     background: #dbeafe;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
   }
 
   &__info {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 12rpx;
     align-items: flex-start;
+    gap: 12rpx;
   }
 
   &__title {
+    width: 100%;
     font-size: $text-base;
-    font-weight: 600;
+    font-weight: $font-semibold;
     color: $text-primary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__meta {
+    width: 100%;
     font-size: $text-11;
-    font-weight: 500;
+    font-weight: $font-medium;
     color: $text-secondary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  &__status {
+  &__tags {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  &__tag {
+    height: 44rpx;
     padding: 8rpx 16rpx;
-    border-radius: 999rpx;
-    background: #0062ff1a;
-
-    &--ended {
-      background: #6b72801a;
-    }
+    border-radius: $radius-full;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
   }
 
-  &__status-text {
+  &__tag-text {
     font-size: $text-11;
-    font-weight: 600;
-    color: $primary;
-
-    &--ended {
-      color: #6b7280;
-    }
+    font-weight: $font-semibold;
+    white-space: nowrap;
   }
 }

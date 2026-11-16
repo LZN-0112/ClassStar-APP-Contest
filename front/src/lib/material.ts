@@ -38,6 +38,8 @@ export interface MaterialSummary {
   totalCount: number;
   totalSize: number;
   newIn7Days: number;
+  /** 上次进入资料库后新增、且非本人上传的资料数（首页角标口径） */
+  unreadCount: number;
   myUploadCount: number;
   folders: MaterialFolderStat[];
   recentFiles: MaterialFileItem[];

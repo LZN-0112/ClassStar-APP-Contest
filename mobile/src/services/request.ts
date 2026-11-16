@@ -9,7 +9,7 @@ import { API_BASE_URL, REQUEST_TIMEOUT, SUCCESS_CODES, UNAUTHORIZED_CODE } from 
 import type { ApiResponse } from '@/types/api'
 
 // ---------- 内部类型 ----------
-type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
+type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 interface RequestOptions {
   url: string
@@ -130,10 +130,15 @@ function doRequest<T>(options: RequestOptions): Promise<T> {
           const status = res.statusCode || 0
           const body = (res.data || {}) as ApiResponse<T>
 
-          // HTTP 层 401 → 登录过期
+          // HTTP 层 401：鉴权接口视为登录过期；公开接口（如登录）是业务错误，直接提示后端消息
           if (status === UNAUTHORIZED_CODE) {
-            handleUnauthorized()
-            reject(new Error(body?.message || '登录已过期'))
+            if (needAuth) {
+              handleUnauthorized()
+              reject(new Error(body?.message || '登录已过期'))
+            } else {
+              Taro.showToast({ title: body?.message || '请求失败', icon: 'none' })
+              reject(new Error(body?.message || '请求失败'))
+            }
             return
           }
 
@@ -204,6 +209,10 @@ export const request = {
     return doRequest<T>({ url, method: 'PUT', data, ...options })
   },
 
+  patch<T>(url: string, data?: unknown, options?: Omit<RequestOptions, 'url' | 'method' | 'data'>) {
+    return doRequest<T>({ url, method: 'PATCH', data, ...options })
+  },
+
   del<T>(url: string, params?: RequestOptions['params'], options?: Omit<RequestOptions, 'url' | 'method' | 'params'>) {
     return doRequest<T>({ url, method: 'DELETE', params, ...options })
   }
@@ -212,4 +221,16 @@ export const request = {
 /** 清除 CSRF 缓存（登出时调用） */
 export function clearCsrfCache() {
   clearCsrfToken()
+}
+
+/** 后端返回的相对文件路径（如 /uploads/xxx）转为可访问地址 */
+export function resolveFileUrl(url?: string | null): string {
+  if (!url) return ''
+  if (/^(https?:|data:|blob:)/i.test(url)) return url
+  const apiBase = API_BASE_URL.replace(/\/+$/, '')
+  const origin = apiBase.replace(/\/api\/v1$/, '')
+  if (/^\/api\/v1\//i.test(url)) {
+    return `${origin}${url}`
+  }
+  return `${apiBase}${url.startsWith('/') ? '' : '/'}${url}`
 }

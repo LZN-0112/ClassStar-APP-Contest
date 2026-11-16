@@ -1,28 +1,79 @@
-.matup {
+// ============================================================
+// 上传资料样式（1:1 对齐 front/src/pages/tools/UploadMaterial.tsx）
+// ============================================================
+.matupload {
   min-height: 100vh;
-  background: $bg;
-  box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom);
+  background: #f5f5f5;
+  display: flex;
+  flex-direction: column;
 
-  &__body {
-    padding: 24rpx $page-padding-x $page-padding-bottom;
+  // ---------- 头部 ----------
+  &__header {
+    flex-shrink: 0;
+    padding: 0 40rpx 24rpx;
+    background: #f5f5f5;
+  }
+
+  &__head-row {
+    margin-top: 8rpx;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
     gap: 24rpx;
   }
 
-  &__drop {
-    min-height: 240rpx;
-    background: $surface;
-    border: 1rpx dashed $gray-300;
-    border-radius: $radius-lg;
+  &__head-left {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  &__back {
+    width: 72rpx;
+    height: 72rpx;
+    margin-left: -16rpx;
     display: flex;
     align-items: center;
     justify-content: center;
+  }
 
-    &--active {
-      border-color: $primary;
-      background: $accent-50;
+  &__head-title {
+    font-size: 44rpx;
+    font-weight: 700;
+    color: #1a1a1a;
+    font-family: $font-heading;
+    white-space: nowrap;
+  }
+
+  &__head-hint {
+    flex-shrink: 0;
+    padding: 8rpx 20rpx;
+    border-radius: 999rpx;
+    background: #ffffff;
+    font-size: 20rpx;
+    color: #64748b;
+  }
+
+  // ---------- 正文 ----------
+  &__body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+    padding: 16rpx 40rpx calc(64rpx + env(safe-area-inset-bottom));
+  }
+
+  // ---------- 选择文件 ----------
+  &__dropzone {
+    padding: 40rpx 32rpx;
+    border-radius: 24rpx;
+    border: 2rpx dashed #e2e8f0;
+    background: #ffffff;
+
+    &--picked {
+      padding: 24rpx;
+      border-style: solid;
+      border-color: #dbeafe;
     }
   }
 
@@ -31,35 +82,297 @@
     flex-direction: column;
     align-items: center;
     gap: 16rpx;
-    padding: 32rpx;
+    padding: 24rpx 0;
   }
 
-  &__drop-tip {
-    font-size: $text-base;
-    color: $text-secondary;
+  &__drop-icon {
+    width: 128rpx;
+    height: 128rpx;
+    border-radius: 50%;
+    background: #eff6ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  &__file-list {
-    width: 100%;
-    padding: 20rpx;
+  &__drop-title {
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  &__drop-desc {
+    font-size: 22rpx;
+    line-height: 36rpx;
+    color: #94a3b8;
+    text-align: center;
+  }
+
+  // ---------- 已选文件 ----------
+  &__picked {
     display: flex;
     flex-direction: column;
-    gap: 12rpx;
-    max-height: 360rpx;
-    overflow-y: auto;
+    gap: 20rpx;
   }
 
-  &__file-item {
-    background: $gray-50;
-    border-radius: $radius-md;
-    padding: 16rpx 20rpx;
+  &__picked-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
+  }
+
+  &__picked-title {
+    font-size: 26rpx;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  &__picked-size {
+    font-size: 22rpx;
+    color: #64748b;
+  }
+
+  &__picked-list {
+    display: flex;
+    flex-direction: column;
     gap: 16rpx;
   }
 
-  &__file-info {
+  &__picked-item {
+    display: flex;
+    align-items: center;
+    gap: 20rpx;
+    padding: 20rpx;
+    border-radius: 16rpx;
+    background: #f8fafc;
+  }
+
+  &__picked-icon {
+    width: 72rpx;
+    height: 72rpx;
+    flex-shrink: 0;
+    border-radius: 16rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__picked-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__picked-name {
+    display: block;
+    font-size: 24rpx;
+    font-weight: 500;
+    color: #1a1a1a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__picked-meta {
+    display: block;
+    margin-top: 4rpx;
+    font-size: 20rpx;
+    color: #64748b;
+  }
+
+  &__picked-remove {
+    width: 56rpx;
+    height: 56rpx;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__add-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+    height: 80rpx;
+    border-radius: 16rpx;
+    border: 2rpx dashed #bfdbfe;
+    font-size: 24rpx;
+    font-weight: 500;
+    color: #0062ff;
+  }
+
+  // ---------- 分类 ----------
+  &__folder-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+  }
+
+  &__folder-head {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+  }
+
+  &__folder-title {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  &__folder-required {
+    font-size: 20rpx;
+    font-weight: 500;
+    color: #dc2626;
+  }
+
+  &__folder-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20rpx;
+  }
+
+  &__folder {
+    position: relative;
+    width: calc(50% - 10rpx);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+    padding: 24rpx;
+    border-radius: 24rpx;
+    border: 2rpx solid #e5e7eb;
+    background: #ffffff;
+
+    &--active {
+      border-color: #0062ff;
+      background: #eff6ff;
+    }
+  }
+
+  &__folder-icon {
+    width: 72rpx;
+    height: 72rpx;
+    border-radius: 16rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__folder-name {
+    font-size: 26rpx;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+
+  &__folder-hint {
+    font-size: 20rpx;
+    line-height: 32rpx;
+    color: #64748b;
+  }
+
+  &__folder-check {
+    position: absolute;
+    top: 20rpx;
+    right: 20rpx;
+    width: 40rpx;
+    height: 40rpx;
+    border-radius: 50%;
+    background: #0062ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  // ---------- 进度 ----------
+  &__progress {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+    padding: 28rpx;
+    border-radius: 24rpx;
+    background: #ffffff;
+  }
+
+  &__progress-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__progress-label {
+    font-size: 22rpx;
+    color: #475569;
+  }
+
+  &__progress-value {
+    font-size: 22rpx;
+    font-weight: 600;
+    color: #0062ff;
+    font-family: $font-data;
+  }
+
+  &__progress-track {
+    height: 12rpx;
+    border-radius: 999rpx;
+    background: #e2e8f0;
+    overflow: hidden;
+  }
+
+  &__progress-bar {
+    height: 100%;
+    border-radius: 999rpx;
+    background: linear-gradient(90deg, #3b82f6, #0062ff);
+    transition: width 0.2s;
+  }
+
+  &__progress-tip {
+    font-size: 20rpx;
+    color: #94a3b8;
+  }
+
+  // ---------- 操作 ----------
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__submit {
+    height: 96rpx;
+    border-radius: 24rpx;
+    background: linear-gradient(-98.571deg, #0062ff 14.645%, #3b82f6 85.355%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #ffffff;
+    box-shadow: 0 16rpx 40rpx -16rpx rgba(0, 98, 255, 0.6);
+
+    &--hover {
+      opacity: 0.92;
+      transform: scale(0.99);
+    }
+
+    &--disabled {
+      opacity: 0.5;
+      box-shadow: none;
+    }
+  }
+
+  &__repost {
+    display: flex;
+    align-items: center;
+    gap: 20rpx;
+    padding: 24rpx;
+    border-radius: 24rpx;
+    background: #eff6ff;
+  }
+
+  &__repost-text {
     flex: 1;
     min-width: 0;
     display: flex;
@@ -67,87 +380,22 @@
     gap: 4rpx;
   }
 
-  &__file-name {
-    font-size: $text-13;
-    color: $text-primary;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  &__repost-title {
+    font-size: 26rpx;
+    font-weight: 600;
+    color: #1a1a1a;
   }
 
-  &__file-size {
-    font-size: $text-11;
-    color: $text-secondary;
+  &__repost-desc {
+    font-size: 20rpx;
+    line-height: 32rpx;
+    color: #64748b;
   }
 
-  &__file-remove {
-    width: 44rpx;
-    height: 44rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  &__file-more {
-    font-size: $text-xs;
-    color: $primary;
+  &__tips {
+    font-size: 20rpx;
+    line-height: 32rpx;
+    color: #94a3b8;
     text-align: center;
-    padding: 8rpx 0;
-  }
-
-  &__cat {
-    display: flex;
-    flex-direction: column;
-    gap: 16rpx;
-  }
-
-  &__cat-title {
-    font-size: $text-base;
-    color: $text-secondary;
-  }
-
-  &__cat-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16rpx;
-  }
-
-  &__cat-chip {
-    height: 72rpx;
-    padding: 0 32rpx;
-    border-radius: 999rpx;
-    background: $accent-50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &--active {
-      background: $primary;
-    }
-  }
-
-  &__cat-chip-text {
-    font-size: $text-13;
-    font-weight: 600;
-    color: $primary;
-
-    &--active {
-      color: #fff;
-    }
-  }
-
-  &__repost {
-    height: 104rpx;
-    background: $accent-50;
-    border-radius: $radius-lg;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  &__repost-text {
-    font-size: $text-base;
-    font-weight: 600;
-    color: $primary;
   }
 }

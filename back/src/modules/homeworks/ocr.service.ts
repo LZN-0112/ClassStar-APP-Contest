@@ -1,94 +1,96 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { RedisService } from '../../common/cache/redis.service';
 
 @Injectable()
 export class OcrService {
   private readonly logger = new Logger(OcrService.name);
 
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly redisService: RedisService,
-  ) {}
+  constructor(private readonly configService: ConfigService) {}
 
-  private async getAccessToken(): Promise<string> {
-    const apiKey = this.configService.get<string>('BAIDU_OCR_API_KEY');
-    const secretKey = this.configService.get<string>('BAIDU_OCR_SECRET_KEY');
+  private getAiApiKey() {
+    return this.configService.get<string>('AI_API_KEY')?.trim() || '';
+  }
 
-    if (!apiKey || !secretKey) {
-      throw new BadRequestException('OCR服务未配置，请联系管理员');
-    }
+  /** 用已接入的视觉大模型识别截图中的文字 */
+  private async recognizeWithAi(imageBuffer: Buffer, mimeType?: string): Promise<string> {
+    const apiKey = this.getAiApiKey();
+    const baseUrl = (
+      this.configService.get<string>('AI_BASE_URL') ||
+      'https://dashscope.aliyuncs.com/compatible-mode/v1'
+    ).replace(/\/+$/, '');
+    const model = this.configService.get<string>('AI_VL_MODEL') || 'qwen3-vl-plus';
+    const mime = mimeType?.startsWith('image/') ? mimeType : 'image/jpeg';
 
-    const cacheKey = 'ocr:baidu:token';
-    const cachedToken = await this.redisService.get(cacheKey);
-    if (cachedToken) {
-      return cachedToken;
-    }
-
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
     try {
-      const url = `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${apiKey}&client_secret=${secretKey}`;
-      const response = await fetch(url, { method: 'POST' });
+      const response = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'image_url',
+                  image_url: { url: `data:${mime};base64,${imageBuffer.toString('base64')}` },
+                },
+                {
+                  type: 'text',
+                  text: '识别图片中的所有文字，按行原样输出，不要解释、不要总结。',
+                },
+              ],
+            },
+          ],
+          stream: false,
+        }),
+        signal: controller.signal,
+      });
 
       if (!response.ok) {
+        const detail = await response.text();
+        this.logger.warn(`OCR 识别失败：${response.status} ${detail.slice(0, 200)}`);
         throw new Error(`HTTP ${response.status}`);
       }
 
-      const data = await response.json();
-      if (!data.access_token) {
-        throw new Error(data.error_description || '获取access_token失败');
+      const json = (await response.json()) as {
+        choices?: { message?: { content?: unknown } }[];
+      };
+      const content = json.choices?.[0]?.message?.content;
+      if (typeof content !== 'string' || !content.trim()) {
+        throw new Error('识别结果为空');
       }
-
-      const accessToken = data.access_token;
-      // TTL 30天（2592000秒），但百度token有效期通常为30天，提前一点过期
-      await this.redisService.set(cacheKey, accessToken, 2592000);
-
-      return accessToken;
-    } catch (error) {
-      this.logger.error('获取百度OCR access_token失败', error);
-      throw new BadRequestException('OCR服务认证失败，请联系管理员');
+      return content.trim();
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
   async recognizeStudentIds(
     imageBuffer: Buffer,
+    mimeType?: string,
   ): Promise<{ rawText: string; studentIds: string[] }> {
-    const accessToken = await this.getAccessToken();
+    if (!this.getAiApiKey()) {
+      throw new BadRequestException('OCR 服务未配置，暂时无法识别截图；可手动输入学号完成核对');
+    }
 
+    let rawText = '';
     try {
-      const base64Image = imageBuffer.toString('base64');
-      const url = `https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic?access_token=${accessToken}`;
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `image=${encodeURIComponent(base64Image)}`,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.error_code) {
-        this.logger.error('百度OCR识别失败', data);
-        throw new BadRequestException('OCR识别失败，请重试或手动输入学号');
-      }
-
-      const wordsResult = data.words_result || [];
-      const rawText = wordsResult.map((item: { words: string }) => item.words).join('\n');
-
-      // 提取8-12位纯数字学号
-      const matches = rawText.match(/\b\d{8,12}\b/g) || [];
-      const studentIds: string[] = Array.from(new Set(matches));
-
-      return { rawText, studentIds };
+      rawText = await this.recognizeWithAi(imageBuffer, mimeType);
     } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
       this.logger.error('OCR识别异常', error);
       throw new BadRequestException('OCR识别失败，请重试或手动输入学号');
     }
+
+    // 提取8-12位纯数字学号
+    const matches = rawText.match(/\b\d{8,12}\b/g) || [];
+    const studentIds: string[] = Array.from(new Set(matches));
+
+    return { rawText, studentIds };
   }
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import PageLayout from '@/components/layout/PageLayout';
 import BottomSheet from '@/components/ui/BottomSheet';
@@ -58,9 +58,9 @@ function formatRemaining(deadline: string) {
 export default function VoteOptions() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useCurrentUser();
-  const state = location.state as { voteId?: string; readOnly?: boolean } | null;
-  const voteId = state?.voteId;
+  const { voteId = '' } = useParams<{ voteId: string }>();
+  const { user, loading: userLoading } = useCurrentUser();
+  const state = location.state as { readOnly?: boolean } | null;
   const readOnly = state?.readOnly || false;
 
   const [vote, setVote] = useState<VoteDetail | null>(null);
@@ -74,7 +74,12 @@ export default function VoteOptions() {
   const classId = user?.classId;
 
   const loadVote = useCallback(async () => {
-    if (!classId || !voteId) return;
+    // 用户信息未返回前 classId 为空，直接返回会误判为“无权限”，需等待其加载完成
+    if (userLoading) return;
+    if (!classId || !voteId) {
+      setLoading(false);
+      return;
+    }
     try {
       const [voteRes, resultRes] = await Promise.all([
         api.get(`/classes/${classId}/votes/${voteId}`),
@@ -99,7 +104,7 @@ export default function VoteOptions() {
     } finally {
       setLoading(false);
     }
-  }, [classId, voteId]);
+  }, [classId, voteId, userLoading]);
 
   useEffect(() => {
     void loadVote();

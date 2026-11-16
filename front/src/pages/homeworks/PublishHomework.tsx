@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { FileText, Loader2, ShieldAlert } from 'lucide-react';
+import { ChevronRight, FileText, Loader2, ShieldAlert } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '@/components/layout/PageLayout';
+import DateTimePickerSheet, { formatDateTimeLabel } from '@/components/ui/DateTimePickerSheet';
 import { api } from '@/lib/api';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { toast } from 'sonner';
@@ -17,6 +18,7 @@ export default function PublishHomework() {
     deadline: '',
     content: '',
   });
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const isManager = Boolean(
     user?.isCommittee || user?.roleLevel === 'owner' || user?.roleLevel === 'admin',
@@ -82,6 +84,7 @@ export default function PublishHomework() {
   }
 
   return (
+    <>
     <PageLayout
       title="发布作业"
       variant="a"
@@ -119,12 +122,20 @@ export default function PublishHomework() {
           data-pencil-name="Input Field"
           className="box-border flex h-[56px] w-full shrink-0 flex-col justify-center rounded-xl border border-[#E2E8F0] bg-white px-4"
         >
-          <input
-            type="datetime-local"
-            value={form.deadline}
-            onChange={(e) => handleChange('deadline', e.target.value)}
-            className="w-full bg-transparent font-body text-[14px] font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none"
-          />
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="flex w-full items-center justify-between text-left active:opacity-70"
+          >
+            <span
+              className={`font-body text-[14px] font-medium ${
+                form.deadline ? 'text-[#1A1A1A]' : 'text-[#94A3B8]'
+              }`}
+            >
+              {form.deadline ? formatDateTimeLabel(form.deadline) : '请选择截止时间'}
+            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-[#CBD5E1]" strokeWidth={2} />
+          </button>
         </div>
         <div
           data-pencil-name="Textarea"
@@ -156,5 +167,17 @@ export default function PublishHomework() {
         </button>
       </div>
     </PageLayout>
+
+    {/* 截止时间选择 */}
+    <DateTimePickerSheet
+      open={pickerOpen}
+      value={form.deadline}
+      onClose={() => setPickerOpen(false)}
+      onConfirm={(next) => {
+        handleChange('deadline', next);
+        setPickerOpen(false);
+      }}
+    />
+    </>
   );
 }

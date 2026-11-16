@@ -4,6 +4,7 @@ import SettingsHeader from '@/components/layout/SettingsHeader';
 import BottomSheet from '@/components/ui/BottomSheet';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
+import { revokePrivacyConsent } from '@/lib/privacy-consent';
 
 type Visibility = 'all' | 'class' | 'committee' | 'self';
 type SettingKey = 'classInfo' | 'contact' | 'attendance';
@@ -16,8 +17,8 @@ interface VisibilityOption {
 
 const VISIBILITY_OPTIONS: VisibilityOption[] = [
   { value: 'all', label: '所有人可见', tagClassName: 'bg-[#E5E7EB] text-[#374151]' },
-  { value: 'class', label: '同班可见', tagClassName: 'bg-[#DBEAFE] text-[#1E3A8A]' },
-  { value: 'committee', label: '仅班委可见', tagClassName: 'bg-[#93C5FD] text-[#1E40AF]' },
+  { value: 'class', label: '同班可见', tagClassName: 'bg-[#DBEAFE] text-[#0062FF]' },
+  { value: 'committee', label: '仅班委可见', tagClassName: 'bg-[#93C5FD] text-[#0B4FD6]' },
   { value: 'self', label: '仅自己可见', tagClassName: 'bg-[#60A5FA] text-[#FFFFFF]' },
 ];
 
@@ -42,6 +43,7 @@ export default function PrivacySettings() {
   const [settings, setSettings] = useState<Record<SettingKey, Visibility>>(DEFAULT_SETTINGS);
   const [activeKey, setActiveKey] = useState<SettingKey | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showRevokeConfirm, setShowRevokeConfirm] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -309,6 +311,45 @@ export default function PrivacySettings() {
                       {saving ? '保存中...' : '保存'}
                     </span>
                   </button>
+                  <div className="box-border w-full h-fit shrink-0 [box-shadow:0px_2px_8px_0px_#0000000D] flex flex-col gap-[4px] p-[12px] bg-[#FFFFFF] rounded-lg">
+                    <div
+                      onClick={() => setShowRevokeConfirm(true)}
+                      className="box-border w-full h-[72px] shrink-0 flex flex-row gap-[12px] p-[0px_12px] justify-start items-center active:bg-[#F8FAFC] rounded-lg"
+                    >
+                      <div className="box-border w-[40px] shrink-0 h-[40px] flex justify-center items-center bg-[#FEF3C7] rounded-lg">
+                        <svg
+                          viewBox="0 0 24 24"
+                          className="h-[24px] w-[24px]"
+                          fill="none"
+                          stroke="#D97706"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+                        </svg>
+                      </div>
+                      <div className="box-border [flex:1_1_0] h-full flex flex-col gap-[4px] justify-center items-start">
+                        <div className="text-[14px]/[normal] text-[#1A1A1A] font-body font-semibold">
+                          撤回隐私授权
+                        </div>
+                        <div className="text-[11px]/[normal] text-[#4B5563] font-body font-medium">
+                          撤回后需重新同意《隐私政策》
+                        </div>
+                      </div>
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-5 w-5 shrink-0"
+                        fill="none"
+                        stroke="#9CA3AF"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="m9 18 6-6-6-6" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </div>
       {activeKey && (
@@ -354,6 +395,38 @@ export default function PrivacySettings() {
                 </button>
               );
             })}
+          </div>
+        </BottomSheet>
+      )}
+      {showRevokeConfirm && (
+        <BottomSheet
+          open
+          onClose={() => setShowRevokeConfirm(false)}
+          title="撤回隐私授权"
+          maxHeight="50vh"
+        >
+          <div className="flex flex-col gap-3 px-2 pb-2">
+            <p className="font-body text-[13px]/[21px] text-[#4B5563]">
+              撤回后本机将清除隐私授权标记，需重新阅读并同意《隐私政策》后才能继续使用班务星。已产生的班级数据不会因此删除。
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setShowRevokeConfirm(false);
+                revokePrivacyConsent();
+                window.location.reload();
+              }}
+              className="h-[48px] w-full rounded-[14px] bg-[#D97706] font-body text-[15px] font-semibold text-white active:opacity-90"
+            >
+              确认撤回
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowRevokeConfirm(false)}
+              className="h-[44px] w-full rounded-[12px] font-body text-[14px] font-medium text-[#64748B] active:opacity-70"
+            >
+              取消
+            </button>
           </div>
         </BottomSheet>
       )}

@@ -25,6 +25,9 @@ export const taskApi = {
     title: string
     ownerId?: string
     deadline?: string
+    location?: string
+    content?: string
+    priority?: number
     status?: 'todo' | 'in_progress' | 'done'
     progress?: number
   }) => request.post(`/classes/${classId}/tasks`, data),
@@ -44,6 +47,9 @@ export const taskApi = {
     title?: string
     ownerId?: string
     deadline?: string
+    location?: string
+    content?: string
+    priority?: number
     status?: 'todo' | 'in_progress' | 'done'
     progress?: number
   }) => request.put(`/classes/${classId}/tasks/${taskId}`, data),
@@ -153,7 +159,8 @@ export const feedbackApi = {
 
   /**
    * 我的反馈列表
-   * GET /feedback/my
+   * GET /feedback/my?page=1&pageSize=20
    */
-  getMyFeedback: () => request.get('/feedback/my')
+  getMyFeedback: (params?: { page?: number; pageSize?: number }) =>
+    request.get('/feedback/my', params)
 }

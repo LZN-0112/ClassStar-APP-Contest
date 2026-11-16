@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, Text } from '@tarojs/components'
+import { Text, View } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 
 import { Icon } from '@/components/ui'
@@ -17,11 +17,17 @@ export default function QrMethod({ classId, attendanceId, onSuccess }: Props) {
   const [loading, setLoading] = useState(false)
 
   const handleScan = async () => {
+    if (loading) return
+    let result = ''
+    try {
+      result = await scanCode()
+    } catch {
+      return
+    }
     setLoading(true)
     try {
-      const result = await scanCode()
       await attendanceApi.checkIn(classId, attendanceId, { method: 'qr', code: result })
-      Taro.showToast({ title: '签到成功', icon: 'success' })
+      Taro.showToast({ title: '签到成功！', icon: 'success' })
       onSuccess()
     } catch (err) {
       Taro.showToast({
@@ -34,25 +40,28 @@ export default function QrMethod({ classId, attendanceId, onSuccess }: Props) {
   }
 
   return (
-    <View className='attdmethod'>
-      <View className='attdmethod__banner attdmethod__banner--green'>
-        <View className='attdmethod__banner-head'>
-          <Icon name='qrcode' size={32} color='#15803D' strokeWidth={2} />
-          <Text className='attdmethod__banner-title'>二维码签到</Text>
+    <View className='attmethod'>
+      <View className='attmethod__qr-banner'>
+        <View className='attmethod__qr-banner-icon'>
+          <Icon name='scan-line' size={56} color='#16A34A' strokeWidth={1.8} />
         </View>
-        <Text className='attdmethod__banner-sub'>请扫描老师展示的签到二维码完成签到</Text>
+        <View className='attmethod__qr-banner-body'>
+          <View className='attmethod__qr-banner-title'>
+            <Icon name='qrcode' size={32} color='#15803D' />
+            <Text>二维码签到</Text>
+          </View>
+          <Text className='attmethod__qr-banner-desc'>
+            扫描班委在签到现场展示的二维码即可完成签到
+          </Text>
+        </View>
       </View>
 
-      <View className='attdmethod__panel'>
-        <View className='attdmethod__qrcode'>
-          <Icon name='qrcode' size={160} color='#0062FF' strokeWidth={2} />
-        </View>
-        <Text className='attdmethod__qrcode-tip'>使用扫码功能扫描二维码</Text>
-      </View>
-
-      <View className='attdmethod__btn' onClick={handleScan}>
-        <Icon name='scan-line' size={32} color='#FFFFFF' strokeWidth={2} />
-        <Text className='attdmethod__btn-text'>{loading ? '签到中...' : '扫码签到'}</Text>
+      <View
+        className={`attmethod__qr-btn ${loading ? 'attmethod__btn--disabled' : ''}`}
+        onClick={() => void handleScan()}
+      >
+        <Icon name='scan-line' size={40} color='#FFFFFF' />
+        <Text>{loading ? '签到中...' : '打开扫一扫'}</Text>
       </View>
     </View>
   )

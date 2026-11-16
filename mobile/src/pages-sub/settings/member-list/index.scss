@@ -1,154 +1,392 @@
 // ============================================================
-// 成员列表
-// 结构参照 front MemberList.tsx
+// 班级成员
+// 1:1 对齐 front/src/pages/class/MemberList.tsx
 // ============================================================
 .mlist {
   min-height: 100vh;
-  background: $bg;
+  background-color: #f7f8fa;
   box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom);
 
   &__body {
-    padding: $page-padding-top $page-padding-x $page-padding-bottom;
     display: flex;
     flex-direction: column;
-    gap: $spacing-3;
-  }
-
-  &__search {
-    display: flex;
-    align-items: center;
-    gap: $spacing-2;
-    background: $surface;
-    border: 1rpx solid $border;
-    border-radius: $radius-lg;
-    padding: 8rpx 24rpx;
+    gap: 32rpx;
+    padding: 0 40rpx 48rpx;
     box-sizing: border-box;
   }
 
-  &__tabs {
+  &__spacer {
+    width: 100%;
+    height: 16rpx;
+    flex-shrink: 0;
+  }
+
+  // ---------- 页头 ----------
+  &__header {
     display: flex;
-    gap: $spacing-2;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  &__header-left {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+  }
+
+  &__back {
+    width: 64rpx;
+    height: 64rpx;
+    margin-left: -16rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__header-title {
+    font-family: $font-heading;
+    font-size: 40rpx;
+    line-height: 1.2;
+    font-weight: $font-bold;
+    color: $text-primary;
+  }
+
+  &__invite-btn {
+    height: 72rpx;
+    padding: 0 24rpx;
+    border-radius: $radius-md;
+    background-color: $surface;
+    box-shadow: $shadow-md;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12rpx;
+    flex-shrink: 0;
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  &__invite-btn-text {
+    font-size: $text-sm;
+    font-weight: $font-medium;
+    color: $primary;
+  }
+
+  // ---------- 统计 ----------
+  &__stats {
+    display: flex;
+    flex-direction: row;
+    gap: 20rpx;
+  }
+
+  &__stat {
+    flex: 1;
+    padding: 24rpx 0;
+    border-radius: $radius-lg;
+    background-color: $surface;
+    box-shadow: $shadow-md;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8rpx;
+  }
+
+  &__stat-value {
+    font-family: $font-heading;
+    font-size: 36rpx;
+    font-weight: $font-bold;
+    line-height: 1;
+  }
+
+  &__stat-label {
+    font-size: $text-xs;
+    color: $text-weak;
+  }
+
+  // ---------- 搜索 ----------
+  &__search {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16rpx;
+    height: 88rpx;
+    padding: 0 28rpx;
+    border-radius: $radius-lg;
+    background-color: $surface;
+    box-shadow: $shadow-md;
+    box-sizing: border-box;
+  }
+
+  &__search-input {
+    flex: 1;
+    min-width: 0;
+    font-size: $text-13;
+    color: $text-primary;
+  }
+
+  &__search-placeholder {
+    color: #9ca3af;
+  }
+
+  &__search-clear {
+    font-size: $text-11;
+    color: #9ca3af;
+
+    &:active {
+      opacity: 0.7;
+    }
+  }
+
+  // ---------- 筛选 ----------
+  &__filter {
+    display: flex;
+    flex-direction: row;
+    gap: 16rpx;
   }
 
   &__tab {
     flex: 1;
-    height: 72rpx;
-    border-radius: $radius-lg;
-    background: $surface;
-    border: 1rpx solid $border;
+    height: 68rpx;
+    border-radius: $radius-md;
+    background-color: $surface;
+    box-shadow: $shadow-md;
     display: flex;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    box-sizing: border-box;
+    gap: 8rpx;
 
     &--active {
-      border-color: $primary;
-      background: $accent-50;
+      background-color: $primary;
+      box-shadow: none;
     }
   }
 
   &__tab-label {
-    font-size: $text-base;
+    font-size: $text-sm;
     color: $text-secondary;
 
     &--active {
-      color: $primary;
       font-weight: $font-semibold;
+      color: $text-inverse;
     }
   }
 
+  &__tab-count {
+    font-size: $text-xs;
+    color: #9ca3af;
+
+    &--active {
+      color: rgba(255, 255, 255, 0.8);
+    }
+  }
+
+  // ---------- 列表 ----------
   &__list {
     display: flex;
     flex-direction: column;
-    gap: $spacing-2;
+    gap: 16rpx;
   }
 
   &__item {
-    background: $surface;
-    border: 1rpx solid $border;
-    border-radius: $radius-lg;
-    padding: $spacing-3;
     display: flex;
+    flex-direction: row;
     align-items: center;
-    gap: $spacing-3;
-    box-shadow: $shadow-sm;
+    gap: 24rpx;
+    width: 100%;
     box-sizing: border-box;
+    padding: 24rpx 28rpx;
+    border-radius: $radius-lg;
+    background-color: $surface;
+    box-shadow: $shadow-md;
+
+    &:active {
+      transform: scale(0.99);
+    }
   }
 
   &__avatar {
     width: 88rpx;
     height: 88rpx;
-    border-radius: $radius-full;
-    background: $accent-50;
+    border-radius: $radius-lg;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
     overflow: hidden;
+    flex-shrink: 0;
   }
 
   &__avatar-img {
-    width: 88rpx;
-    height: 88rpx;
-    border-radius: $radius-full;
+    width: 100%;
+    height: 100%;
   }
 
-  &__item-info {
+  &__avatar-text {
+    font-family: $font-heading;
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $text-inverse;
+  }
+
+  &__item-main {
     flex: 1;
     min-width: 0;
+  }
+
+  &__item-title-row {
     display: flex;
-    flex-direction: column;
-    gap: 8rpx;
+    flex-direction: row;
+    align-items: center;
+    gap: 16rpx;
+    overflow: hidden;
   }
 
   &__item-name {
-    font-size: $text-base;
+    font-size: $text-md;
     font-weight: $font-semibold;
     color: $text-primary;
     overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
-  &__item-tags {
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
+  &__badge {
+    padding: 4rpx 12rpx;
+    border-radius: $radius-full;
+    flex-shrink: 0;
+
+    &--committee {
+      background-color: #fff7ed;
+    }
   }
 
-  &__item-role {
+  &__badge-text {
+    font-size: $text-xs;
+    font-weight: $font-medium;
+
+    &--committee {
+      color: #c2410c;
+    }
+  }
+
+  &__item-sub {
+    display: block;
+    margin-top: 4rpx;
     font-size: $text-11;
-    color: $text-secondary;
+    color: #9ca3af;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
-  &__import {
-    background: $surface;
-    border: 1rpx dashed $primary;
-    border-radius: $radius-lg;
-    padding: $spacing-3;
-    display: flex;
-    align-items: center;
-    gap: $spacing-3;
-    box-sizing: border-box;
-    margin-top: $spacing-3;
-  }
-
-  &__import-icon {
-    width: 80rpx;
-    height: 80rpx;
-    border-radius: $radius-lg;
-    background: $accent-50;
+  &__verify {
+    height: 48rpx;
+    padding: 0 20rpx;
+    border-radius: $radius-full;
+    background-color: $primary;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+
+    &--loading {
+      background-color: #f3f4f6;
+    }
+
+    &:active {
+      opacity: 0.8;
+    }
   }
 
-  &__import-text {
-    flex: 1;
-    font-size: $text-base;
+  &__verify-text {
+    font-size: $text-xs;
     font-weight: $font-semibold;
-    color: $primary;
+    color: $text-inverse;
+
+    &--loading {
+      color: #9ca3af;
+    }
+  }
+
+  // ---------- 骨架屏 ----------
+  &__skeleton {
+    width: 100%;
+    height: 124rpx;
+    border-radius: $radius-lg;
+    background-color: $surface;
+    box-shadow: $shadow-md;
+    animation: mlist-pulse 1.6s ease-in-out infinite;
+  }
+
+  // ---------- 空态 ----------
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24rpx;
+    padding: 128rpx 0;
+  }
+
+  &__empty-icon {
+    width: 128rpx;
+    height: 128rpx;
+    border-radius: $radius-full;
+    background-color: #ebf3ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__empty-text {
+    font-size: $text-base;
+    color: $text-secondary;
+  }
+
+  &__primary-btn {
+    padding: 20rpx 40rpx;
+    border-radius: $radius-md;
+    background-color: $primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:active {
+      opacity: 0.8;
+    }
+  }
+
+  &__primary-btn-text {
+    font-size: $text-13;
+    font-weight: $font-semibold;
+    color: $text-inverse;
+  }
+
+  &__empty-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16rpx;
+    padding: 112rpx 0;
+  }
+
+  &__empty-list-text {
+    font-size: $text-13;
+    color: #9ca3af;
+  }
+}
+
+@keyframes mlist-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
   }
 }

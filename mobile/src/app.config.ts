@@ -4,8 +4,10 @@ export default defineAppConfig({
     'pages/auth/login/index',
     'pages/auth/register/index',
     'pages/auth/reset/index',
+    'pages/auth/wechat-bind/index',
     'pages/home/index',
     'pages/class-home/index',
+    'pages/ai/index',
     'pages/notice/index',
     'pages/data/index',
     'pages/profile/index',
@@ -27,10 +29,7 @@ export default defineAppConfig({
       pages: [
         'list/index',
         'publish/index',
-        'detail/index',
-        'check-in/index',
         'check-in-detail/index',
-        'check-in-method/index',
         'leave-apply/index',
         'leave-approval/index',
         'report/index',
@@ -83,6 +82,7 @@ export default defineAppConfig({
         'upload/index',
         'detail/index',
         'task-board/index',
+        'task-detail/index',
         'publish-task/index',
         'pomodoro/index',
         'scan/index',
@@ -96,10 +96,10 @@ export default defineAppConfig({
       pages: [
         'index',
         'account-security/index',
+        'change-password/index',
         'notification/index',
         'privacy/index',
         'general/index',
-        'reminder/index',
         'help-feedback/index',
         'about/index',
         'member-list/index',
@@ -147,48 +147,13 @@ export default defineAppConfig({
   },
   window: {
     backgroundTextStyle: 'light',
+    // App 端为沉浸式布局：隐藏小程序原生导航栏，统一由页面内 NavBar / StatusBar 绘制
+    navigationStyle: 'custom',
     navigationBarBackgroundColor: '#0062FF',
     navigationBarTitleText: '班务星',
-    navigationBarTextStyle: 'white',
-    backgroundColor: '#F8FAFC',
+    // 自定义导航下由 StatusBar 组件按页面明暗动态切换状态栏图标颜色
+    navigationBarTextStyle: 'black',
+    backgroundColor: '#F5F6F8',
     enablePullDownRefresh: false
-  },
-  tabBar: {
-    color: '#999999',
-    selectedColor: '#0062FF',
-    backgroundColor: '#FFFFFF',
-    borderStyle: 'white',
-    list: [
-      {
-        pagePath: 'pages/home/index',
-        text: '首页',
-        iconPath: 'assets/tabbar/home.png',
-        selectedIconPath: 'assets/tabbar/home_active.png'
-      },
-      {
-        pagePath: 'pages/class-home/index',
-        text: '班级',
-        iconPath: 'assets/tabbar/class.png',
-        selectedIconPath: 'assets/tabbar/class_active.png'
-      },
-      {
-        pagePath: 'pages/notice/index',
-        text: '通知',
-        iconPath: 'assets/tabbar/notice.png',
-        selectedIconPath: 'assets/tabbar/notice_active.png'
-      },
-      {
-        pagePath: 'pages/data/index',
-        text: '数据',
-        iconPath: 'assets/tabbar/data.png',
-        selectedIconPath: 'assets/tabbar/data_active.png'
-      },
-      {
-        pagePath: 'pages/profile/index',
-        text: '我的',
-        iconPath: 'assets/tabbar/profile.png',
-        selectedIconPath: 'assets/tabbar/profile_active.png'
-      }
-    ]
   }
 })

@@ -3,17 +3,22 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { MinioService } from '@/common/storage/minio.service';
+import { normalizeUploadFileName } from '@/common/utils/upload-name.util';
+import { PushService } from '../push/push.service';
 import { OcrService } from './ocr.service';
 import {
   CreateHomeworkDto,
   SubmitHomeworkDto,
   DelayApplicationDto,
   OfflineCheckDto,
+  ReviewSubmissionDto,
 } from './dto/homeworks.dto';
 
 /** 解析分页参数（兼容 undefined/null/NaN/非法值） */
@@ -24,12 +29,89 @@ function toPositiveInt(value: unknown, fallback: number, max?: number): number {
   return max ? Math.min(int, max) : int;
 }
 
+type AttachmentType = 'image' | 'video' | 'audio' | 'file';
+
+export interface NormalizedAttachment {
+  url: string;
+  name: string;
+  size?: number;
+  mime?: string;
+  type: AttachmentType;
+  duration?: number;
+}
+
+const IMAGE_EXT = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.heic', '.heif'];
+const VIDEO_EXT = ['.mp4', '.mov', '.m4v', '.avi', '.mkv', '.webm'];
+const AUDIO_EXT = ['.mp3', '.m4a', '.aac', '.wav', '.ogg', '.amr', '.webm'];
+const DOC_EXT = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.zip', '.rar', '.7z'];
+
+const ATTACHMENT_LIMITS: Record<AttachmentType, { maxSize: number; message: string }> = {
+  image: { maxSize: 10 * 1024 * 1024, message: '图片大小不能超过 10MB' },
+  video: { maxSize: 100 * 1024 * 1024, message: '视频大小不能超过 100MB' },
+  audio: { maxSize: 20 * 1024 * 1024, message: '录音大小不能超过 20MB' },
+  file: { maxSize: 50 * 1024 * 1024, message: '文件大小不能超过 50MB' },
+};
+
+/** 单次提交附件总数与图片张数上限 */
+const MAX_ATTACHMENTS = 12;
+const MAX_IMAGES = 9;
+
+function guessAttachmentType(nameOrUrl: string): AttachmentType {
+  const clean = nameOrUrl.split('?')[0].toLowerCase();
+  const ext = path.extname(clean);
+  if (IMAGE_EXT.includes(ext)) return 'image';
+  if (VIDEO_EXT.includes(ext)) return 'video';
+  if (AUDIO_EXT.includes(ext)) return 'audio';
+  return 'file';
+}
+
+function fileNameFromUrl(url: string): string {
+  const clean = url.split('?')[0];
+  const base = clean.substring(clean.lastIndexOf('/') + 1);
+  try {
+    return decodeURIComponent(base) || '附件';
+  } catch {
+    return base || '附件';
+  }
+}
+
+/** 兼容历史字符串数组与新版结构化对象数组 */
+function normalizeAttachments(raw: unknown): NormalizedAttachment[] {
+  if (!Array.isArray(raw)) return [];
+  const result: NormalizedAttachment[] = [];
+  for (const item of raw) {
+    if (typeof item === 'string') {
+      if (!item) continue;
+      result.push({ url: item, name: fileNameFromUrl(item), type: guessAttachmentType(item) });
+      continue;
+    }
+    if (item && typeof item === 'object' && typeof (item as any).url === 'string') {
+      const obj = item as any;
+      const name = obj.name || fileNameFromUrl(obj.url);
+      result.push({
+        url: obj.url,
+        name,
+        size: typeof obj.size === 'number' ? obj.size : undefined,
+        mime: typeof obj.mime === 'string' ? obj.mime : undefined,
+        type: ['image', 'video', 'audio', 'file'].includes(obj.type)
+          ? (obj.type as AttachmentType)
+          : guessAttachmentType(name || obj.url),
+        duration: typeof obj.duration === 'number' ? obj.duration : undefined,
+      });
+    }
+  }
+  return result;
+}
+
 @Injectable()
 export class HomeworksService {
+  private readonly logger = new Logger(HomeworksService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly ocrService: OcrService,
     private readonly minioService: MinioService,
+    private readonly push: PushService,
   ) {}
 
   /** 校验用户是班级成员，返回成员信息 */
@@ -57,7 +139,16 @@ export class HomeworksService {
 
   async create(classId: string, dto: CreateHomeworkDto, publisherId: string) {
     await this.assertManager(classId, publisherId);
-    if (new Date(dto.deadline).getTime() <= Date.now()) {
+    const title = dto.title?.trim();
+    const subject = dto.subject?.trim();
+    if (!title) throw new BadRequestException('作业标题不能为空');
+    if (!subject) throw new BadRequestException('作业科目不能为空');
+    if (title.length > 200) throw new BadRequestException('作业标题不能超过 200 个字符');
+    const deadline = new Date(dto.deadline);
+    if (Number.isNaN(deadline.getTime())) {
+      throw new BadRequestException('截止时间格式不正确');
+    }
+    if (deadline.getTime() <= Date.now()) {
       throw new BadRequestException('截止时间需晚于当前时间');
     }
     const homeworkId = uuidv4();
@@ -66,10 +157,10 @@ export class HomeworksService {
         id: homeworkId,
         class_id: classId,
         publisher_id: publisherId,
-        subject: dto.subject,
-        title: dto.title,
+        subject,
+        title,
         content: dto.content,
-        deadline: new Date(dto.deadline),
+        deadline,
         status: 'published',
       },
     });
@@ -183,7 +274,9 @@ export class HomeworksService {
       content: homework.content,
       deadline: homework.deadline,
       publisher: homework.users,
-      mySubmission: homework.homework_submissions[0] || null,
+      mySubmission: homework.homework_submissions[0]
+        ? this.toSubmissionView(homework.homework_submissions[0])
+        : null,
       myDelayApplication: homework.homework_delay_applications[0] || null,
       submissionCount: homework._count.homework_submissions,
       totalMembers,
@@ -201,13 +294,37 @@ export class HomeworksService {
     }
 
     const content = (dto.content || '').trim();
-    if (!content && (!dto.fileUrls || dto.fileUrls.length === 0)) {
+    // 新版前端传 attachments，旧版仍只传 fileUrls（图片）
+    const attachments: NormalizedAttachment[] = dto.attachments?.length
+      ? dto.attachments.map((item) => ({
+          url: item.url,
+          name: item.name || fileNameFromUrl(item.url),
+          size: item.size,
+          mime: item.mime,
+          type: item.type as AttachmentType,
+          duration: item.duration,
+        }))
+      : normalizeAttachments(dto.fileUrls);
+
+    if (!content && attachments.length === 0) {
       throw new BadRequestException('请填写提交内容或上传附件');
     }
+    if (attachments.length > MAX_ATTACHMENTS) {
+      throw new BadRequestException(`单次最多提交 ${MAX_ATTACHMENTS} 个附件`);
+    }
+    if (attachments.filter((item) => item.type === 'image').length > MAX_IMAGES) {
+      throw new BadRequestException(`图片最多上传 ${MAX_IMAGES} 张`);
+    }
+
+    // 被驳回的学生即使已过截止时间也允许重新提交，避免驳回后无法改正
+    const existingSubmission = await this.prisma.homework_submissions.findUnique({
+      where: { homework_id_student_id: { homework_id: id, student_id: userId } },
+      select: { status: true },
+    });
 
     // 截止时间校验：已截止且无有效延时审批时禁止提交
     const now = new Date();
-    if (now > homework.deadline) {
+    if (now > homework.deadline && existingSubmission?.status !== 'rejected') {
       const approvedDelay = await this.prisma.homework_delay_applications.findFirst({
         where: {
           homework_id: id,
@@ -230,18 +347,31 @@ export class HomeworksService {
         homework_id: id,
         student_id: userId,
         content,
-        attachments: dto.fileUrls ?? undefined,
+        attachments: attachments as unknown as Prisma.InputJsonValue,
         status: 'submitted',
       },
       update: {
         content,
-        attachments: dto.fileUrls ?? undefined,
+        attachments: attachments as unknown as Prisma.InputJsonValue,
         status: 'submitted',
         submitted_at: new Date(),
       },
     });
 
     return null;
+  }
+
+  /** 提交记录出参：附件统一为结构化数组，同时保留 fileUrls 兼容旧客户端 */
+  private toSubmissionView(submission: {
+    attachments: unknown;
+    [key: string]: any;
+  }) {
+    const attachments = normalizeAttachments(submission.attachments);
+    return {
+      ...submission,
+      attachments,
+      fileUrls: attachments.map((item) => item.url),
+    };
   }
 
   async applyDelay(
@@ -370,29 +500,55 @@ export class HomeworksService {
     }));
   }
 
-  /** 学生上传作业附件 */
+  /** 学生上传作业附件（图片/视频/录音/文件） */
   async uploadAttachment(
     classId: string,
     file: Express.Multer.File,
     userId: string,
-  ): Promise<{ url: string; name: string }> {
+  ): Promise<NormalizedAttachment> {
     await this.assertMember(classId, userId);
     if (!file) {
-      throw new BadRequestException('请选择要上传的图片');
-    }
-    if (!file.mimetype.startsWith('image/')) {
-      throw new BadRequestException('仅支持上传图片附件');
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      throw new BadRequestException('图片大小不能超过 10MB');
+      throw new BadRequestException('请选择要上传的附件');
     }
 
-    const ext = path.extname(file.originalname || '') || '.jpg';
+    const type = this.resolveUploadType(file);
+    if (!type) {
+      throw new BadRequestException('不支持的附件类型');
+    }
+    const limit = ATTACHMENT_LIMITS[type];
+    if (file.size > limit.maxSize) {
+      throw new BadRequestException(limit.message);
+    }
+
+    // multipart 文件名默认按 latin1 解析，中文文件名需转回 UTF-8
+    const originalName = normalizeUploadFileName(file.originalname);
+    const ext = path.extname(originalName || '').toLowerCase();
     const objectName = `homeworks/${classId}/${Date.now()}-${uuidv4()}${ext}`;
     const url = await this.minioService.uploadBuffer(objectName, file.buffer, {
-      'Content-Type': file.mimetype,
+      'Content-Type': file.mimetype || 'application/octet-stream',
     });
-    return { url, name: file.originalname || '附件' };
+    return {
+      url,
+      name: originalName || '附件',
+      size: file.size,
+      mime: file.mimetype,
+      type,
+    };
+  }
+
+  /** 根据 MIME 或扩展名判定附件类型，不在白名单内返回 null */
+  private resolveUploadType(file: Express.Multer.File): AttachmentType | null {
+    const mime = file.mimetype || '';
+    if (mime.startsWith('image/')) return 'image';
+    if (mime.startsWith('video/')) return 'video';
+    if (mime.startsWith('audio/')) return 'audio';
+
+    const ext = path.extname(normalizeUploadFileName(file.originalname) || '').toLowerCase();
+    if (IMAGE_EXT.includes(ext)) return 'image';
+    if (VIDEO_EXT.includes(ext)) return 'video';
+    if (AUDIO_EXT.includes(ext)) return 'audio';
+    if (DOC_EXT.includes(ext)) return 'file';
+    return null;
   }
 
   async recognizeScreenshot(
@@ -407,7 +563,10 @@ export class HomeworksService {
     }
 
     // OCR识别学号
-    const { rawText, studentIds } = await this.ocrService.recognizeStudentIds(file.buffer);
+    const { rawText, studentIds } = await this.ocrService.recognizeStudentIds(
+      file.buffer,
+      file.mimetype,
+    );
 
     // 查询班级所有成员的student_id
     const members = await this.prisma.class_members.findMany({
@@ -642,5 +801,226 @@ export class HomeworksService {
       unsubmittedList,
       unmatchedList,
     };
+  }
+
+  /** 班委查看全班提交情况（含未交名单与批改统计） */
+  async findSubmissions(
+    classId: string,
+    id: string,
+    userId: string,
+    options: { status?: string },
+  ) {
+    await this.assertManager(classId, userId);
+    const homework = await this.prisma.homeworks.findFirst({
+      where: { id, class_id: classId },
+      select: { id: true, title: true, deadline: true },
+    });
+    if (!homework) {
+      throw new NotFoundException('作业不存在');
+    }
+
+    const [members, submissions] = await Promise.all([
+      this.prisma.class_members.findMany({
+        where: { class_id: classId },
+        include: { users: { select: { id: true, name: true, student_id: true, avatar: true } } },
+        orderBy: { joined_at: 'asc' },
+      }),
+      this.prisma.homework_submissions.findMany({
+        where: { homework_id: id },
+        orderBy: { submitted_at: 'desc' },
+      }),
+    ]);
+
+    const submissionMap = new Map(submissions.map((item) => [item.student_id, item]));
+
+    const list = members.map((member) => {
+      const submission = submissionMap.get(member.user_id);
+      const attachments = submission ? normalizeAttachments(submission.attachments) : [];
+      return {
+        studentId: member.user_id,
+        studentNo: member.users.student_id || '',
+        studentName: member.users.name,
+        avatar: member.users.avatar || null,
+        submissionId: submission?.id || null,
+        status: submission?.status || 'unsubmitted',
+        submittedAt: submission?.submitted_at || null,
+        isLate: submission ? submission.submitted_at.getTime() > homework.deadline.getTime() : false,
+        score: submission?.score || null,
+        reviewComment: submission?.review_comment || null,
+        reviewedAt: submission?.reviewed_at || null,
+        contentPreview: (submission?.content || '').slice(0, 60),
+        attachmentCount: attachments.length,
+        attachmentTypes: Array.from(new Set(attachments.map((item) => item.type))),
+      };
+    });
+
+    const stats = {
+      total: list.length,
+      pending: list.filter((item) => item.status === 'submitted').length,
+      approved: list.filter((item) => item.status === 'approved').length,
+      rejected: list.filter((item) => item.status === 'rejected').length,
+      unsubmitted: list.filter((item) => item.status === 'unsubmitted').length,
+    };
+
+    const statusFilter = options?.status;
+    const filtered =
+      !statusFilter || statusFilter === 'all'
+        ? list
+        : list.filter((item) => item.status === statusFilter);
+
+    return {
+      homework,
+      stats,
+      list: filtered,
+    };
+  }
+
+  /** 班委查看某个学生的提交详情 */
+  async findSubmissionDetail(
+    classId: string,
+    id: string,
+    submissionId: string,
+    userId: string,
+  ) {
+    await this.assertManager(classId, userId);
+    const submission = await this.prisma.homework_submissions.findFirst({
+      where: { id: submissionId, homework_id: id, homeworks: { class_id: classId } },
+      include: {
+        users: { select: { id: true, name: true, student_id: true, avatar: true } },
+        homeworks: { select: { id: true, title: true, deadline: true } },
+      },
+    });
+    if (!submission) {
+      throw new NotFoundException('提交记录不存在');
+    }
+
+    return {
+      id: submission.id,
+      homeworkId: submission.homework_id,
+      homeworkTitle: submission.homeworks.title,
+      student: {
+        id: submission.users.id,
+        name: submission.users.name,
+        studentNo: submission.users.student_id || '',
+        avatar: submission.users.avatar || null,
+      },
+      content: submission.content || '',
+      attachments: normalizeAttachments(submission.attachments),
+      status: submission.status,
+      score: submission.score,
+      reviewComment: submission.review_comment,
+      reviewedAt: submission.reviewed_at,
+      submittedAt: submission.submitted_at,
+      isLate: submission.submitted_at.getTime() > submission.homeworks.deadline.getTime(),
+    };
+  }
+
+  /** 班委批改：通过（等级+评语）或驳回（必填原因，通知学生） */
+  async reviewSubmission(
+    classId: string,
+    id: string,
+    submissionId: string,
+    dto: ReviewSubmissionDto,
+    userId: string,
+  ) {
+    await this.assertManager(classId, userId);
+    const homework = await this.prisma.homeworks.findFirst({
+      where: { id, class_id: classId },
+      select: { id: true, title: true },
+    });
+    if (!homework) {
+      throw new NotFoundException('作业不存在');
+    }
+
+    const submission = await this.prisma.homework_submissions.findFirst({
+      where: { id: submissionId, homework_id: id },
+      select: { id: true, student_id: true },
+    });
+    if (!submission) {
+      throw new NotFoundException('提交记录不存在');
+    }
+
+    const comment = (dto.comment || '').trim();
+    if (dto.action === 'reject' && !comment) {
+      throw new BadRequestException('驳回时请填写原因');
+    }
+    if (dto.action === 'approve' && !dto.score) {
+      throw new BadRequestException('请选择批改等级');
+    }
+
+    const status = dto.action === 'approve' ? 'approved' : 'rejected';
+    await this.prisma.homework_submissions.update({
+      where: { id: submissionId },
+      data: {
+        status,
+        score: dto.action === 'approve' ? dto.score : null,
+        review_comment: comment || null,
+        reviewed_by: userId,
+        reviewed_at: new Date(),
+      },
+    });
+
+    let messageId: string | null = null;
+    if (dto.action === 'reject') {
+      messageId = await this.notifyRejected(
+        classId,
+        homework,
+        submission.student_id,
+        comment,
+        userId,
+      );
+    }
+
+    return { status, messageId };
+  }
+
+  /** 驳回通知：写入仅该学生可见的站内私信，并下发 App 推送 */
+  private async notifyRejected(
+    classId: string,
+    homework: { id: string; title: string },
+    studentId: string,
+    reason: string,
+    reviewerId: string,
+  ): Promise<string | null> {
+    const messageId = uuidv4();
+    const title = '作业被驳回';
+    const content = `你的作业《${homework.title}》被驳回，原因：${reason}`;
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.messages.create({
+          data: {
+            id: messageId,
+            class_id: classId,
+            publisher_id: reviewerId,
+            type: 'homework_rejected',
+            title,
+            content,
+            status: 'published',
+            source_type: 'homework',
+            source_id: homework.id,
+          },
+        });
+        await tx.message_reads.create({
+          data: {
+            id: uuidv4(),
+            message_id: messageId,
+            user_id: studentId,
+          },
+        });
+      });
+    } catch (error) {
+      this.logger.warn(`作业驳回通知写入失败: ${(error as Error).message}`);
+      return null;
+    }
+
+    void this.push.sendMessagePush([studentId], {
+      title,
+      content,
+      messageId,
+      classId,
+      type: 'homework_rejected',
+    });
+    return messageId;
   }
 }

@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { View, Text, Input, Textarea } from '@tarojs/components'
+import { Input, Text, Textarea, View } from '@tarojs/components'
 import Taro, { useLoad } from '@tarojs/taro'
 
-import { NavBar } from '@/components/business'
-import { Button } from '@/components/ui'
+import { PageHeader } from '@/components/business'
 import { activityApi } from '@/services'
 import { useUserStore } from '@/stores'
 import { useAuth } from '@/utils'
@@ -14,9 +13,8 @@ export default function RegistrationForm() {
   const user = useUserStore((s) => s.userInfo)
   const { requireLogin } = useAuth()
 
-  const classIdRef = { id: currentClassId || '' }
-  const activityIdRef = { id: '' }
-
+  const [classId, setClassId] = useState('')
+  const [activityId, setActivityId] = useState('')
   const [activityTitle, setActivityTitle] = useState('')
   const [activityMeta, setActivityMeta] = useState('')
   const [name, setName] = useState(user?.name || '')
@@ -25,25 +23,23 @@ export default function RegistrationForm() {
   const [remark, setRemark] = useState('')
   const [loading, setLoading] = useState(false)
 
-  useLoad((o) => {
+  useLoad((options) => {
     if (!requireLogin()) return
-    const classId = (o?.classId as string) || currentClassId
-    const activityId = o?.activityId as string
-    if (!classId || !activityId) {
-      Taro.showToast({ title: '参数缺失', icon: 'none' })
+    const cid = (options?.classId as string) || currentClassId || ''
+    const aid = (options?.activityId as string) || ''
+    if (!cid || !aid) {
+      Taro.showToast({ title: '缺少必要信息', icon: 'none' })
       Taro.navigateBack()
       return
     }
-    classIdRef.id = classId
-    activityIdRef.id = activityId
-    fetchActivity()
+    setClassId(cid)
+    setActivityId(aid)
+    void fetchActivity(cid, aid)
   })
 
-  const fetchActivity = async () => {
-    if (!classIdRef.id || !activityIdRef.id) return
+  const fetchActivity = async (cid: string, aid: string) => {
     try {
-      const res: any = await activityApi.getDetail(classIdRef.id, activityIdRef.id)
-      const data = res?.data || res
+      const data: any = await activityApi.getDetail(cid, aid)
       if (data) {
         setActivityTitle(data.title || '')
         setActivityMeta(`${data.eventDate || ''} ${data.location || ''}`.trim())
@@ -53,30 +49,38 @@ export default function RegistrationForm() {
     }
   }
 
-  const validate = () => {
+  const handleSubmit = async () => {
+    if (loading) return
+    if (!classId || !activityId) {
+      Taro.showToast({ title: '缺少必要信息', icon: 'none' })
+      return
+    }
     if (!name.trim()) {
       Taro.showToast({ title: '请输入姓名', icon: 'none' })
-      return false
+      return
     }
     if (!phone.trim()) {
       Taro.showToast({ title: '请输入手机号', icon: 'none' })
-      return false
+      return
     }
-    return true
-  }
 
-  const handleSubmit = async () => {
-    if (!validate() || loading) return
-    if (!classIdRef.id || !activityIdRef.id) return
     setLoading(true)
     try {
-      await activityApi.register(classIdRef.id, activityIdRef.id)
-      Taro.showToast({ title: '提交成功', icon: 'success' })
+      await activityApi.register(classId, activityId, {
+        name: name.trim(),
+        studentId: studentId.trim(),
+        phone: phone.trim(),
+        remark: remark.trim()
+      })
+      Taro.showToast({ title: '报名成功', icon: 'success' })
       setTimeout(() => {
         Taro.redirectTo({ url: '/pages-sub/activity/my-registration/index' })
       }, 600)
     } catch (err) {
-      Taro.showToast({ title: err instanceof Error ? err.message : '提交失败', icon: 'none' })
+      Taro.showToast({
+        title: err instanceof Error ? err.message : '报名失败，请重试',
+        icon: 'none'
+      })
     } finally {
       setLoading(false)
     }
@@ -84,13 +88,19 @@ export default function RegistrationForm() {
 
   return (
     <View className='actreg'>
-      <NavBar title='报名表单' />
+      <PageHeader title='报名表单' variant='b' />
 
       <View className='actreg__body'>
-        <View className='actreg__info'>
-          <Text className='actreg__info-title'>{activityTitle || '活动报名'}</Text>
-          <Text className='actreg__info-meta'>{activityMeta || '请填写报名信息'}</Text>
-        </View>
+        {activityTitle ? (
+          <View className='actreg__info'>
+            <Text className='actreg__info-title'>{activityTitle}</Text>
+            <Text className='actreg__info-meta'>{activityMeta}</Text>
+          </View>
+        ) : (
+          <View className='actreg__loading'>
+            <Text>加载活动信息中...</Text>
+          </View>
+        )}
 
         <View className='actreg__field'>
           <Input
@@ -133,9 +143,12 @@ export default function RegistrationForm() {
 
         <View className='actreg__spacer' />
 
-        <Button type='primary' size='lg' block loading={loading} onClick={handleSubmit}>
-          {loading ? '提交中...' : '提交报名'}
-        </Button>
+        <View
+          className={`actreg__submit ${loading ? 'actreg__submit--disabled' : ''}`}
+          onClick={handleSubmit}
+        >
+          <Text>{loading ? '提交中...' : '提交报名'}</Text>
+        </View>
       </View>
     </View>
   )

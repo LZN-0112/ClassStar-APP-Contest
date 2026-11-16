@@ -5,26 +5,35 @@ import {
   Bell,
   BellRing,
   CalendarCheck,
-  ChevronLeft,
   CircleCheck,
   FileText,
   Inbox,
+  Megaphone,
   Search,
   Ticket,
   UserCheck,
   Wallet,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useMarkMessagesRead } from '@/hooks/useMarkMessagesRead';
 import { useStatusBarStyle } from '@/hooks/useStatusBarStyle';
 import { api } from '@/lib/api';
 import { isNative } from '@/lib/capacitor';
+import { cn } from '@/lib/utils';
+import BackButton from '@/components/navigation/BackButton';
 import { toast } from 'sonner';
 
-/** 封面高度：滚动此距离后顶栏完全落下 */
-const COVER_H = 200;
+/**
+ * 封面标题区上方需要让开的顶栏高度：
+ * 真机 = 系统状态栏 + 顶栏；网页 = 模拟状态栏(62) + 顶栏
+ * 用占位撑开而不是写死封面高度，避免状态栏较高的机型上标题被返回按钮压住
+ */
+const HEADER_SPACE = isNative
+  ? 'calc(var(--safe-top, env(safe-area-inset-top, 0px)) + 56px)'
+  : '118px';
 
 function clamp01(v: number) {
   return v < 0 ? 0 : v > 1 ? 1 : v;
@@ -150,6 +159,8 @@ function SkeletonCard() {
 export default function Messages() {
   const navigate = useNavigate();
   const { user, loading: userLoading } = useCurrentUser();
+  // 仅班委（创建者/管理员）可以发通知，与后端 AdminOrOwner 权限保持一致
+  const canPublish = user?.roleLevel === 'owner' || user?.roleLevel === 'admin';
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [memberCount, setMemberCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -249,6 +260,13 @@ export default function Messages() {
     fetchMessages();
   }, [classId, userLoading, reloadKey]);
 
+  // 列表停留 1 秒即视为已读：批量清除普通通知红点，未签收的签收类保留
+  const handleMarked = useCallback((ids: string[]) => {
+    const marked = new Set(ids);
+    setMessages((prev) => prev.map((m) => (marked.has(m.id) ? { ...m, isRead: true } : m)));
+  }, []);
+  useMarkMessagesRead(classId, messages, handleMarked);
+
   /** 待我处理：要求签收且我还没签收的消息 */
   const todoCount = useMemo(
     () => messages.filter((m) => m.requireAck && !m.isAcked).length,
@@ -338,14 +356,15 @@ export default function Messages() {
             />
             <StatusBar light={!darkInk} />
             <div className="relative flex h-[56px] items-center justify-center px-5">
-              <button
-                type="button"
-                aria-label="返回"
-                onClick={() => navigate('/home')}
-                className="absolute left-3.5 flex h-9 w-9 items-center justify-center rounded-full bg-white/85 text-[#0B66FF] shadow-[0_6px_16px_-10px_rgba(15,40,90,0.6)] backdrop-blur active:scale-95"
-              >
-                <ChevronLeft className="h-5 w-5" strokeWidth={2.2} />
-              </button>
+              <BackButton
+                variant={darkInk ? 'light' : 'dark'}
+                className={cn(
+                  'pointer-events-auto absolute left-3.5 h-10 w-10 rounded-full border transition-colors duration-300',
+                  darkInk
+                    ? 'border-black/10 bg-transparent text-[#1A1F2C]'
+                    : 'border-white/30 bg-white/[0.18] text-white backdrop-blur-sm'
+                )}
+              />
               {/* 标题：p > 0.7 后淡入，与滚走的封面大标题交接 */}
               <div
                 className="text-[17px] font-semibold tracking-[0.5px] text-[#0F172A]"
@@ -353,47 +372,56 @@ export default function Messages() {
               >
                 消息中心
               </div>
+              {canPublish && (
+                <button
+                  type="button"
+                  aria-label="发通知"
+                  onClick={() => navigate('/publish-message')}
+                  className={cn(
+                    'pointer-events-auto absolute right-3.5 flex h-10 w-10 items-center justify-center rounded-full border transition-colors duration-300',
+                    darkInk
+                      ? 'border-black/10 bg-transparent text-[#1A1F2C]'
+                      : 'border-white/30 bg-white/[0.18] text-white backdrop-blur-sm'
+                  )}
+                >
+                  <Megaphone className="h-5 w-5" strokeWidth={2.2} />
+                </button>
+              )}
             </div>
           </div>
         </header>
 
-        {/* 封面：随内容自然滚出（不接管滚动，纯 CSS 位移） */}
+        {/* 封面：参与正常排版并随内容滚出，高度由内容撑开，不同状态栏高度下都不会压住标题 */}
         <div
           ref={coverRef}
           aria-hidden
-          className="pointer-events-none absolute left-0 top-0 z-0 w-full overflow-hidden rounded-b-[22px] shadow-[0_10px_24px_-12px_rgba(15,110,200,0.55)]"
+          className="relative z-0 w-full overflow-hidden rounded-b-[22px] shadow-[0_10px_24px_-12px_rgba(15,110,200,0.55)]"
           style={{
-            height: COVER_H,
-            backgroundImage:
-              'linear-gradient(152deg, #3D93FF 0%, #0B66FF 52%, #0043BC 100%)',
+            backgroundImage: 'linear-gradient(152deg, #3D93FF 0%, #0B66FF 52%, #0043BC 100%)',
           }}
         >
           <div className="pointer-events-none absolute -right-[40px] -top-[48px] h-[150px] w-[150px] rounded-full bg-white/[0.14]" />
-          <BellRing
-            className="pointer-events-none absolute right-[12px] top-[42px] h-[104px] w-[104px] text-white/[0.22]"
-            strokeWidth={1.5}
-          />
           <div
-            className="absolute inset-0"
+            className="pointer-events-none absolute inset-0"
             style={{
               background: 'linear-gradient(180deg, rgba(3,14,32,0) 52%, rgba(3,14,32,0.40) 100%)',
             }}
           />
-          {/* 标题块：底边留出 52px = 搜索卡上浮 32px + 20px 间距 */}
-          <div className="absolute inset-x-0 bottom-[52px] px-5">
-            <div className="font-heading text-[28px] font-bold leading-[1.2] tracking-[1px] text-white">
+          {/* 让开顶栏 + 状态栏，避免返回按钮/发通知按钮压在大标题上 */}
+          <div className="pointer-events-none" style={{ height: HEADER_SPACE }} />
+          {/* 标题块：底边留出 46px = 搜索卡上浮 28px + 18px 间距 */}
+          <div className="relative px-5 pb-[46px] pt-1.5">
+            <div className="font-heading text-[24px] font-bold leading-[1.2] tracking-[1px] text-white">
               消息中心
             </div>
-            <div className="mt-[5px] text-[12px] tracking-[0.4px] text-white/75">{coverSubtitle}</div>
+            <div className="mt-1 text-[11.5px] tracking-[0.4px] text-white/75">{coverSubtitle}</div>
           </div>
         </div>
-        {/* 流内占位：让正文从封面下方开始，封面本身由绝对定位层绘制 */}
-        <div className="shrink-0" style={{ height: COVER_H }} aria-hidden />
 
         <main className="relative z-10 flex w-full flex-1 flex-col px-5 pb-[calc(20px+env(safe-area-inset-bottom))]">
           {/* 搜索 / 筛选：浮在封面上的一层白卡 */}
-          <div className="-mt-8 w-full rounded-2xl border border-[#EDF1F7] bg-white p-3.5 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.45)]">
-            <div className="flex h-10 w-full items-center gap-2 rounded-xl bg-[#F3F4F6] px-3">
+          <div className="-mt-7 w-full rounded-2xl border border-[#EDF1F7] bg-white p-3 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.45)]">
+            <div className="flex h-9 w-full items-center gap-2 rounded-xl bg-[#F3F4F6] px-3">
               <Search className="h-4 w-4 shrink-0 text-[#9CA3AF]" strokeWidth={2} />
               <input
                 value={keyword}
@@ -413,7 +441,7 @@ export default function Messages() {
               )}
             </div>
 
-            <div className="mt-3 flex flex-row gap-2">
+            <div className="mt-2.5 flex flex-row gap-2">
               {filters.map((item) => {
                 const active = filter === item.key;
                 return (
@@ -421,7 +449,7 @@ export default function Messages() {
                     key={item.key}
                     type="button"
                     onClick={() => setFilter(item.key)}
-                    className={`box-border h-8 shrink-0 flex flex-row items-center gap-1 rounded-full px-3 font-body text-[12px] font-medium transition-colors active:opacity-80 ${
+                    className={`box-border h-7 shrink-0 flex flex-row items-center gap-1 rounded-full px-2.5 font-body text-[11.5px] font-medium transition-colors active:opacity-80 ${
                       active
                         ? 'bg-[#0062FF] text-[#FFFFFF]'
                         : 'border border-[#E5E7EB] bg-[#FFFFFF] text-[#4B5563]'
@@ -511,19 +539,20 @@ export default function Messages() {
 
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-row items-start gap-2">
-                            <span
-                              className={`mt-[5px] h-2 w-2 shrink-0 rounded-full ${
-                                message.isRead ? 'bg-transparent' : 'bg-[#EF4444]'
-                              }`}
-                            />
-                            <div
-                              className={`min-w-0 flex-1 truncate font-body text-[14px] ${
-                                message.isRead
-                                  ? 'font-medium text-[#374151]'
-                                  : 'font-semibold text-[#111827]'
-                              }`}
-                            >
-                              {message.title}
+                            <div className="relative min-w-0 flex-1">
+                              {/* 未读红点绝对定位，不占位，保证标题与正文/时间左对齐 */}
+                              {!message.isRead && (
+                                <span className="absolute -left-3 top-[6px] h-2 w-2 rounded-full bg-[#EF4444]" />
+                              )}
+                              <div
+                                className={`min-w-0 truncate font-body text-[14px] ${
+                                  message.isRead
+                                    ? 'font-medium text-[#374151]'
+                                    : 'font-semibold text-[#111827]'
+                                }`}
+                              >
+                                {message.title}
+                              </div>
                             </div>
                             {badge && (
                               <span

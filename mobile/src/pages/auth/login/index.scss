@@ -7,35 +7,12 @@
   box-sizing: border-box;
   overflow: hidden;
 
-  // ---------- Status Bar（top:0, height:124rpx） ----------
+  // ---------- Status Bar 占位（top:0, height:124rpx） ----------
   &__statusbar {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
     height: 124rpx;
     padding: 24rpx 48rpx 0 48rpx; // front p-[12px_24px_0px_24px]
     flex-shrink: 0;
     background-color: #ffffff;
-  }
-
-  &__statusbar-time {
-    font-size: 28rpx; // 14px
-    font-weight: $font-semibold;
-    color: #1a1a1a;
-  }
-
-  &__statusbar-icons {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 12rpx; // 6px
-  }
-
-  &__statusbar-signal,
-  &__statusbar-battery {
-    font-size: 28rpx;
-    color: #1a1a1a;
   }
 
   // ---------- Login Content（相对定位容器） ----------

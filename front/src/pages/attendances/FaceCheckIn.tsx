@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, Image as ImageIcon } from 'lucide-react';
+import { Camera, Image as ImageIcon, SwitchCamera } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -15,20 +15,23 @@ export default function FaceCheckIn({ classId, attendanceId, onSuccess }: FaceCh
   const videoRef = useRef<HTMLVideoElement>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState('');
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  const [switching, setSwitching] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const startingRef = useRef(false);
 
-  const startCamera = async () => {
-    if (startingRef.current || cameraActive) return;
+  const startCamera = async (facing: 'user' | 'environment' = facingMode) => {
+    if (startingRef.current) return;
     startingRef.current = true;
     setCameraError('');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 640 } },
+        video: { facingMode: facing, width: { ideal: 480 }, height: { ideal: 640 } },
         audio: false,
       });
       streamRef.current = stream;
+      setFacingMode(facing);
       // 先设置状态让 video 元素渲染出来，再绑定流
       setCameraActive(true);
     } catch (err: any) {
@@ -41,6 +44,33 @@ export default function FaceCheckIn({ classId, attendanceId, onSuccess }: FaceCh
       toast.error(msg);
     } finally {
       startingRef.current = false;
+    }
+  };
+
+  // 前后置切换：直接替换 video 的流，不重建预览
+  const switchCamera = async () => {
+    if (switching) return;
+    const next = facingMode === 'user' ? 'environment' : 'user';
+    setSwitching(true);
+    setCameraError('');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: next, width: { ideal: 480 }, height: { ideal: 640 } },
+        audio: false,
+      });
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = stream;
+      setFacingMode(next);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(() => {
+          setCameraError('视频播放失败，请重试');
+        });
+      }
+    } catch {
+      toast.error('切换摄像头失败，请重试');
+    } finally {
+      setSwitching(false);
     }
   };
 
@@ -208,8 +238,20 @@ export default function FaceCheckIn({ classId, attendanceId, onSuccess }: FaceCh
               playsInline
               muted
               className="w-full h-[300px] object-cover bg-black"
-              style={{ transform: 'scaleX(-1)' }}
+              style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
             />
+            <button
+              type="button"
+              onClick={switchCamera}
+              disabled={switching}
+              aria-label="切换前后摄像头"
+              className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm active:opacity-70 disabled:opacity-50"
+            >
+              <SwitchCamera className="h-[18px] w-[18px]" />
+            </button>
+            <div className="absolute left-3 top-3 rounded-full bg-black/35 px-2 py-0.5 text-[10px] text-white/90">
+              {facingMode === 'user' ? '前置摄像头' : '后置摄像头'}
+            </div>
             <button
               onClick={takePhoto}
               className="absolute bottom-4 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full bg-white border-4 border-[#0062FF] flex items-center justify-center active:opacity-80"
@@ -241,7 +283,7 @@ export default function FaceCheckIn({ classId, attendanceId, onSuccess }: FaceCh
       {!cameraActive && !photoUrl && (
         <div className="flex gap-2">
           <button
-            onClick={startCamera}
+            onClick={() => startCamera()}
             className="flex-1 h-[48px] flex items-center justify-center gap-2 bg-[#0062FF] text-white font-medium rounded-lg active:opacity-80"
           >
             <Camera className="w-4 h-4" />

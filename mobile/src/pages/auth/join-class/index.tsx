@@ -86,7 +86,7 @@ export default function JoinClass() {
       })
       setCurrentClass(data.id)
       setTimeout(() => {
-        Taro.switchTab({ url: '/pages/home/index' })
+        Taro.reLaunch({ url: '/pages/home/index' })
       }, 500)
     } catch (err) {
       Taro.showToast({
@@ -121,7 +121,7 @@ export default function JoinClass() {
         Taro.showToast({ title: `成功加入班级：${data.name || '班级'}`, icon: 'none' })
         setCurrentClass(data.id)
         setTimeout(() => {
-          Taro.switchTab({ url: '/pages/home/index' })
+          Taro.reLaunch({ url: '/pages/home/index' })
         }, 500)
       } catch (err) {
         Taro.showToast({
@@ -170,7 +170,7 @@ export default function JoinClass() {
   }
 
   const enterClass = () => {
-    Taro.switchTab({ url: '/pages/home/index' })
+    Taro.reLaunch({ url: '/pages/home/index' })
   }
 
   return (
@@ -283,6 +283,7 @@ export default function JoinClass() {
                   <Icon
                     name={t.icon}
                     size={40}
+                    color={active ? '#FFFFFF' : '#4B5563'}
                     strokeWidth={2}
                     className={`${active ? 'join-class__org-icon join-class__org-icon--active' : 'join-class__org-icon'}`}
                   />

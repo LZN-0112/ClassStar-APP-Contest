@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <application
         android:allowBackup="false"
@@ -52,6 +53,18 @@
             android:taskAffinity="com.banwuxing.app"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
 
+        <!-- 极光推送：通知点击回调（与插件自带接收器并存，只做加法）。
+             仅用于把通知 extras 交给 Web 层做页面跳转，不处理其它推送事件 -->
+        <receiver
+            android:name=".PushMessageReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter android:priority="1000">
+                <action android:name="cn.jpush.android.intent.RECEIVER_MESSAGE" />
+                <category android:name="${applicationId}" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -61,6 +74,18 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- 极光推送 AppKey：
+             jpush-phonegap-plugin 的 Cordova 清单里会写入 JPUSH_APPKEY="undefined"，
+             这里用更高优先级覆盖。AppKey 与包名 com.banwuxing.app 绑定 -->
+        <meta-data
+            android:name="JPUSH_APPKEY"
+            android:value="aad09f6968978747d9cc571c"
+            tools:replace="android:value" />
+        <meta-data
+            android:name="JPUSH_CHANNEL"
+            android:value="developer-default"
+            tools:replace="android:value" />
     </application>
 
     <!-- Permissions -->
@@ -89,4 +114,20 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.location" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+
+    <!-- 极光推送：SDK 自身需要的非敏感权限；SDK 在用户同意隐私政策后才初始化 -->
+    <!-- Android 13+ 通知权限，需在运行时动态申请 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- 裁剪 jpush-phonegap-plugin 清单里申请的高敏感/应用商店敏感权限：
+         推送功能不需要通话状态、存储、后台定位与全量应用列表查询 -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" tools:node="remove" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:node="remove" />
 </manifest>

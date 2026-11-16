@@ -1,160 +1,404 @@
+// ============================================================
+// 班费/团费收支报表样式
+// 1:1 对齐 front/src/pages/finance/FinanceReport.tsx
+// ============================================================
 .feereport {
   min-height: 100vh;
-  background: $bg;
-  box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom);
+  background: #ffffff;
 
   &__body {
-    padding: 24rpx $page-padding-x $page-padding-bottom;
     display: flex;
     flex-direction: column;
-    gap: 24rpx;
+    gap: 32rpx;
+    padding: 32rpx 40rpx calc(40rpx + env(safe-area-inset-bottom));
   }
 
-  &__type {
+  // ---------- 权限不足 ----------
+  &__denied {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24rpx;
+    padding: 160rpx 40rpx;
+  }
+
+  &__denied-text {
+    font-size: 28rpx;
+    color: #64748b;
+  }
+
+  // ---------- 导出按钮 ----------
+  &__export {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    height: 72rpx;
+    padding: 0 28rpx;
+    border-radius: 999rpx;
+    background: rgba(255, 255, 255, 0.2);
+
+    &--busy {
+      opacity: 0.6;
+    }
+  }
+
+  &__export-text {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  &__spinner {
+    width: 28rpx;
+    height: 28rpx;
+    border-radius: 50%;
+    border: 4rpx solid rgba(255, 255, 255, 0.4);
+    border-top-color: #ffffff;
+    animation: feereport-spin 0.8s linear infinite;
+    box-sizing: border-box;
+  }
+
+  // ---------- 班费/团费切换 ----------
+  &__tabs {
     display: flex;
     gap: 16rpx;
   }
 
-  &__type-item {
+  &__tab {
     flex: 1;
     height: 72rpx;
     border-radius: 999rpx;
-    background: $gray-100;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: #f1f5f9;
 
     &--active {
-      background: $primary;
-      box-shadow: $shadow-md;
+      background: #0062ff;
+      box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
     }
   }
 
-  &__type-label {
-    font-size: $text-base;
+  &__tab-label {
+    font-size: 28rpx;
     font-weight: 600;
-    color: $text-secondary;
+    color: #64748b;
 
     &--active {
-      color: #fff;
+      color: #ffffff;
     }
   }
 
-  &__content {
-    display: flex;
-    flex-direction: column;
-    gap: 24rpx;
-  }
-
-  &__stats {
+  // ---------- 汇总 ----------
+  &__summary {
     display: flex;
     gap: 16rpx;
   }
 
-  &__stat {
+  &__summary-card {
     flex: 1;
-    background: $surface;
-    border-radius: $radius-xl;
-    padding: 28rpx 16rpx;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 8rpx;
-    box-shadow: $shadow-md;
+    padding: 32rpx 16rpx;
+    border-radius: 32rpx;
+    background: #ffffff;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
   }
 
-  &__stat-value {
-    font-size: $text-2xl;
+  &__summary-value {
+    width: 100%;
+    text-align: center;
+    font-family: $font-data;
+    font-size: 40rpx;
     font-weight: 700;
-    color: $primary;
-    font-family: 'DIN Alternate', $font-family;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  &__stat-value--income {
-    color: $success;
-  }
-
-  &__stat-value--expense {
-    color: $danger;
-  }
-
-  &__stat-label {
-    font-size: $text-11;
+  &__summary-label {
+    font-size: 22rpx;
     font-weight: 600;
-    color: $text-secondary;
+    color: #64748b;
   }
 
-  &__chart {
-    background: $surface;
-    border-radius: $radius-xl;
-    padding: 28rpx;
-    box-shadow: $shadow-md;
+  // ---------- 月度趋势 ----------
+  &__chart-card {
+    padding: 32rpx;
+    border-radius: 32rpx;
+    background: #ffffff;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+  }
+
+  &__chart-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
   }
 
   &__chart-title {
-    display: block;
-    font-size: $text-sm;
+    font-size: 28rpx;
     font-weight: 700;
-    color: $text-primary;
-    margin-bottom: 16rpx;
+    color: #1a1a1a;
   }
 
-  &__item {
-    background: $surface;
-    border-radius: $radius-xl;
-    padding: 24rpx;
+  &__legend {
     display: flex;
     align-items: center;
-    gap: 20rpx;
-    box-shadow: $shadow-md;
+    gap: 24rpx;
   }
 
-  &__item-icon {
-    width: 80rpx;
-    height: 80rpx;
-    border-radius: $radius-lg;
+  &__legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+  }
+
+  &__legend-dot {
+    width: 16rpx;
+    height: 16rpx;
+    border-radius: 50%;
+
+    &--income {
+      background: #004ecc;
+    }
+
+    &--expense {
+      background: #93b4ff;
+    }
+  }
+
+  &__legend-text {
+    font-size: 20rpx;
+    color: #94a3b8;
+  }
+
+  &__chart-skeleton {
+    margin-top: 32rpx;
+    height: 280rpx;
+    border-radius: 24rpx;
+    background: #e9eef5;
+    animation: feereport-pulse 1.4s ease-in-out infinite;
+  }
+
+  &__chart {
+    display: flex;
+    flex-direction: column;
+    height: 300rpx;
+    margin-top: 32rpx;
+  }
+
+  &__bars {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12rpx;
+  }
+
+  &__bar-col {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  &__bar-pair {
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 8rpx;
+  }
+
+  &__bar {
+    width: 20rpx;
+    border-radius: 8rpx 8rpx 0 0;
+
+    &--income {
+      background: #004ecc;
+    }
+
+    &--expense {
+      background: #93b4ff;
+    }
+  }
+
+  &__axis {
+    display: flex;
+    justify-content: space-between;
+    gap: 12rpx;
+    margin-top: 16rpx;
+  }
+
+  &__axis-label {
+    flex: 1;
+    text-align: center;
+    font-size: 20rpx;
+    color: #94a3b8;
+  }
+
+  // ---------- 最近收支 ----------
+  &__recent {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__recent-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4rpx;
+  }
+
+  &__recent-title {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #6b7280;
+  }
+
+  &__recent-all {
+    display: flex;
+    align-items: center;
+    gap: 4rpx;
+  }
+
+  &__recent-all-text {
+    font-size: 22rpx;
+    font-weight: 600;
+    color: #0062ff;
+  }
+
+  &__row-skeleton {
+    height: 128rpx;
+    border-radius: 24rpx;
+    background: #e9eef5;
+    animation: feereport-pulse 1.4s ease-in-out infinite;
+  }
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16rpx;
+    padding: 80rpx 40rpx;
+    border-radius: 24rpx;
+    background: #ffffff;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+  }
+
+  &__empty-text {
+    font-size: 24rpx;
+    color: #64748b;
+  }
+
+  &__card {
+    overflow: hidden;
+    border-radius: 24rpx;
+    background: #ffffff;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 24rpx;
+    padding: 24rpx 32rpx;
+    border-bottom: 2rpx solid #f1f5f9;
+
+    &--last {
+      border-bottom: none;
+    }
+  }
+
+  &__row-icon {
+    width: 72rpx;
+    height: 72rpx;
+    border-radius: 16rpx;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
 
     &--income {
-      background: #dcfce7;
+      background: #ecfdf5;
     }
 
     &--expense {
-      background: #fee2e2;
+      background: #fef2f2;
     }
   }
 
-  &__item-info {
+  &__row-main {
     flex: 1;
     min-width: 0;
   }
 
-  &__item-title {
-    font-size: $text-base;
+  &__row-title {
+    display: block;
+    font-size: 26rpx;
     font-weight: 600;
-    color: $text-primary;
+    color: #1a1a1a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  &__item-right {
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
+  &__row-meta {
+    display: block;
+    margin-top: 4rpx;
+    font-size: 22rpx;
+    color: #94a3b8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  &__item-amount {
-    font-size: $text-base;
+  &__row-amount {
+    flex-shrink: 0;
+    font-family: $font-data;
+    font-size: 28rpx;
     font-weight: 600;
 
     &--income {
-      color: $success;
+      color: #16a34a;
     }
 
     &--expense {
-      color: $danger;
+      color: #dc2626;
     }
+  }
+
+  &__footer {
+    display: block;
+    padding-bottom: 8rpx;
+    text-align: center;
+    font-size: 20rpx;
+    color: #94a3b8;
+  }
+}
+
+@keyframes feereport-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes feereport-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
   }
 }

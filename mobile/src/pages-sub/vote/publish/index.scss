@@ -1,197 +1,308 @@
+// ============================================================
+// 发起投票 — 1:1 对齐 front/src/pages/votes/PublishVote.tsx
+// ============================================================
+$vote-accent: #3d6be5;
+
 .votepub {
   min-height: 100vh;
-  background: $bg;
+  background: #ffffff;
   box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom);
 
   &__body {
-    padding: 0 $page-padding-x;
-    padding-top: 40rpx;
     display: flex;
     flex-direction: column;
-    gap: 24rpx;
-  }
-
-  &__title-field {
-    height: 112rpx;
-    padding: 0 32rpx;
-    background: $surface;
-    border: 1rpx solid $border;
-    border-radius: $radius-xl;
-    display: flex;
-    align-items: center;
+    gap: 32rpx;
+    padding: 32rpx 40rpx calc(40rpx + env(safe-area-inset-bottom));
     box-sizing: border-box;
   }
 
-  &__title-input {
-    width: 100%;
-    font-size: $text-base;
-    font-weight: 500;
-    color: $text-primary;
+  &__notice {
+    padding: 20rpx 24rpx;
+    background: #fff7ed;
+    border-radius: 24rpx;
+    font-size: 24rpx;
+    line-height: 1.625;
+    color: #b45309;
+    box-sizing: border-box;
   }
 
   &__card {
-    background: $surface;
-    border: 1rpx solid $border;
-    border-radius: $radius-xl;
     padding: 32rpx;
-    display: flex;
-    flex-direction: column;
-    gap: 16rpx;
+    background: #ffffff;
+    border: 1rpx solid #e2e8f0;
+    border-radius: 24rpx;
     box-sizing: border-box;
   }
 
-  &__card-label {
-    font-size: $text-sm;
-    font-weight: 500;
-    color: $text-secondary;
-  }
-
-  &__option {
-    height: 88rpx;
-    padding: 0 24rpx;
-    background: #0062ff0d;
-    border-radius: $radius-lg;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-  }
-
-  &__option-num {
-    font-size: $text-sm;
-    font-weight: 500;
-    color: $primary;
-    margin-right: 16rpx;
-  }
-
-  &__option-input {
-    flex: 1;
-    font-size: $text-base;
-    font-weight: 500;
-    color: $text-primary;
-  }
-
-  &__option-del {
-    font-size: $text-sm;
-    color: $text-weak;
-  }
-
-  &__add {
-    height: 72rpx;
-    border: 1rpx dashed #cbd5e1;
-    border-radius: $radius-lg;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  &__add-text {
-    font-size: $text-sm;
-    color: $text-secondary;
-  }
-
-  &__settings {
-    gap: 0;
-    padding: 0 32rpx;
-  }
-
-  &__setting-row {
-    height: 96rpx;
-    border-bottom: 1rpx solid $gray-100;
+  &__card-head {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    position: relative;
+    gap: 16rpx;
+  }
 
-    &:last-child {
-      border-bottom: none;
+  &__card-label-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12rpx;
+  }
+
+  &__card-label {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #64748b;
+  }
+
+  &__counter {
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  &__hint {
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  &__title-input {
+    width: 100%;
+    height: 48rpx;
+    margin-top: 16rpx;
+    font-size: 30rpx;
+    font-weight: 500;
+    color: #1a1a1a;
+    box-sizing: border-box;
+  }
+
+  &__placeholder {
+    color: #cbd5e1;
+  }
+
+  // ---------- 选项 ----------
+  &__options {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+    margin-top: 24rpx;
+  }
+
+  &__option {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    height: 92rpx;
+    padding: 0 24rpx;
+    background: #f7f9fd;
+    border-radius: 24rpx;
+    box-sizing: border-box;
+  }
+
+  &__option-num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44rpx;
+    height: 44rpx;
+    margin-right: 16rpx;
+    background: #e4ecfd;
+    border-radius: 999rpx;
+    flex-shrink: 0;
+  }
+
+  &__option-num-text {
+    font-size: 22rpx;
+    font-weight: 600;
+    color: $vote-accent;
+  }
+
+  &__option-input {
+    flex: 1;
+    min-width: 0;
+    font-size: 28rpx;
+    font-weight: 500;
+    color: #1a1a1a;
+  }
+
+  &__option-del {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56rpx;
+    height: 56rpx;
+    margin-left: 16rpx;
+    border-radius: 999rpx;
+    flex-shrink: 0;
+  }
+
+  &__add {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+    height: 80rpx;
+    margin-top: 16rpx;
+    border: 1rpx dashed #cbd5e1;
+    border-radius: 24rpx;
+    box-sizing: border-box;
+  }
+
+  &__add-text {
+    font-size: 26rpx;
+    color: #64748b;
+  }
+
+  // ---------- 截止时间 ----------
+  &__deadline-value {
+    font-size: 22rpx;
+    color: #94a3b8;
+
+    &--set {
+      color: $vote-accent;
     }
   }
 
-  &__setting-label {
-    font-size: $text-base;
-    font-weight: 400;
-    color: $text-primary;
+  &__presets {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 16rpx;
+    margin-top: 24rpx;
   }
 
-  &__type-wrap {
-    position: relative;
+  &__preset {
+    padding: 12rpx 24rpx;
+    background: #ffffff;
+    border: 1rpx solid #e2e8f0;
+    border-radius: 999rpx;
+    font-size: 24rpx;
+    color: #64748b;
+
+    &--active {
+      border-color: $vote-accent;
+      background: #edf1fd;
+      font-weight: 600;
+      color: $vote-accent;
+    }
   }
 
-  &__type {
+  &__custom {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+    margin-top: 24rpx;
+    padding: 20rpx 24rpx;
+    background: #f7f9fd;
+    border-radius: 24rpx;
+    box-sizing: border-box;
+  }
+
+  &__custom-label {
+    font-size: 24rpx;
+    color: #64748b;
+  }
+
+  &__custom-value {
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 8rpx;
   }
 
-  &__type-text {
-    font-size: $text-base;
-    color: $primary;
+  &__custom-part {
+    font-size: 24rpx;
+    color: #1e293b;
+
+    &--empty {
+      color: #94a3b8;
+    }
   }
 
-  &__type-caret {
-    font-size: $text-sm;
-    color: $text-weak;
+  // ---------- 投票类型 ----------
+  &__types {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16rpx;
+    margin-top: 24rpx;
   }
 
-  &__type-menu {
-    position: absolute;
-    right: 0;
-    top: 96rpx;
-    width: 240rpx;
-    background: $surface;
-    border: 1rpx solid $border;
-    border-radius: $radius-lg;
-    box-shadow: $shadow-md;
-    z-index: 20;
-    overflow: hidden;
-  }
-
-  &__type-item {
-    padding: 24rpx 32rpx;
+  &__type {
+    padding: 24rpx;
+    background: #ffffff;
+    border: 1rpx solid #e2e8f0;
+    border-radius: 24rpx;
+    box-sizing: border-box;
 
     &--active {
-      background: $accent-50;
+      border-color: $vote-accent;
+      background: #f1f5ff;
     }
   }
 
-  &__type-item-text {
-    font-size: $text-base;
-    color: $text-primary;
-  }
+  &__type-head {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12rpx;
+    font-size: 26rpx;
+    font-weight: 600;
+    color: #1e293b;
 
-  &__switch {
-    position: relative;
-    width: 88rpx;
-    height: 48rpx;
-    border-radius: 999rpx;
-    background: $gray-100;
-    transition: background 0.2s;
-  }
-
-  &__switch-thumb {
-    position: absolute;
-    top: 4rpx;
-    left: 4rpx;
-    width: 40rpx;
-    height: 40rpx;
-    border-radius: 50%;
-    background: #ffffff;
-    box-shadow: $shadow-sm;
-    transition: left 0.2s;
-
-    &--on {
-      left: 44rpx;
+    &--active {
+      color: $vote-accent;
     }
   }
 
-  &__placeholder {
-    color: $text-weak;
+  &__type-label {
+    font-size: 26rpx;
+    font-weight: 600;
+    color: inherit;
   }
 
+  &__type-desc {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  // ---------- 提交 ----------
   &__spacer {
-    height: 40rpx;
+    height: 16rpx;
+  }
+
+  &__tip {
+    font-size: 22rpx;
+    color: #b45309;
+    text-align: center;
+  }
+
+  &__submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100rpx;
+    background: #e5e7eb;
+    border-radius: 24rpx;
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #94a3b8;
+    box-sizing: border-box;
+    flex-shrink: 0;
+
+    &--enabled {
+      background: $vote-accent;
+      color: #ffffff;
+      box-shadow: 0 16rpx 40rpx -20rpx rgba(61, 107, 229, 0.9);
+
+      &:active {
+        opacity: 0.8;
+      }
+    }
   }
 }

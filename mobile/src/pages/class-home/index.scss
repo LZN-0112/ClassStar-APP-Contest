@@ -1,14 +1,539 @@
+// 班级主 Tab 页 —— 对照 front/src/pages/class/ClassHome.tsx 1:1 还原
+// App 设计稿 375px → 750rpx（1px = 2rpx）
+
 .class-home {
-  display: flex;
-  flex-direction: column;
   width: 100%;
   min-height: 100vh;
-  background-color: $home-bg;
+  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
+  background: $bg;
   box-sizing: border-box;
+  font-family: $font-body;
+  color: $text-primary;
 
-  // ---------- 无班级空态 ----------
-  &__no-class {
+  // ---------- 头部 ----------
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24rpx 40rpx;
+    box-sizing: border-box;
+
+    &--empty {
+      padding-bottom: 32rpx;
+    }
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: 40rpx;
+    font-weight: $font-bold;
+    line-height: 1.2;
+    color: $text-primary;
+  }
+
+  &__settings {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72rpx;
+    height: 72rpx;
+    background: $surface;
+    border-radius: $radius-full;
+    box-shadow: $shadow-md;
+    transition: transform $transition-fast $ease-in-out, opacity $transition-fast $ease-in-out;
+  }
+
+  // ---------- 内容区 ----------
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+    padding: 0 30rpx 48rpx;
+    box-sizing: border-box;
+  }
+
+  // ---------- 班级身份卡 ----------
+  &__card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+    padding: 40rpx;
+    overflow: hidden;
+    background: linear-gradient(-141.235deg, #0062ff 13.008%, #004ecc 82.977%);
+    border-radius: 32rpx;
+    box-shadow: $shadow-lg;
+    box-sizing: border-box;
+  }
+
+  &__card-circle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+
+    &--top {
+      top: -80rpx;
+      right: -80rpx;
+      width: 256rpx;
+      height: 256rpx;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    &--bottom {
+      left: -64rpx;
+      bottom: -96rpx;
+      width: 224rpx;
+      height: 224rpx;
+      background: rgba(255, 255, 255, 0.05);
+    }
+  }
+
+  &__card-head {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 24rpx;
+  }
+
+  &__logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 104rpx;
+    height: 104rpx;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 24rpx;
+  }
+
+  &__logo-img {
+    width: 100%;
+    height: 100%;
+  }
+
+  &__logo-char {
+    font-family: $font-heading;
+    font-size: 44rpx;
+    font-weight: $font-bold;
+    color: $text-inverse;
+  }
+
+  &__card-info {
     flex: 1;
+    min-width: 0;
+  }
+
+  &__name-row {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+    min-width: 0;
+  }
+
+  &__name {
+    flex-shrink: 1;
+    min-width: 0;
+    overflow: hidden;
+    font-family: $font-heading;
+    font-size: 42rpx;
+    font-weight: $font-bold;
+    line-height: 1.2;
+    color: $text-inverse;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__org-badge {
+    flex-shrink: 0;
+    padding: 4rpx 12rpx;
+    font-size: 20rpx;
+    font-weight: $font-medium;
+    line-height: 1.3;
+    color: $text-inverse;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12rpx;
+  }
+
+  &__card-sub {
+    display: block;
+    margin-top: 8rpx;
+    overflow: hidden;
+    font-size: 24rpx;
+    color: rgba(255, 255, 255, 0.75);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__card-qr {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 84rpx;
+    height: 84rpx;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 24rpx;
+    transition: background-color $transition-fast $ease-in-out;
+  }
+
+  &__card-meta {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 20rpx;
+  }
+
+  &__pill {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    padding: 8rpx 20rpx;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 16rpx;
+    transition: background-color $transition-fast $ease-in-out;
+
+    &-text {
+      font-size: 24rpx;
+      font-weight: $font-medium;
+      line-height: 1.2;
+      color: $text-inverse;
+    }
+  }
+
+  &__card-members {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+  }
+
+  &__avatars {
+    display: flex;
+    align-items: center;
+  }
+
+  &__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 56rpx;
+    height: 56rpx;
+    overflow: hidden;
+    border-radius: $radius-full;
+    box-shadow: 0 0 0 4rpx #0055e0;
+    box-sizing: border-box;
+
+    &--overlap {
+      margin-left: -16rpx;
+    }
+
+    &-img {
+      width: 100%;
+      height: 100%;
+    }
+
+    &-char {
+      font-size: 22rpx;
+      font-weight: $font-semibold;
+      color: $text-inverse;
+    }
+  }
+
+  &__avatar-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-width: 56rpx;
+    height: 56rpx;
+    padding: 0 8rpx;
+    margin-left: -16rpx;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: $radius-full;
+    box-shadow: 0 0 0 4rpx #0055e0;
+    box-sizing: border-box;
+
+    &-text {
+      font-size: 20rpx;
+      font-weight: $font-medium;
+      color: $text-inverse;
+    }
+  }
+
+  &__members-link {
+    display: flex;
+    align-items: center;
+    gap: 4rpx;
+    flex-shrink: 0;
+    transition: opacity $transition-fast $ease-in-out;
+
+    &-text {
+      font-size: 24rpx;
+      font-weight: $font-medium;
+      color: rgba(255, 255, 255, 0.85);
+    }
+  }
+
+  &__owner {
+    position: relative;
+    z-index: 1;
+    margin-top: 12rpx;
+    overflow: hidden;
+    font-size: 24rpx;
+    color: rgba(255, 255, 255, 0.8);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  // ---------- 班级公告 ----------
+  &__announce {
+    display: flex;
+    align-items: flex-start;
+    gap: 24rpx;
+    padding: 32rpx;
+    background: $surface;
+    border-radius: 32rpx;
+    box-shadow: $shadow-md;
+    box-sizing: border-box;
+    transition: transform $transition-fast $ease-in-out, opacity $transition-fast $ease-in-out;
+  }
+
+  &__announce-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 72rpx;
+    height: 72rpx;
+    background: #fff7ed;
+    border-radius: 24rpx;
+  }
+
+  &__announce-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__announce-label-row {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  &__announce-label {
+    font-size: 24rpx;
+    font-weight: $font-semibold;
+    color: #9a3412;
+  }
+
+  &__announce-hint {
+    font-size: 20rpx;
+    color: rgba(194, 65, 12, 0.6);
+  }
+
+  &__announce-text {
+    display: -webkit-box;
+    margin-top: 8rpx;
+    overflow: hidden;
+    font-size: 26rpx;
+    line-height: 1.625;
+    color: $text-secondary;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+
+    &--expanded {
+      display: block;
+      overflow: visible;
+      -webkit-line-clamp: unset;
+    }
+  }
+
+  // ---------- 班级资料 / 班级管理 卡片 ----------
+  &__section {
+    padding: 32rpx;
+    background: $surface;
+    border-radius: 32rpx;
+    box-shadow: $shadow-md;
+    box-sizing: border-box;
+  }
+
+  &__section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8rpx;
+  }
+
+  &__section-title {
+    display: block;
+    margin-bottom: 8rpx;
+    font-family: $font-heading;
+    font-size: 30rpx;
+    font-weight: $font-semibold;
+    line-height: 1.4;
+    color: $text-primary;
+
+    &--flush {
+      margin-bottom: 0;
+    }
+  }
+
+  &__section-badge {
+    padding: 4rpx 16rpx;
+    background: $icon-bg;
+    border-radius: $radius-full;
+
+    &-text {
+      font-size: 20rpx;
+      font-weight: $font-medium;
+      color: $primary;
+    }
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 24rpx;
+    padding: 24rpx 0;
+    transition: opacity $transition-fast $ease-in-out;
+
+    &--border {
+      border-bottom: 2rpx solid $border-light;
+    }
+  }
+
+  &__row-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 72rpx;
+    height: 72rpx;
+    border-radius: 24rpx;
+
+    &--blue {
+      background: $icon-bg;
+    }
+
+    &--gray {
+      background: #f3f4f6;
+    }
+  }
+
+  &__row-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__row-title {
+    display: block;
+    font-size: 28rpx;
+    font-weight: $font-medium;
+    line-height: 1.4;
+    color: $text-primary;
+  }
+
+  &__row-subtitle {
+    display: block;
+    margin-top: 4rpx;
+    overflow: hidden;
+    font-size: 22rpx;
+    color: $text-tertiary;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  // ---------- 邀请卡片 ----------
+  &__invite {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24rpx;
+    padding: 32rpx;
+    background: $icon-bg;
+    border-radius: 32rpx;
+    box-sizing: border-box;
+  }
+
+  &__invite-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__invite-title {
+    display: block;
+    font-family: $font-heading;
+    font-size: 28rpx;
+    font-weight: $font-semibold;
+    line-height: 1.4;
+    color: $text-primary;
+  }
+
+  &__invite-sub {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 22rpx;
+    line-height: 1.5;
+    color: $text-weak;
+  }
+
+  &__invite-code {
+    font-family: $font-data;
+    font-weight: $font-bold;
+    letter-spacing: 1rpx;
+    color: $primary;
+  }
+
+  &__invite-actions {
+    display: flex;
+    flex-shrink: 0;
+    gap: 16rpx;
+  }
+
+  &__invite-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+    height: 72rpx;
+    padding: 0 24rpx;
+    border-radius: 16rpx;
+    transition: transform $transition-fast $ease-in-out, opacity $transition-fast $ease-in-out;
+
+    &--copy {
+      background: $surface;
+      box-shadow: $shadow-md;
+    }
+
+    &--qr {
+      background: $primary;
+    }
+
+    &-text {
+      font-size: 24rpx;
+      font-weight: $font-medium;
+      color: $text-inverse;
+
+      &--copy {
+        color: $primary;
+      }
+    }
+  }
+
+  // ---------- 空态 ----------
+  &__empty {
+    padding: 0 30rpx 32rpx;
+    box-sizing: border-box;
+  }
+
+  &__empty-inner {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -17,315 +542,370 @@
     padding: 128rpx 0;
   }
 
-  &__no-class-icon {
+  &__empty-icon {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 160rpx;
     height: 160rpx;
-    border-radius: 50%;
-    background-color: $icon-bg;
-  }
-
-  &__no-class-text {
-    font-size: $text-lg;
-    color: $text-secondary;
-    font-weight: $font-medium;
-  }
-
-  &__join-btn {
-    padding: 20rpx 48rpx;
-    background-color: $primary;
-    border-radius: $radius-md;
-  }
-
-  &__join-btn-text {
-    font-size: $text-base;
-    font-weight: $font-semibold;
-    color: $text-inverse;
-  }
-
-  // ---------- 内容 ----------
-  &__content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: $card-gap;
-    padding: 0 $page-padding-x $tabbar-safe-bottom;
-    padding-bottom: $tabbar-safe-bottom;
-  }
-
-  // ---------- 班级卡片 ----------
-  &__card {
-    display: flex;
-    flex-direction: column;
-    gap: 32rpx;
-    padding: 48rpx;
-    background-image: linear-gradient(-141.235deg, $primary 13.008%, $primary-dark 82.977%);
-    background-size: 100% 100%;
-    background-repeat: no-repeat;
-    border-radius: $radius-lg;
-    box-shadow: $shadow-lg;
-  }
-
-  &__card-top {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  &__card-name {
-    font-size: 48rpx;
-    font-weight: $font-bold;
-    color: $text-inverse;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    flex: 1;
-    margin-right: 24rpx;
-  }
-
-  &__card-qr {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 96rpx;
-    height: 96rpx;
-    border-radius: $radius-lg;
-    background-color: rgba(255, 255, 255, 0.13);
-    flex-shrink: 0;
-  }
-
-  &__card-meta {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 24rpx;
-  }
-
-  &__card-meta-text {
-    font-size: $text-md;
-    font-weight: $font-medium;
-    color: $text-inverse;
-    white-space: nowrap;
-  }
-
-  &__card-dot {
-    width: 4rpx;
-    height: 4rpx;
+    background: $icon-bg;
     border-radius: $radius-full;
-    background-color: rgba(255, 255, 255, 0.5);
   }
 
-  &__card-announce {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 16rpx;
-    padding: 20rpx;
-    background-color: rgba(255, 255, 255, 0.08);
-    border-radius: $radius-md;
+  &__empty-text {
+    text-align: center;
   }
 
-  &__card-announce-text {
-    flex: 1;
-    font-size: 26rpx;
-    color: #ffffffee;
-    line-height: 1.5;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
-
-  &__card-admins {
-    display: flex;
-    flex-direction: column;
-    gap: 16rpx;
-    padding-top: 16rpx;
-    border-top: 2rpx solid rgba(255, 255, 255, 0.13);
-  }
-
-  &__card-owner {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 20rpx;
-  }
-
-  &__card-owner-avatar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 72rpx;
-    height: 72rpx;
-    border-radius: $radius-full;
-    background-color: $text-inverse;
-    flex-shrink: 0;
-  }
-
-  &__card-owner-char {
-    font-size: $text-base;
+  &__empty-title {
+    display: block;
+    font-size: 34rpx;
     font-weight: $font-semibold;
-    color: $primary;
-  }
-
-  &__card-owner-info {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 16rpx;
-  }
-
-  &__card-owner-name {
-    font-size: $text-base;
-    font-weight: $font-semibold;
-    color: $text-inverse;
-  }
-
-  &__card-owner-tag {
-    padding: 4rpx 12rpx;
-    border-radius: $radius-sm;
-    background-color: rgba(255, 255, 255, 0.15);
-  }
-
-  &__card-owner-tag-text {
-    font-size: 20rpx;
-    font-weight: $font-medium;
-    color: #ffffffee;
-  }
-
-  &__card-admin-line {
-    font-size: 26rpx;
-    color: #ffffffcc;
-  }
-
-  &__card-admin-more {
-    color: #ffffffaa;
-  }
-
-  // ---------- 数据概览 ----------
-  &__stats {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    padding: 40rpx 40rpx;
-    background-color: $surface;
-    border-radius: $radius-lg;
-    box-shadow: $shadow-md;
-  }
-
-  &__stat {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12rpx;
-    padding: 8rpx;
-  }
-
-  &__stat-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 80rpx;
-    height: 80rpx;
-    border-radius: $radius-lg;
-    flex-shrink: 0;
-    position: relative;
-    overflow: hidden;
-  }
-
-  &__stat-icon-shine {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 80rpx;
-    height: 24rpx;
-    border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.25);
-    pointer-events: none;
-  }
-
-  &__stat-value {
-    font-size: 40rpx;
-    font-weight: $font-bold;
+    line-height: 1.4;
     color: $text-primary;
-    white-space: nowrap;
   }
 
-  &__stat-label {
-    font-size: 22rpx;
-    color: $text-tertiary;
-    white-space: nowrap;
+  &__empty-desc {
+    margin-top: 12rpx;
   }
 
-  // ---------- 菜单列表 ----------
-  &__menu {
+  &__empty-desc-line {
+    display: block;
+    font-size: 26rpx;
+    line-height: 1.625;
+    color: $text-weak;
+  }
+
+  &__empty-actions {
     display: flex;
     flex-direction: column;
-    background-color: $surface;
-    border-radius: $radius-lg;
-    box-shadow: $shadow-md;
-    overflow: hidden;
+    gap: 20rpx;
+    width: 100%;
+    margin-top: 16rpx;
+    padding: 0 48rpx;
+    box-sizing: border-box;
   }
 
-  &__menu-item {
+  &__empty-primary {
     display: flex;
-    flex-direction: row;
-    justify-content: space-between;
     align-items: center;
-    height: 128rpx;
-    padding: 0 32rpx;
+    justify-content: center;
+    width: 100%;
+    height: 96rpx;
+    background: $primary;
+    border-radius: 24rpx;
+    box-shadow: $shadow-lg;
+    box-sizing: border-box;
+    transition: transform $transition-fast $ease-in-out, opacity $transition-fast $ease-in-out;
 
-    &--border {
-      border-bottom: 2rpx solid $border-light;
+    &-text {
+      font-size: 30rpx;
+      font-weight: $font-semibold;
+      color: $text-inverse;
     }
   }
 
-  &__menu-item-left {
-    flex: 1;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 24rpx;
-    overflow: hidden;
-  }
-
-  &__menu-item-icon {
+  &__empty-secondary {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 72rpx;
-    height: 72rpx;
-    border-radius: $radius-md;
-    background-color: $gray-100;
-    flex-shrink: 0;
+    width: 100%;
+    height: 88rpx;
+    background: $surface;
+    border-radius: 24rpx;
+    box-shadow: $shadow-md;
+    box-sizing: border-box;
+    transition: transform $transition-fast $ease-in-out, opacity $transition-fast $ease-in-out;
+
+    &-text {
+      font-size: 28rpx;
+      font-weight: $font-semibold;
+      color: $primary;
+    }
   }
 
-  &__menu-item-text {
+  // ---------- 骨架屏 ----------
+  &__skeleton {
     display: flex;
     flex-direction: column;
-    gap: 4rpx;
-    overflow: hidden;
+    align-items: center;
+    justify-content: center;
+    height: 376rpx;
+    background: #f3f4f6;
+    border-radius: 32rpx;
+    animation: class-home-pulse 1.8s $ease-in-out infinite;
   }
 
-  &__menu-item-title {
-    font-size: $text-lg;
+  &__skeleton-line {
+    height: 32rpx;
+    margin-bottom: 24rpx;
+    background: #e5e7eb;
+    border-radius: 8rpx;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    &--lg {
+      width: 75%;
+      height: 48rpx;
+    }
+
+    &--md {
+      width: 50%;
+    }
+
+    &--sm {
+      width: 66.67%;
+    }
+  }
+
+  // ---------- 二维码抽屉 ----------
+  &__sheet {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 110;
+  }
+
+  &__sheet-mask {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(15, 23, 42, 0.42);
+    backdrop-filter: blur(4rpx);
+    animation: class-home-fade-in 240ms $ease-in-out;
+  }
+
+  &__sheet-panel {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 111;
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
+    overflow: hidden;
+    background: $surface;
+    border-radius: 48rpx 48rpx 0 0;
+    box-shadow: 0 -28rpx 88rpx rgba(15, 23, 42, 0.16);
+    box-sizing: border-box;
+    animation: class-home-sheet-up 340ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  &__sheet-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20rpx 0 8rpx;
+  }
+
+  &__sheet-handle-bar {
+    width: 76rpx;
+    height: 8rpx;
+    background: #e2e8f0;
+    border-radius: $radius-full;
+  }
+
+  &__sheet-head {
+    padding: 12rpx 40rpx 24rpx;
+  }
+
+  &__sheet-title {
+    display: block;
+    overflow: hidden;
+    font-family: $font-heading;
+    font-size: 34rpx;
     font-weight: $font-semibold;
+    letter-spacing: 0.4rpx;
+    line-height: normal;
     color: $text-primary;
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
-  &__menu-item-subtitle {
-    font-size: 22rpx;
-    color: $text-secondary;
+  &__sheet-subtitle {
+    display: block;
+    margin-top: 8rpx;
     overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 24rpx;
+    line-height: normal;
+    color: $text-tertiary;
     white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__sheet-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32rpx;
+    min-height: 0;
+    padding: 0 40rpx 16rpx;
+    overflow-y: auto;
+    box-sizing: border-box;
+  }
+
+  &__qr-img {
+    width: 440rpx;
+    height: 440rpx;
+    border: 4rpx solid $icon-bg;
+    border-radius: 32rpx;
+    box-sizing: border-box;
+  }
+
+  &__qr-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    width: 440rpx;
+    height: 440rpx;
+    padding: 40rpx;
+    background: #f3f4f6;
+    border-radius: 32rpx;
+    box-sizing: border-box;
+  }
+
+  &__qr-empty-text {
+    font-size: 26rpx;
+    color: $text-tertiary;
+  }
+
+  &__qr-generate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 64rpx;
+    padding: 0 32rpx;
+    margin-top: 8rpx;
+    background: $primary;
+    border-radius: 16rpx;
+    transition: opacity $transition-fast $ease-in-out;
+
+    &--disabled {
+      background: #93c5fd;
+    }
+
+    &-text {
+      font-size: 24rpx;
+      font-weight: $font-semibold;
+      color: $text-inverse;
+    }
+  }
+
+  &__qr-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8rpx;
+    width: 100%;
+  }
+
+  &__qr-code {
+    font-size: 26rpx;
+    font-weight: $font-medium;
+    color: $text-weak;
+  }
+
+  &__qr-hint {
+    font-size: 22rpx;
+    line-height: 1.6;
+    color: $text-tertiary;
+    text-align: center;
+  }
+
+  &__sheet-footer {
+    display: flex;
+    gap: 20rpx;
+    padding: 24rpx 40rpx 48rpx;
+    padding-bottom: max(48rpx, env(safe-area-inset-bottom));
+    box-sizing: border-box;
+  }
+
+  &__sheet-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    flex: 1;
+    height: 96rpx;
+    border-radius: 28rpx;
+    transition: opacity $transition-fast $ease-in-out;
+
+    &--copy {
+      background: #f2f5f9;
+    }
+
+    &--done {
+      background: linear-gradient(180deg, #2e7dff 0%, #0062ff 100%);
+      box-shadow: 0 20rpx 40rpx rgba(0, 98, 255, 0.24);
+    }
+
+    &-text {
+      font-size: 30rpx;
+      font-weight: $font-semibold;
+      color: $text-inverse;
+
+      &--copy {
+        color: #475569;
+      }
+    }
+  }
+
+  // ---------- 按压态（hover-class） ----------
+  &__hover-scale {
+    opacity: 0.9;
+    transform: scale(0.97);
+  }
+
+  &__hover-opacity {
+    opacity: 0.7;
+  }
+
+  &__hover-press {
+    opacity: 0.95;
+    transform: scale(0.99);
+  }
+
+  &__hover-qr {
+    background-color: rgba(255, 255, 255, 0.25);
+  }
+
+  &__hover-pill {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+}
+
+@keyframes class-home-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes class-home-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes class-home-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
   }
 }

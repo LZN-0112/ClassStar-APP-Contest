@@ -17,6 +17,7 @@ import { AdminOrOwner } from '@/common/decorators/role-level.decorator';
 import {
   CreateMessageDto,
   CreateReminderDto,
+  MarkMessagesReadDto,
 } from './dto/messages.dto';
 
 @ApiTags('通知消息')
@@ -27,6 +28,7 @@ export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
 
   @Post()
+  @AdminOrOwner()
   @ApiOperation({ summary: '发布通知' })
   create(
     @Param('classId') classId: string,
@@ -65,6 +67,16 @@ export class MessagesController {
     @CurrentUser('userId') userId: string,
   ) {
     return this.messagesService.findOne(classId, id, userId);
+  }
+
+  @Post('read-batch')
+  @ApiOperation({ summary: '批量标记通知已读（列表浏览即已读）' })
+  markManyAsRead(
+    @Param('classId') classId: string,
+    @Body() dto: MarkMessagesReadDto,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.messagesService.markManyAsRead(classId, dto.ids, userId);
   }
 
   @Post(':id/read')

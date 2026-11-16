@@ -1,7 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Check, ChevronLeft, History, Minus, Plus, RotateCcw, Shuffle, UserMinus, X } from 'lucide-react';
+import { Check, ChevronLeft, History, Megaphone, Minus, Plus, RotateCcw, Shuffle, UserMinus, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import BottomSheet from '@/components/ui/BottomSheet';
 import LoadingVeil from '@/components/ui/LoadingVeil';
@@ -119,6 +119,11 @@ export default function RandomDraw() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [savedDrawId, setSavedDrawId] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [publicized, setPublicized] = useState(false);
+
+  const isCommittee = user?.roleLevel === 'owner' || user?.roleLevel === 'admin';
 
   const orbRefs = useRef<Array<HTMLDivElement | null>>([]);
   const orbStates = useRef<OrbState[]>(
@@ -261,6 +266,8 @@ export default function RandomDraw() {
     drawingRef.current = true;
     setSheetOpen(false);
     setSaved(false);
+    setSavedDrawId(null);
+    setPublicized(false);
     setPreviewResult(null);
     setPhase('drawing');
     boostRef.current = DRAW_BOOST;
@@ -298,17 +305,32 @@ export default function RandomDraw() {
     }
   }, [classId, candidates.length, mainCount, backupCount, excludedIds, finishDraw]);
 
+  // 保存当前展示的抽签结果，返回记录 ID
+  const saveDraw = useCallback(async (): Promise<string | null> => {
+    if (!classId || !previewResult) return null;
+    const res = await api.post(`/classes/${classId}/random-draws`, {
+      title: drawTitle,
+      mainCount,
+      backupCount,
+      excludedUserIds: Array.from(excludedIds),
+      // 沿用当前展示的抽签结果，避免保存时重新随机
+      mainUserIds: previewResult.main.map((m) => m.id),
+      backupUserIds: previewResult.backup.map((m) => m.id),
+    });
+    const data = res.data.data || res.data;
+    return data?.id || null;
+  }, [classId, previewResult, mainCount, backupCount, excludedIds, drawTitle]);
+
   // 确认保存抽签结果（保存后保留结果态并标记「已保存」）
   const handleConfirmSave = useCallback(async () => {
-    if (!classId || !previewResult) return;
+    if (!classId || !previewResult || saved || confirming) return;
     setConfirming(true);
     try {
-      await api.post(`/classes/${classId}/random-draws`, {
-        title: drawTitle,
-        mainCount,
-        backupCount,
-        excludedUserIds: Array.from(excludedIds),
-      });
+      const drawId = await saveDraw();
+      if (!drawId) {
+        throw new Error('保存抽签结果失败');
+      }
+      setSavedDrawId(drawId);
       setSaved(true);
       toast.success('抽签结果已保存');
     } catch (err: any) {
@@ -316,13 +338,39 @@ export default function RandomDraw() {
     } finally {
       setConfirming(false);
     }
-  }, [classId, previewResult, mainCount, backupCount, excludedIds]);
+  }, [classId, previewResult, saved, confirming, saveDraw]);
+
+  // 一键公示：未保存时先自动保存，再将本次班委抽签结果通知全班
+  const handlePublish = useCallback(async () => {
+    if (!classId || publicized) return;
+    setPublishing(true);
+    try {
+      let drawId = savedDrawId;
+      if (!drawId) {
+        drawId = await saveDraw();
+        if (!drawId) {
+          throw new Error('保存抽签结果失败');
+        }
+        setSavedDrawId(drawId);
+        setSaved(true);
+      }
+      await api.post(`/classes/${classId}/random-draws/${drawId}/publish`);
+      setPublicized(true);
+      toast.success('已公示给全班');
+    } catch (err: any) {
+      toast.error(err.message || '公示失败');
+    } finally {
+      setPublishing(false);
+    }
+  }, [classId, savedDrawId, publicized, saveDraw]);
 
   // 收起结果抽屉 → 回到待抽取状态，彩球继续公转
   const dismissResult = () => {
     setSheetOpen(false);
     setPhase('idle');
     setSaved(false);
+    setSavedDrawId(null);
+    setPublicized(false);
     setPreviewResult(null);
     orbStates.current.forEach((st) => {
       st.hold = false;
@@ -582,38 +630,73 @@ export default function RandomDraw() {
             </button>
           }
           footer={
-            <div className="flex gap-2.5">
-              <button
-                type="button"
-                onClick={runDraw}
-                disabled={confirming}
-                className="flex h-[46px] flex-1 items-center justify-center gap-1.5 rounded-[14px] border border-[#2F9BF0] bg-white font-body text-[14px]/[normal] font-semibold text-[#0B6FE0] transition-transform active:scale-[0.98] disabled:opacity-50"
-              >
-                <RotateCcw className="h-4 w-4" strokeWidth={2.2} />
-                再抽一次
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmSave}
-                disabled={confirming || saved}
-                className="flex h-[46px] flex-1 items-center justify-center gap-1.5 rounded-[14px] font-body text-[14px]/[normal] font-semibold text-white transition-transform active:scale-[0.98] disabled:opacity-70"
-                style={{
-                  backgroundImage: saved
-                    ? 'linear-gradient(135deg, #8FD6A8 0%, #47B36B 100%)'
-                    : 'linear-gradient(135deg, #2F9BF0 0%, #0B6FE0 100%)',
-                }}
-              >
-                {saved ? (
-                  <>
-                    <Check className="h-4 w-4" strokeWidth={2.6} />
-                    已保存
-                  </>
-                ) : confirming ? (
-                  '保存中…'
-                ) : (
-                  '确认保存'
-                )}
-              </button>
+            <div className="flex flex-col gap-2">
+              {isCommittee && (
+                <button
+                  type="button"
+                  onClick={handlePublish}
+                  disabled={publishing || publicized}
+                  className="flex h-[46px] w-full items-center justify-center gap-1.5 rounded-[14px] font-body text-[14px]/[normal] font-semibold text-white transition-transform active:scale-[0.98] disabled:opacity-60"
+                  style={{
+                    backgroundImage: publicized
+                      ? 'linear-gradient(135deg, #8FD6A8 0%, #47B36B 100%)'
+                      : 'linear-gradient(135deg, #34D399 0%, #059669 100%)',
+                    boxShadow: publicized ? 'none' : '0 8px 18px rgba(5,150,105,0.24)',
+                  }}
+                >
+                  {publicized ? (
+                    <>
+                      <Check className="h-4 w-4" strokeWidth={2.6} />
+                      已公示给全班
+                    </>
+                  ) : publishing ? (
+                    '公示中…'
+                  ) : (
+                    <>
+                      <Megaphone className="h-4 w-4" strokeWidth={2.2} />
+                      一键公示给全班
+                    </>
+                  )}
+                </button>
+              )}
+              <div className="text-center font-body text-[10px]/[normal] text-[#94A3B8]">
+                {isCommittee
+                  ? '一键公示会保存抽签结果并通知全班'
+                  : '个人抽签记录仅自己可见'}
+              </div>
+              <div className="flex gap-2.5">
+                <button
+                  type="button"
+                  onClick={runDraw}
+                  disabled={confirming || publishing}
+                  className="flex h-[46px] flex-1 items-center justify-center gap-1.5 rounded-[14px] border border-[#2F9BF0] bg-white font-body text-[14px]/[normal] font-semibold text-[#0B6FE0] transition-transform active:scale-[0.98] disabled:opacity-50"
+                >
+                  <RotateCcw className="h-4 w-4" strokeWidth={2.2} />
+                  再抽一次
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmSave}
+                  disabled={confirming || saved || publishing}
+                  className="flex h-[46px] flex-1 items-center justify-center gap-1.5 rounded-[14px] font-body text-[14px]/[normal] font-semibold text-white transition-transform active:scale-[0.98] disabled:opacity-70"
+                  style={{
+                    backgroundImage: saved
+                      ? 'linear-gradient(135deg, #8FD6A8 0%, #47B36B 100%)'
+                      : 'linear-gradient(135deg, #2F9BF0 0%, #0B6FE0 100%)',
+                  }}
+                >
+                  {saved ? (
+                    <>
+                      <Check className="h-4 w-4" strokeWidth={2.6} />
+                      已保存
+                    </>
+                  ) : confirming ? (
+                    '保存中…'
+                  ) : (
+                    '确认保存'
+                  )}
+                </button>
+              </div>
             </div>
           }
         >
@@ -696,7 +779,11 @@ export default function RandomDraw() {
           </div>
         </BottomSheet>
 
-        <LoadingVeil open={confirming} text="正在保存抽签结果" sub="请不要关闭页面" />
+        <LoadingVeil
+          open={confirming || publishing}
+          text={publishing ? '正在公示给全班' : '正在保存抽签结果'}
+          sub="请不要关闭页面"
+        />
       </div>
     </div>
   );

@@ -80,5 +80,33 @@ export const attendanceApi = {
     id: string,
     applicationId: string,
     data: { status: 'approved' | 'rejected' }
-  ) => request.post(`/classes/${classId}/attendances/${id}/leave/${applicationId}/review`, data)
+  ) => request.post(`/classes/${classId}/attendances/${id}/leave/${applicationId}/review`, data),
+
+  /**
+   * 请假申请列表
+   * GET /classes/:classId/attendances/:id/leaves
+   */
+  getLeaves: (classId: string, id: string) =>
+    request.get(`/classes/${classId}/attendances/${id}/leaves`),
+
+  /**
+   * 待审批请假列表
+   * GET /classes/:classId/attendances/pending-leaves
+   */
+  getPendingLeaves: (classId: string) =>
+    request.get(`/classes/${classId}/attendances/pending-leaves`),
+
+  /**
+   * 班级考勤报表
+   * GET /classes/:classId/attendances/report
+   */
+  getClassReport: (classId: string) =>
+    request.get(`/classes/${classId}/attendances/report`),
+
+  /**
+   * 一键催签
+   * POST /classes/:classId/attendances/:id/remind
+   */
+  remind: (classId: string, id: string) =>
+    request.post(`/classes/${classId}/attendances/${id}/remind`)
 }

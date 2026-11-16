@@ -47,6 +47,13 @@ export const homeworkApi = {
     request.post(`/classes/${classId}/homeworks/${id}/delay`, data),
 
   /**
+   * 延时申请列表（班委）
+   * GET /classes/:classId/homeworks/:id/delays
+   */
+  getDelays: (classId: string, id: string) =>
+    request.get(`/classes/${classId}/homeworks/${id}/delays`),
+
+  /**
    * 审批延时申请
    * POST /classes/:classId/homeworks/:id/delay/:applicationId/review
    */

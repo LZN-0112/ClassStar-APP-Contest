@@ -11,6 +11,8 @@ export interface UserInfo {
   id: string
   name: string
   phone: string
+  /** 绑定邮箱（未绑定为空字符串） */
+  email?: string
   avatar?: string
   backgroundImage?: string
   bio?: string
@@ -21,12 +23,15 @@ export interface UserInfo {
   className?: string
   orgType?: string
   isCommittee: boolean
+  /** 是否已绑定微信（账号与安全页使用） */
+  hasWechat?: boolean
   createdAt?: string
 }
 
 /** 登录请求参数（对应后端 LoginDto） */
 export interface LoginParams {
-  phone: string
+  /** 登录账号：手机号或邮箱 */
+  account: string
   password: string
   /** 登录方式：password / wechat */
   loginType?: 'password' | 'wechat'
@@ -44,6 +49,7 @@ export interface LoginResult {
 export interface RegisterParams {
   phone: string
   name: string
+  nickname?: string
   password: string
   confirmPassword: string
   studentId?: string
@@ -51,7 +57,10 @@ export interface RegisterParams {
 
 /** 重置密码参数（对应后端 ResetPasswordDto） */
 export interface ResetPasswordParams {
-  phone: string
+  /** 注册邮箱 */
+  email: string
+  /** 该邮箱收到的验证码 */
+  emailCode: string
   oldPassword: string
   newPassword: string
   confirmPassword: string

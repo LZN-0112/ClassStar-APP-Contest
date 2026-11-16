@@ -1,120 +1,263 @@
+// ============================================================
+// 任务看板样式
+// 1:1 对齐 front/src/pages/tools/TaskBoard.tsx
+// 内容区白底，统计卡 / 任务卡 32rpx 圆角 + soft 阴影
+// ============================================================
 .taskboard {
   min-height: 100vh;
-  background: $bg;
-  box-sizing: border-box;
+  background: $surface;
   padding-bottom: env(safe-area-inset-bottom);
+  box-sizing: border-box;
 
-  &__nav-plus {
+  &__plus {
     width: 72rpx;
     height: 72rpx;
     border-radius: 50%;
-    background: $primary;
+    background: #0062ff;
     box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
+
+    &:active {
+      opacity: 0.85;
+    }
   }
 
   &__body {
-    padding: 24rpx $page-padding-x $page-padding-bottom;
+    padding: $page-padding-top $page-padding-x calc(40rpx + env(safe-area-inset-bottom));
     display: flex;
     flex-direction: column;
-    gap: 24rpx;
+    gap: 40rpx;
+    box-sizing: border-box;
   }
 
+  /* ---------- 统计三卡 ---------- */
   &__stats {
     display: flex;
-    gap: 16rpx;
+    gap: 24rpx;
   }
 
   &__stat {
     flex: 1;
-    background: $surface;
-    border-radius: $radius-xl;
-    padding: 28rpx 16rpx;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8rpx;
+    gap: 12rpx;
+    padding: 32rpx;
+    border-radius: $radius-xl;
+    background: $surface;
     box-shadow: $shadow-md;
+    box-sizing: border-box;
+    transition: background-color 0.2s;
 
     &--active {
       background: #076cab;
+
+      .taskboard__stat-value {
+        color: #ffffff;
+      }
+
+      .taskboard__stat-label {
+        color: rgba(255, 255, 255, 0.8);
+      }
     }
   }
 
   &__stat-value {
-    font-size: $text-2xl;
+    font-family: $font-heading;
+    font-size: 56rpx;
+    line-height: 1.1;
     font-weight: 700;
     color: #076cab;
-
-    &--active {
-      color: #fff;
-    }
   }
 
   &__stat-label {
-    font-size: $text-11;
+    font-family: $font-body;
+    font-size: 22rpx;
     font-weight: 600;
-    color: $text-secondary;
-
-    &--active {
-      color: rgba(255, 255, 255, 0.8);
-    }
+    color: #6b7280;
   }
 
+  /* ---------- 任务列表 ---------- */
   &__section {
     display: flex;
     flex-direction: column;
-    gap: 16rpx;
+    gap: 10rpx;
   }
 
   &__section-title {
-    font-size: $text-13;
+    font-family: $font-body;
+    font-size: 22rpx;
     font-weight: 600;
-    color: $text-secondary;
+    color: #6b7280;
   }
 
-  &__card {
-    background: $surface;
-    border-radius: $radius-xl;
-    padding: 28rpx;
+  &__list {
     display: flex;
     flex-direction: column;
     gap: 16rpx;
+  }
+
+  &__hint {
+    display: block;
+    padding: 80rpx 0;
+    text-align: center;
+    font-size: 26rpx;
+    color: #94a3b8;
+  }
+
+  &__error {
+    padding: 80rpx 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24rpx;
+
+    .taskboard__hint {
+      padding: 0;
+    }
+  }
+
+  &__retry {
+    padding: 12rpx 32rpx;
+    border: 2rpx solid #076cab;
+    border-radius: 999rpx;
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #076cab;
+
+    &:active {
+      opacity: 0.7;
+    }
+  }
+
+  /* ---------- 任务卡片 ---------- */
+  &__row {
+    position: relative;
+    overflow: hidden;
+    border-radius: $radius-xl;
+  }
+
+  &__actions {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    z-index: 0;
+  }
+
+  &__action {
+    width: 120rpx;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    font-size: 22rpx;
+    font-weight: 600;
     box-shadow: $shadow-md;
+
+    &--done {
+      color: #076cab;
+      border-top-left-radius: $radius-xl;
+      border-bottom-left-radius: $radius-xl;
+    }
+
+    &--delete {
+      color: #ef4444;
+    }
+
+    &--first {
+      border-top-left-radius: $radius-xl;
+      border-bottom-left-radius: $radius-xl;
+    }
+
+    &--pin {
+      color: #f59e0b;
+      border-top-right-radius: $radius-xl;
+      border-bottom-right-radius: $radius-xl;
+    }
+  }
+
+  &__card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+    padding: 32rpx;
+    border-radius: $radius-xl;
+    background: #ffffff;
+    box-shadow: $shadow-md;
+    box-sizing: border-box;
+    transition: transform 0.2s ease-out;
+
+    &--dragging {
+      transition: none;
+    }
   }
 
   &__card-head {
     display: flex;
+    flex-direction: row;
     align-items: center;
     justify-content: space-between;
+    gap: 16rpx;
+  }
+
+  &__card-title-wrap {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12rpx;
+  }
+
+  &__badge {
+    flex-shrink: 0;
+    padding: 2rpx 12rpx;
+    border-radius: 999rpx;
+    font-size: 20rpx;
+    font-weight: 600;
   }
 
   &__card-title {
-    font-size: $text-base;
-    font-weight: 600;
-    color: $text-primary;
     flex: 1;
-    margin-right: 16rpx;
+    min-width: 0;
+    font-family: $font-body;
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #1e293b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__card-progress {
-    font-size: $text-base;
+    flex-shrink: 0;
+    font-family: $font-body;
+    font-size: 28rpx;
     font-weight: 700;
     color: #076cab;
   }
 
   &__card-deadline {
-    font-size: $text-11;
+    font-family: $font-body;
+    font-size: 22rpx;
     font-weight: 500;
-    color: $text-secondary;
+    color: #64748b;
+    white-space: nowrap;
   }
 
   &__track {
+    width: 100%;
     height: 12rpx;
     border-radius: 999rpx;
-    background: $gray-100;
+    background: #e2e8f0;
     overflow: hidden;
   }
 
@@ -123,33 +266,5 @@
     border-radius: 999rpx;
     background: #076cab;
     transition: width 0.3s;
-  }
-
-  &__actions {
-    display: flex;
-    gap: 12rpx;
-    padding-top: 8rpx;
-  }
-
-  &__act {
-    font-size: $text-13;
-    font-weight: 600;
-    padding: 12rpx 24rpx;
-    border-radius: $radius-md;
-
-    &--done {
-      color: #076cab;
-      background: $accent-50;
-    }
-
-    &--delete {
-      color: $danger;
-      background: #fee2e2;
-    }
-
-    &--pin {
-      color: $warning;
-      background: #fef3c7;
-    }
   }
 }

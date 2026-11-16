@@ -96,6 +96,45 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+/** 用 refreshToken 换新 accessToken；并发 401 时共享同一次刷新，避免重复请求 */
+let refreshPromise: Promise<string> | null = null;
+
+async function refreshAccessToken(): Promise<string> {
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (!refreshToken) throw new Error('登录已过期');
+
+  if (!refreshPromise) {
+    refreshPromise = api
+      .post('/auth/refresh', { refreshToken }, { timeout: 8000 })
+      .then((res) => {
+        const data = res.data?.data || res.data;
+        if (!data?.accessToken) throw new Error('登录已过期');
+        localStorage.setItem('accessToken', data.accessToken);
+        log('[api] access token refreshed');
+        return data.accessToken as string;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
+/** 登录态确实失效：清理本地凭证并回到登录页 */
+function redirectToLogin() {
+  cachedCsrfToken = null;
+  try {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('currentUser');
+  } catch {
+    // ignore
+  }
+  if (!window.location.hash.startsWith('#/login')) {
+    window.location.hash = '#/login?reason=expired';
+  }
+}
+
 api.interceptors.response.use(
   (response) => {
     log('[api] response:', response.status, response.config.method?.toUpperCase(), response.config.url);
@@ -104,6 +143,33 @@ api.interceptors.response.use(
   async (error) => {
     const message = normalizeErrorMessage(error);
     log('[api] response error:', error.response?.status, error.config?.method?.toUpperCase(), error.config?.url, message);
+
+    // accessToken 只有 2 小时：401 时先静默续期并重放原请求，续期失败才回登录页
+    if (error.response?.status === 401) {
+      const url = error.config?.url || '';
+      const isCredentialRequest =
+        /^\/auth\/(login|register|refresh|csrf-token|wechat\/bind|wechat\/login)/.test(url);
+      if (!isCredentialRequest) {
+        const config = error.config as
+          | (typeof error.config & { __authRetry?: boolean })
+          | undefined;
+        if (config && !config.__authRetry && localStorage.getItem('refreshToken')) {
+          config.__authRetry = true;
+          try {
+            const token = await refreshAccessToken();
+            config.headers.Authorization = `Bearer ${token}`;
+            return api.request(config);
+          } catch (refreshError) {
+            // 只有刷新接口本身 401 才说明登录真失效；网络/服务异常保留登录态，避免误踢
+            const refreshStatus = (refreshError as { status?: number }).status;
+            if (refreshStatus !== 401) {
+              return Promise.reject(refreshError);
+            }
+          }
+        }
+        redirectToLogin();
+      }
+    }
 
     if (
       message.includes('CSRF') &&

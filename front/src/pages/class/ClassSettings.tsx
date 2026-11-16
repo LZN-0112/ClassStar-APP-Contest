@@ -6,7 +6,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { api } from '@/lib/api';
+import { api, resolveFileUrl } from '@/lib/api';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { getOrgTypeMeta } from '@/utils/org';
 import { isOwner } from '@/utils/role';
@@ -261,7 +261,7 @@ export default function ClassSettings() {
               <div className="flex flex-row items-center gap-3">
                 <div className="flex h-[54px] w-[54px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#EBF3FF]">
                   {classInfo.logoUrl ? (
-                    <img src={classInfo.logoUrl} alt={classInfo.name} className="h-full w-full object-cover" />
+                    <img src={resolveFileUrl(classInfo.logoUrl)} alt={classInfo.name} className="h-full w-full object-cover" />
                   ) : (
                     <span className="text-[22px] font-heading font-bold text-[#0062FF]">{classInfo.name.charAt(0)}</span>
                   )}

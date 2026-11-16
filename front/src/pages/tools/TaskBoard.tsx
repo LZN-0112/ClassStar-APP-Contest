@@ -18,6 +18,9 @@ interface TaskItem {
   title: string;
   ownerId?: string;
   ownerName?: string | null;
+  creatorId?: string;
+  creatorName?: string | null;
+  assignType?: 'self' | 'all' | 'member';
   deadline: string;
   progress: number;
   priority?: number;
@@ -99,11 +102,16 @@ export default function TaskBoard() {
   /* ---------- 派生数据 / 权限 ---------- */
   const isCommittee =
     user?.roleLevel === 'owner' || user?.roleLevel === 'admin';
-  // 已完成：班委或该任务负责人；删除：仅班委；置顶：本地偏好，所有人可用
+  // 已完成：班委、发布者、负责人，或全班任务的所有成员；删除：班委或发布者；置顶：本地偏好
+  const canDelete = (task: TaskItem) =>
+    isCommittee || (!!user?.id && task.creatorId === user.id);
   const canComplete = (task: TaskItem) =>
-    task.status !== 'done' && (isCommittee || (!!user?.id && task.ownerId === user.id));
+    task.status !== 'done' &&
+    (isCommittee ||
+      task.assignType === 'all' ||
+      (!!user?.id && (task.ownerId === user.id || task.creatorId === user.id)));
   const getActionWidth = (task: TaskItem) =>
-    60 + (canComplete(task) ? 60 : 0) + (isCommittee ? 60 : 0);
+    60 + (canComplete(task) ? 60 : 0) + (canDelete(task) ? 60 : 0);
 
   const displayTasks = (() => {
     let list: TaskItem[];
@@ -202,6 +210,12 @@ export default function TaskBoard() {
     activeId.current = id;
     setSwipedId((prev) => (prev !== id ? null : prev));
 
+    // 记录手势开始时卡片已展开的距离，向右拖动时据此收回
+    const startEl = document.getElementById(`tc-${id}`);
+    const startRect = startEl?.getBoundingClientRect();
+    const startParentRect = startEl?.parentElement?.getBoundingClientRect();
+    const startOffset = startRect && startParentRect ? startParentRect.left - startRect.left : 0;
+
     const handleMove = (e: MouseEvent | TouchEvent) => {
       if (!activeId.current) return;
       const { x, y } = getPoint(e);
@@ -216,9 +230,8 @@ export default function TaskBoard() {
       if (!el) return;
       el.style.transition = 'none';
       const dragLimit = Math.max(activeWidth.current + 20, SWIPE_THRESHOLD + 40);
-      if (dx <= 0 && dx >= -dragLimit) {
-        el.style.transform = `translateX(${dx}px)`;
-      }
+      // 在 0 ~ -dragLimit 之间双向拖动：左滑展开，右滑收回
+      el.style.transform = `translateX(${Math.min(0, Math.max(-dragLimit, -startOffset + dx))}px)`;
       if ('preventDefault' in e) e.preventDefault();
     };
 
@@ -314,7 +327,7 @@ export default function TaskBoard() {
         <button
           type="button"
           onClick={() => navigate('/publish-task')}
-          className="flex h-[36px] w-[36px] items-center justify-center rounded-full bg-[#0062FF] shadow-[0px_2px_8px_0px_#0000001A]"
+          className="flex h-[36px] w-[36px] items-center justify-center rounded-full border border-white/40 bg-[linear-gradient(150deg,#4D9BFF_0%,#0B66FF_58%,#0043BC_100%)] shadow-[0px_6px_16px_rgba(0,60,180,0.35)] active:scale-95"
         >
           <Plus className="h-[20px] w-[20px] text-white" strokeWidth={2.5} />
         </button>
@@ -328,13 +341,15 @@ export default function TaskBoard() {
               key={stat.label}
               type="button"
               onClick={() => setFilter((prev) => (prev === stat.key ? null : stat.key))}
-              className={`box-border flex flex-col items-center gap-[6px] rounded-2xl p-4 shadow-soft transition-all ${
-                filter === stat.key ? 'bg-[#076CAB]' : 'bg-white'
+              className={`box-border flex flex-col items-center gap-[6px] rounded-2xl p-4 transition-all ${
+                filter === stat.key
+                  ? 'bg-[linear-gradient(158deg,#2E7DFF_0%,#0B4FD6_100%)] shadow-[0_8px_20px_rgba(11,79,214,0.30)]'
+                  : 'bg-white shadow-soft'
               }`}
             >
               <div
                 className={`font-heading text-[28px] font-bold ${
-                  filter === stat.key ? 'text-white' : 'text-[#076CAB]'
+                  filter === stat.key ? 'text-white' : 'text-[#0062FF]'
                 }`}
               >
                 {stat.value}
@@ -367,7 +382,7 @@ export default function TaskBoard() {
                     setLoading(true);
                     fetchTasks();
                   }}
-                  className="rounded-full border border-[#076CAB] px-4 py-[6px] text-[12px] font-semibold text-[#076CAB] active:opacity-70"
+                  className="rounded-full border border-[#0062FF] px-4 py-[6px] text-[12px] font-semibold text-[#0062FF] active:opacity-70"
                 >
                   重新加载
                 </button>
@@ -384,18 +399,18 @@ export default function TaskBoard() {
 
                 return (
                   <div key={task.id} className="relative overflow-hidden rounded-2xl">
-                    {/* 操作按钮（底层）：删除仅班委、已完成仅班委或负责人可见 */}
+                    {/* 操作按钮（底层）：删除仅班委或发布者、已完成仅相关成员可见 */}
                     <div className="absolute inset-y-0 right-0 flex h-full">
                       {canComplete(task) && (
                         <button
                           type="button"
                           onClick={() => handleComplete(task.id)}
-                          className="flex h-full w-[60px] items-center justify-center rounded-l-2xl bg-white text-[11px] font-semibold text-[#076CAB] shadow-soft"
+                          className="flex h-full w-[60px] items-center justify-center rounded-l-2xl bg-white text-[11px] font-semibold text-[#0062FF] shadow-soft"
                         >
                           已完成
                         </button>
                       )}
-                      {isCommittee && (
+                      {canDelete(task) && (
                         <button
                           type="button"
                           onClick={() => requestDelete(task)}
@@ -437,20 +452,30 @@ export default function TaskBoard() {
                               {priorityMeta.label}
                             </span>
                           )}
+                          {task.assignType === 'all' && (
+                            <span className="shrink-0 rounded-full bg-[#EFF6FF] px-[6px] py-[1px] text-[10px] font-semibold text-[#0062FF]">
+                              全班
+                            </span>
+                          )}
+                          {task.assignType === 'self' && (
+                            <span className="shrink-0 rounded-full bg-[#F1F5F9] px-[6px] py-[1px] text-[10px] font-semibold text-[#64748B]">
+                              仅自己
+                            </span>
+                          )}
                           <div className="truncate text-[14px]/[normal] box-border text-left font-body font-semibold text-[#1E293B]">
                             {task.title}
                           </div>
                         </div>
-                        <div className="shrink-0 text-[14px]/[normal] box-border text-left font-body font-bold text-[#076CAB] [white-space:nowrap]">
+                        <div className="shrink-0 text-[14px]/[normal] box-border text-left font-body font-bold text-[#0062FF] [white-space:nowrap]">
                           {task.progress}%
                         </div>
                       </div>
                       <div className="text-[11px]/[normal] box-border text-left font-body font-medium text-[#64748B] [white-space:nowrap]">
                         截止：{deadlineStr}
                       </div>
-                      <div className="box-border flex h-[6px] w-full flex-col justify-start rounded-full bg-[#E2E8F0]">
+                      <div className="box-border flex h-[6px] w-full flex-col justify-start overflow-hidden rounded-full bg-[#E8F0FF]">
                         <div
-                          className="box-border h-[6px] shrink-0 rounded-full bg-[#076CAB] transition-[width] duration-300"
+                          className="box-border h-[6px] shrink-0 rounded-full bg-[linear-gradient(90deg,#6EA8FF_0%,#2E7DFF_45%,#0B4FD6_100%)] transition-[width] duration-300"
                           style={{ width: `${task.progress}%` }}
                         />
                       </div>

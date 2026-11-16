@@ -1,69 +1,280 @@
 // ============================================================
-// 隐私设置
-// 结构参照 front PrivacySettings.tsx（以 Switch 绑定真实配置）
+// 隐私设置（1:1 对齐 front/src/pages/settings/PrivacySettings.tsx）
+// 结构：SettingsHeader + 可见范围卡片 + 保存按钮 + 选择底部抽屉
 // ============================================================
+
 .priv {
   min-height: 100vh;
-  background: $bg;
+  background-color: #ffffff;
   box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom);
 
   &__body {
-    padding: $page-padding-top $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+    padding: 32rpx 40rpx 40rpx;
+    box-sizing: border-box;
   }
 
   &__card {
-    width: 100%;
-    box-sizing: border-box;
-    background: $surface;
-    border: 1rpx solid $border;
-    border-radius: $radius-lg;
-    box-shadow: $shadow-md;
-    padding: 24rpx;
     display: flex;
     flex-direction: column;
+    gap: 8rpx;
+    width: 100%;
+    padding: 24rpx;
+    border-radius: 16rpx;
+    background-color: #ffffff;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
   }
 
   &__row {
     display: flex;
+    flex-direction: row;
     align-items: center;
-    gap: $spacing-3;
+    gap: 24rpx;
+    width: 100%;
     height: 144rpx;
     padding: 0 24rpx;
+    border-radius: 16rpx;
     box-sizing: border-box;
+
+    &:active {
+      background-color: #f8fafc;
+    }
   }
 
   &__row-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 80rpx;
     height: 80rpx;
-    border-radius: $radius-lg;
-    background: $accent-50;
+    flex-shrink: 0;
+    border-radius: 16rpx;
+    background-color: rgba(0, 98, 255, 0.05);
+  }
+
+  &__row-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 8rpx;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+  }
+
+  &__row-title {
+    font-family: $font-body;
+    font-size: 28rpx;
+    font-weight: $font-semibold;
+    line-height: normal;
+    color: #1a1a1a;
+    white-space: nowrap;
+  }
+
+  &__row-subtitle {
+    font-family: $font-body;
+    font-size: 22rpx;
+    font-weight: $font-medium;
+    line-height: normal;
+    color: #4b5563;
+    white-space: nowrap;
+  }
+
+  &__tag {
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    height: 52rpx;
+    padding: 0 20rpx;
+    border-radius: 999rpx;
+    box-sizing: border-box;
+
+    &--all {
+      background-color: #e5e7eb;
+    }
+
+    &--class {
+      background-color: #dbeafe;
+    }
+
+    &--committee {
+      background-color: #93c5fd;
+    }
+
+    &--self {
+      background-color: #60a5fa;
+    }
   }
 
-  &__row-info {
-    flex: 1;
-    min-width: 0;
+  &__tag-text {
+    font-family: $font-body;
+    font-size: 22rpx;
+    font-weight: $font-semibold;
+    line-height: normal;
+    color: #374151;
+    white-space: nowrap;
+
+    .priv__tag--class & {
+      color: #1e3a8a;
+    }
+
+    .priv__tag--committee & {
+      color: #1e40af;
+    }
+
+    .priv__tag--self & {
+      color: #ffffff;
+    }
+  }
+
+  &__submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 104rpx;
+    border-radius: 16rpx;
+    background-image: linear-gradient(180deg, #0062ff 0%, #3b82f6 100%);
+    box-shadow: 0 12rpx 40rpx rgba(0, 98, 255, 0.2);
+    box-sizing: border-box;
+
+    &--disabled {
+      opacity: 0.6;
+    }
+
+    &:active {
+      opacity: 0.9;
+    }
+  }
+
+  &__submit-text {
+    font-family: $font-body;
+    font-size: 32rpx;
+    font-weight: $font-semibold;
+    line-height: normal;
+    color: #ffffff;
+  }
+
+  // 可见范围底部抽屉
+  &__sheet {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 110;
+  }
+
+  &__sheet-mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(15, 23, 42, 0.42);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    animation: priv-fade 0.24s ease-out both;
+  }
+
+  &__sheet-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
     display: flex;
     flex-direction: column;
-    gap: 8rpx;
+    max-height: 70vh;
+    border-radius: 48rpx 48rpx 0 0;
+    background-color: #ffffff;
+    box-shadow: 0 -28rpx 88rpx rgba(15, 23, 42, 0.16);
+    animation: priv-slide-up 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+    overflow: hidden;
   }
 
-  &__row-title {
-    font-size: $text-base;
+  &__sheet-handle-wrap {
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 20rpx 0 8rpx;
+  }
+
+  &__sheet-handle {
+    width: 76rpx;
+    height: 8rpx;
+    border-radius: 999rpx;
+    background-color: #e2e8f0;
+  }
+
+  &__sheet-header {
+    flex-shrink: 0;
+    padding: 12rpx 40rpx 24rpx;
+  }
+
+  &__sheet-title {
+    font-family: $font-heading;
+    font-size: 34rpx;
     font-weight: $font-semibold;
-    color: $text-primary;
+    letter-spacing: 0.4rpx;
+    line-height: normal;
+    color: #1a1a1a;
   }
 
-  &__row-subtitle {
-    font-size: $text-11;
-    color: $text-secondary;
+  &__sheet-list {
+    display: flex;
+    flex-direction: column;
+    padding: 0 16rpx calc(32rpx + env(safe-area-inset-bottom));
+    overflow-y: auto;
   }
 
-  &__switch {
-    transform: scale(0.85);
+  &__sheet-option {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 100rpx;
+    padding: 0 24rpx;
+    border-radius: 28rpx;
+    box-sizing: border-box;
+
+    &:active {
+      background-color: #f7f9fc;
+    }
+  }
+
+  &__sheet-option-text {
+    font-family: $font-body;
+    font-size: 30rpx;
+    font-weight: $font-normal;
+    line-height: normal;
+    color: #1a1a1a;
+
+    &--selected {
+      font-weight: $font-semibold;
+      color: #0062ff;
+    }
+  }
+}
+
+@keyframes priv-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes priv-slide-up {
+  from {
+    transform: translate3d(0, 100%, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
   }
 }

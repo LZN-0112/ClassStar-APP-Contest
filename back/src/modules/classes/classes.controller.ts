@@ -8,8 +8,12 @@ import {
   Param,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { ClassesService } from './classes.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
@@ -75,6 +79,19 @@ export class ClassesController {
     @CurrentUser('userId') userId: string,
   ) {
     return this.classesService.updateClass(id, dto, userId);
+  }
+
+  @Post(':id/logo')
+  @AdminOrOwner()
+  @ApiOperation({ summary: '上传/更换班级头像（仅群主或管理员）' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  uploadClassLogo(
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.classesService.uploadClassLogo(id, file, userId);
   }
 
   @Get(':id/members')

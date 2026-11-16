@@ -131,13 +131,13 @@ export default function ScreenshotCheck() {
             />
             {uploading ? (
               <>
-                <Loader2 className="h-[28px] w-[28px] animate-spin text-[#076CAB]" />
+                <Loader2 className="h-[28px] w-[28px] animate-spin text-[#0062FF]" />
                 <div className="text-[14px]/[normal] font-body font-semibold text-[#1E293B]">识别中...</div>
               </>
             ) : (
               <>
                 <div className="box-border flex h-[56px] w-[56px] flex-col items-center justify-center rounded-full bg-[#DBEAFE]">
-                  <Upload className="h-[28px] w-[28px] text-[#076CAB]" strokeWidth={2} />
+                  <Upload className="h-[28px] w-[28px] text-[#0062FF]" strokeWidth={2} />
                 </div>
                 <div className="text-[14px]/[normal] font-body font-semibold text-[#1E293B]">点击上传截图</div>
                 <div className="text-[11px]/[normal] font-caption font-medium text-[#64748B]">支持作业文件夹/压缩包截图</div>
@@ -214,7 +214,7 @@ export default function ScreenshotCheck() {
                       onClick={() => toggleSelected(student.studentId)}
                       className="flex flex-1 flex-row items-center gap-3"
                     >
-                      <div className="box-border flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-full bg-[#076CAB]">
+                      <div className="box-border flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-full bg-[#0062FF]">
                         <div className="text-[12px]/[normal] font-body font-semibold text-white">{student.studentId.charAt(0)}</div>
                       </div>
                       <div className="text-[14px]/[normal] font-body font-medium text-[#1A1A1A]">{student.studentId}</div>

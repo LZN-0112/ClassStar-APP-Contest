@@ -1,46 +1,58 @@
 .actreg {
   min-height: 100vh;
-  background: $bg;
-  box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom);
+  background: $surface;
 
   &__body {
-    padding: 0 $page-padding-x;
-    padding-top: 40rpx;
+    padding: $page-padding-top $page-padding-x calc(40rpx + env(safe-area-inset-bottom));
     display: flex;
     flex-direction: column;
-    gap: 24rpx;
+    gap: 40rpx;
+    box-sizing: border-box;
   }
 
   &__info {
+    width: 100%;
     padding: 32rpx;
-    background: $accent-50;
-    border-radius: $radius-xl;
     display: flex;
     flex-direction: column;
-    gap: 8rpx;
+    align-items: flex-start;
+    gap: 16rpx;
+    background: #ebf4ff;
+    border-radius: $radius-xl;
+    box-sizing: border-box;
   }
 
   &__info-title {
     font-size: $text-lg;
-    font-weight: 700;
+    font-weight: $font-bold;
     color: $text-primary;
+    white-space: nowrap;
   }
 
   &__info-meta {
-    font-size: $text-sm;
-    font-weight: 500;
+    font-size: $text-base;
+    font-weight: $font-medium;
     color: $text-secondary;
+    white-space: nowrap;
+  }
+
+  &__loading {
+    padding: 32rpx 0;
+    text-align: center;
+    font-size: $text-base;
+    color: #94a3b8;
   }
 
   &__field {
+    width: 100%;
     height: 112rpx;
     padding: 0 32rpx;
     background: $surface;
-    border: 1rpx solid $border;
-    border-radius: $radius-lg;
+    border: 1rpx solid #e5e7eb;
+    border-radius: $radius-md;
     display: flex;
     align-items: center;
+    box-sizing: border-box;
 
     &--area {
       height: 240rpx;
@@ -52,7 +64,7 @@
   &__input {
     width: 100%;
     font-size: $text-base;
-    font-weight: 500;
+    font-weight: $font-medium;
     color: $text-primary;
   }
 
@@ -60,15 +72,34 @@
     width: 100%;
     height: 100%;
     font-size: $text-base;
-    font-weight: 500;
+    font-weight: $font-medium;
     color: $text-primary;
   }
 
   &__placeholder {
-    color: $text-weak;
+    color: $text-secondary;
   }
 
   &__spacer {
     height: 40rpx;
+  }
+
+  &__submit {
+    width: 100%;
+    height: 104rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: $primary;
+    border-radius: $radius-md;
+    box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $text-inverse;
+    box-sizing: border-box;
+
+    &--disabled {
+      opacity: 0.7;
+    }
   }
 }

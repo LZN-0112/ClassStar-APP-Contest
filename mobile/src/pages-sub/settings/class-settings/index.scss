@@ -1,126 +1,786 @@
 // ============================================================
 // 班级设置
-// 结构参照 front ClassSettings.tsx
+// 1:1 对齐 front/src/pages/class/ClassSettings.tsx
+// 页面底色 #F7F8FA / 卡片 32rpx 圆角 + soft 阴影
 // ============================================================
-.cset {
+.classset {
   min-height: 100vh;
-  background: $bg;
+  background-color: #f7f8fa;
   box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom);
 
   &__body {
-    padding: $page-padding-top $page-padding-x $page-padding-bottom;
     display: flex;
     flex-direction: column;
-    gap: $spacing-4;
+    gap: 32rpx;
+    padding: 0 40rpx 48rpx;
+    box-sizing: border-box;
   }
 
-  &__group {
+  &__spacer {
+    width: 100%;
+    height: 16rpx;
+    flex-shrink: 0;
+  }
+
+  &__header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+  }
+
+  &__back {
+    width: 64rpx;
+    height: 64rpx;
+    margin-left: -16rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__header-title {
+    font-family: $font-heading;
+    font-size: 40rpx;
+    line-height: 1.2;
+    font-weight: $font-bold;
+    color: $text-primary;
+  }
+
+  // ---------- 空状态 / 失败 ----------
+  &__empty {
     display: flex;
     flex-direction: column;
-    gap: $spacing-2;
+    align-items: center;
+    gap: 24rpx;
+    padding: 128rpx 0;
   }
 
-  &__group-title {
-    font-size: $text-11;
-    font-weight: $font-semibold;
+  &__empty-icon {
+    width: 128rpx;
+    height: 128rpx;
+    border-radius: $radius-full;
+    background-color: #ebf3ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__empty-text {
+    font-size: $text-base;
     color: $text-secondary;
   }
 
+  &__primary-btn {
+    padding: 20rpx 40rpx;
+    border-radius: $radius-md;
+    background-color: $primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:active {
+      opacity: 0.8;
+    }
+  }
+
+  &__primary-btn-text {
+    font-size: $text-13;
+    font-weight: $font-semibold;
+    color: $text-inverse;
+  }
+
+  // ---------- 骨架屏 ----------
+  &__skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__skeleton-block {
+    width: 100%;
+    border-radius: $radius-xl;
+    background-color: $surface;
+    box-shadow: $shadow-md;
+    animation: classset-pulse 1.6s ease-in-out infinite;
+
+    &--sm {
+      height: 380rpx;
+    }
+
+    &--lg {
+      height: 460rpx;
+    }
+  }
+
+  // ---------- 卡片 ----------
   &__card {
     width: 100%;
     box-sizing: border-box;
-    background: $surface;
-    border: 1rpx solid $border;
-    border-radius: $radius-lg;
-    box-shadow: $shadow-md;
-    padding: $spacing-2 $card-padding;
     display: flex;
     flex-direction: column;
+    gap: 32rpx;
+    padding: 32rpx;
+    border-radius: $radius-xl;
+    background-color: $surface;
+    box-shadow: $shadow-md;
+  }
 
-    &--danger {
-      border-color: rgba(185, 28, 28, 0.12);
-      background: #fef2f2;
-      box-shadow: none;
+  // ---------- 班级信息 ----------
+  &__identity {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 24rpx;
+  }
+
+  &__logo {
+    width: 108rpx;
+    height: 108rpx;
+    border-radius: $radius-lg;
+    background-color: #ebf3ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  &__logo-img {
+    width: 100%;
+    height: 100%;
+  }
+
+  &__logo-text {
+    font-family: $font-heading;
+    font-size: 44rpx;
+    font-weight: $font-bold;
+    color: $primary;
+  }
+
+  &__identity-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__name {
+    font-family: $font-heading;
+    font-size: 36rpx;
+    font-weight: $font-bold;
+    color: $text-primary;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__identity-sub {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12rpx;
+    margin-top: 8rpx;
+  }
+
+  &__badge {
+    padding: 4rpx 12rpx;
+    border-radius: $radius-sm;
+    background-color: #ebf3ff;
+    flex-shrink: 0;
+  }
+
+  &__badge-text {
+    font-size: $text-xs;
+    font-weight: $font-medium;
+    color: $primary;
+  }
+
+  &__identity-desc {
+    font-size: $text-sm;
+    color: $text-weak;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__identity-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16rpx;
+    flex-shrink: 0;
+  }
+
+  &__icon-btn {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: $radius-lg;
+    background-color: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:active {
+      transform: scale(0.95);
     }
+
+    &--blue {
+      background-color: #ebf3ff;
+    }
+  }
+
+  // ---------- 班级码 ----------
+  &__code {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24rpx 28rpx;
+    border-radius: $radius-lg;
+    background-color: #f7f8fa;
+  }
+
+  &__code-main {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__code-label {
+    font-size: $text-11;
+    color: #9ca3af;
+  }
+
+  &__code-value {
+    margin-top: 4rpx;
+    font-family: $font-data;
+    font-size: 36rpx;
+    font-weight: $font-bold;
+    letter-spacing: 2rpx;
+    color: $primary;
+  }
+
+  &__copy {
+    height: 72rpx;
+    padding: 0 24rpx;
+    border-radius: $radius-md;
+    background-color: $surface;
+    box-shadow: $shadow-sm;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12rpx;
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  &__copy-text {
+    font-size: $text-sm;
+    font-weight: $font-medium;
+    color: $primary;
+  }
+
+  // ---------- 信息四格 ----------
+  &__grid {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    column-gap: 32rpx;
+    row-gap: 24rpx;
+  }
+
+  &__grid-item {
+    width: calc((100% - 32rpx) / 2);
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
+  }
+
+  &__grid-label {
+    font-size: $text-11;
+    color: #9ca3af;
+  }
+
+  &__grid-value {
+    font-size: $text-13;
+    font-weight: $font-medium;
+    color: $text-primary;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  // ---------- 公告 ----------
+  &__card--announcement {
+    gap: 16rpx;
+  }
+
+  &__announce-head {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+  }
+
+  &__announce-title-wrap {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16rpx;
+    min-width: 0;
+  }
+
+  &__announce-icon {
+    width: 56rpx;
+    height: 56rpx;
+    border-radius: $radius-md;
+    background-color: #fff7ed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__announce-title {
+    font-family: $font-heading;
+    font-size: $text-base;
+    font-weight: $font-semibold;
+    color: $text-primary;
+  }
+
+  &__announce-tag {
+    padding: 4rpx 16rpx;
+    border-radius: $radius-full;
+    background-color: #fff7ed;
+    flex-shrink: 0;
+  }
+
+  &__announce-tag-text {
+    font-size: $text-xs;
+    color: #c2410c;
+  }
+
+  &__announce-text {
+    font-size: $text-13;
+    line-height: $leading-relaxed;
+    color: $text-secondary;
+    white-space: pre-wrap;
+  }
+
+  // ---------- 管理入口 ----------
+  &__card--manage {
+    gap: 0;
+  }
+
+  &__section-title {
+    font-family: $font-heading;
+    font-size: $text-base;
+    font-weight: $font-semibold;
+    color: $text-primary;
+    margin-bottom: 8rpx;
   }
 
   &__row {
     display: flex;
+    flex-direction: row;
     align-items: center;
-    gap: $spacing-3;
-    min-height: 104rpx;
-    padding: $spacing-2 0;
+    gap: 24rpx;
+    padding: 24rpx 0;
+    width: 100%;
     box-sizing: border-box;
-    border-bottom: 1rpx solid $border-light;
 
-    &:last-child {
-      border-bottom: none;
+    &:active {
+      opacity: 0.7;
+    }
+
+    &--line {
+      border-bottom: 1rpx solid $border-light;
+    }
+
+    &--plain {
+      padding: 16rpx 0;
     }
   }
 
   &__row-icon {
-    width: 80rpx;
-    height: 80rpx;
+    width: 72rpx;
+    height: 72rpx;
     border-radius: $radius-lg;
-    background: $accent-50;
+    background-color: #f3f4f6;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
 
     &--danger {
-      background: #fee2e2;
+      background-color: #fef2f2;
     }
   }
 
-  &__row-info {
+  &__row-main {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 8rpx;
   }
 
   &__row-title {
     font-size: $text-base;
-    font-weight: $font-semibold;
+    font-weight: $font-medium;
     color: $text-primary;
 
     &--danger {
-      color: #b91c1c;
+      color: #dc2626;
     }
   }
 
   &__row-subtitle {
+    margin-top: 4rpx;
     font-size: $text-11;
-    color: $text-secondary;
+    color: #9ca3af;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
 
-    &--danger {
-      color: #b91c1c;
+  // ---------- 邀请 ----------
+  &__invite {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24rpx;
+    padding: 32rpx;
+    border-radius: $radius-xl;
+    background-color: #ebf3ff;
+  }
+
+  &__invite-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__invite-title {
+    font-family: $font-heading;
+    font-size: $text-base;
+    font-weight: $font-semibold;
+    color: $text-primary;
+  }
+
+  &__invite-desc {
+    display: block;
+    margin-top: 8rpx;
+    font-size: $text-11;
+    color: $text-weak;
+  }
+
+  &__invite-btn {
+    height: 72rpx;
+    padding: 0 24rpx;
+    border-radius: $radius-md;
+    background-color: $primary;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8rpx;
+    flex-shrink: 0;
+
+    &:active {
+      transform: scale(0.95);
     }
   }
 
-  &__switch {
-    transform: scale(0.85);
+  &__invite-btn-text {
+    font-size: $text-sm;
+    font-weight: $font-medium;
+    color: $text-inverse;
   }
 
-  &__save {
-    width: 100%;
-    height: 104rpx;
+  // ---------- 账号与班级 ----------
+  &__card--account {
+    gap: 0;
+  }
+
+  &__owner {
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+    padding: 16rpx 0;
+  }
+
+  &__owner-tip {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 24rpx;
+    padding: 24rpx;
     border-radius: $radius-lg;
-    background: linear-gradient(180deg, #0062ff 0%, #3b82f6 100%);
-    box-shadow: 0 8rpx 32rpx 0 rgba(0, 98, 255, 0.2);
+    background-color: #fff7ed;
+  }
+
+  &__owner-tip-text {
+    flex: 1;
+    font-size: $text-sm;
+    line-height: $leading-relaxed;
+    color: #9a3412;
+  }
+
+  &__owner-btn {
+    width: 100%;
+    height: 88rpx;
+    border-radius: $radius-lg;
+    background-color: #f3f4f6;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: $spacing-6;
-    box-sizing: border-box;
+
+    &:active {
+      opacity: 0.8;
+    }
   }
 
-  &__save-text {
-    font-size: $text-lg;
+  &__owner-btn-text {
+    font-size: $text-base;
+    font-weight: $font-medium;
+    color: $text-secondary;
+  }
+
+  &__divider {
+    width: 100%;
+    height: 1rpx;
+    background-color: #f3f4f6;
+    margin: 8rpx 0;
+  }
+
+  &__footer-note {
+    text-align: center;
+    font-size: $text-11;
+    color: #9ca3af;
+  }
+
+  // ---------- 弹层表单 ----------
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+    padding-bottom: 8rpx;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+  }
+
+  &__field-row {
+    display: flex;
+    flex-direction: row;
+    gap: 24rpx;
+  }
+
+  &__field--half {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__label {
+    font-size: $text-sm;
+    color: $text-weak;
+  }
+
+  &__label-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__label-strong {
+    font-weight: $font-semibold;
+    color: #dc2626;
+  }
+
+  &__counter {
+    font-size: $text-xs;
+    color: #9ca3af;
+  }
+
+  &__input {
+    width: 100%;
+    height: 88rpx;
+    box-sizing: border-box;
+    padding: 0 28rpx;
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+    background-color: $surface;
+    font-size: $text-base;
+    color: $text-primary;
+
+    &--danger {
+      border-color: $border;
+    }
+  }
+
+  &__textarea {
+    width: 100%;
+    min-height: 184rpx;
+    box-sizing: border-box;
+    padding: 24rpx;
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+    background-color: $surface;
+    font-size: $text-13;
+    line-height: $leading-relaxed;
+    color: $text-primary;
+  }
+
+  &__placeholder {
+    color: #9ca3af;
+  }
+
+  &__dissolve-desc {
+    font-size: $text-13;
+    line-height: $leading-relaxed;
+    color: $text-secondary;
+  }
+
+  &__sheet-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 24rpx;
+  }
+
+  &__sheet-btn {
+    flex: 1;
+    height: 96rpx;
+    border-radius: 28rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--ghost {
+      background-color: #f2f5f9;
+
+      &:active {
+        opacity: 0.8;
+      }
+    }
+
+    &--primary {
+      background: linear-gradient(180deg, #2e7dff 0%, #0062ff 100%);
+      box-shadow: 0 20rpx 40rpx 0 rgba(0, 98, 255, 0.24);
+
+      &:active {
+        opacity: 0.9;
+      }
+    }
+
+    &--danger {
+      background: linear-gradient(180deg, #f76b6b 0%, #e5484d 100%);
+      box-shadow: 0 20rpx 40rpx 0 rgba(229, 72, 77, 0.24);
+
+      &:active {
+        opacity: 0.9;
+      }
+    }
+
+    &--disabled {
+      opacity: 0.5;
+    }
+  }
+
+  &__sheet-btn-text {
+    font-size: 30rpx;
     font-weight: $font-semibold;
     color: $text-inverse;
+
+    &--ghost {
+      color: #475569;
+    }
+  }
+
+  // ---------- 二维码 ----------
+  &__qr {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40rpx;
+    padding-bottom: 8rpx;
+  }
+
+  &__qr-img {
+    width: 440rpx;
+    height: 440rpx;
+    border-radius: $radius-lg;
+    border: 4rpx solid #ebf3ff;
+  }
+
+  &__qr-empty {
+    width: 440rpx;
+    height: 440rpx;
+    border-radius: $radius-lg;
+    background-color: #f3f4f6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+  }
+
+  &__qr-empty-text {
+    font-size: $text-13;
+    color: #9ca3af;
+  }
+
+  &__qr-gen {
+    margin-top: 8rpx;
+    height: 64rpx;
+    padding: 0 32rpx;
+    border-radius: $radius-md;
+    background-color: $primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:active {
+      opacity: 0.8;
+    }
+  }
+
+  &__qr-gen-text {
+    font-size: $text-sm;
+    font-weight: $font-semibold;
+    color: $text-inverse;
+  }
+
+  &__qr-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8rpx;
+  }
+
+  &__qr-code {
+    font-size: $text-13;
+    font-weight: $font-medium;
+    color: $text-weak;
+  }
+
+  &__qr-tip {
+    font-size: $text-11;
+    color: #9ca3af;
+  }
+}
+
+@keyframes classset-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
   }
 }

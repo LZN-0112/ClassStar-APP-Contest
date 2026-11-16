@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
+import SelectSheet from '@/components/ui/SelectSheet';
 import {
   AlertCircle,
   Activity,
@@ -247,34 +248,40 @@ export default function ErrorDashboard() {
               <h3 className="text-[14px] font-semibold text-[#1A1A1A]">筛选错误日志</h3>
             </div>
             <div className="flex gap-2">
-              <select
+              <SelectSheet
+                variant="compact"
                 value={filterSeverity}
-                onChange={(e) => {
-                  setFilterSeverity(e.target.value);
+                onChange={(value) => {
+                  setFilterSeverity(value);
                   setPage(1);
                 }}
-                className="flex-1 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2 text-[13px] text-[#1A1A1A] outline-none focus:border-[#0062FF]"
-              >
-                <option value="">全部严重程度</option>
-                <option value="critical">致命</option>
-                <option value="major">严重</option>
-                <option value="minor">一般</option>
-                <option value="info">提示</option>
-              </select>
-              <select
+                placeholder="全部严重程度"
+                title="严重程度"
+                options={[
+                  { value: '', label: '全部严重程度' },
+                  { value: 'critical', label: '致命' },
+                  { value: 'major', label: '严重' },
+                  { value: 'minor', label: '一般' },
+                  { value: 'info', label: '提示' },
+                ]}
+              />
+              <SelectSheet
+                variant="compact"
                 value={filterStatus}
-                onChange={(e) => {
-                  setFilterStatus(e.target.value);
+                onChange={(value) => {
+                  setFilterStatus(value);
                   setPage(1);
                 }}
-                className="flex-1 rounded-xl border border-[#E5E7EB] bg-white px-3 py-2 text-[13px] text-[#1A1A1A] outline-none focus:border-[#0062FF]"
-              >
-                <option value="">全部状态</option>
-                <option value="new">新建</option>
-                <option value="processing">处理中</option>
-                <option value="resolved">已解决</option>
-                <option value="closed">已关闭</option>
-              </select>
+                placeholder="全部状态"
+                title="处理状态"
+                options={[
+                  { value: '', label: '全部状态' },
+                  { value: 'new', label: '新建' },
+                  { value: 'processing', label: '处理中' },
+                  { value: 'resolved', label: '已解决' },
+                  { value: 'closed', label: '已关闭' },
+                ]}
+              />
             </div>
           </div>
 

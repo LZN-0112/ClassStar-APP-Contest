@@ -1,11 +1,23 @@
 import BackButton from '@/components/navigation/BackButton';
 import PhoneFrame from '@/components/layout/PhoneFrame';
+import StatusBar from '@/components/layout/StatusBar';
 import { useNavigate } from 'react-router-dom';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { FileSpreadsheet, Database, MessageCircle, MessageSquare, Download } from 'lucide-react';
+import {
+  Check,
+  ChevronRight,
+  Database,
+  Download,
+  FileSpreadsheet,
+  Loader2,
+  MessageCircle,
+  MessageSquare,
+  UploadCloud,
+  X,
+} from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -156,181 +168,185 @@ export default function ImportStudents() {
   // ==================== Step: SELECT METHOD ====================
   if (step === 'select') {
     return (
-      <PhoneFrame>
-        <div className="box-border w-full h-[62px] shrink-0 flex flex-row gap-0 p-[12px_24px_0px_24px] justify-between items-center bg-[#FFFFFF]">
-          <div className="text-[14px]/[normal] box-border text-[#1A1A1A] font-data font-semibold text-left [white-space:nowrap]">9:41</div>
-          <div className="text-[14px]/[normal] box-border text-[#1A1A1A] font-data font-normal text-left [white-space:nowrap]">100%</div>
-        </div>
-        <div className="box-border w-full [flex:1_1_0] flex flex-col gap-4 p-[0px_24px] justify-start items-start">
-          <div className="box-border w-full h-[60px] shrink-0 flex flex-row gap-0 justify-start items-start"></div>
-          <div className="flex flex-row items-center gap-0 w-full">
-            <BackButton className="-ml-2" />
-            <div className="text-[20px]/[normal] text-[#1A1A1A] font-heading font-bold text-left">导入学生名单</div>
-          </div>
-          <div className="text-[14px]/[normal] box-border text-[#4B5563] font-body font-normal text-left [white-space:nowrap] mb-2">
-            选择一种方式快速导入班级成员
-          </div>
+      <PhoneFrame reserveSafeAreaTop safeAreaTopClassName="bg-[#F7F8FA]">
+        <StatusBar />
+        <div className="box-border w-full flex-1 flex flex-col bg-[#F7F8FA]">
+          <div className="flex w-full flex-col gap-4 px-5 pb-8">
+            <div className="w-full h-2 shrink-0" />
 
-          {/* Excel 导入 */}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="box-border w-full h-[64px] shrink-0 flex flex-row gap-3 p-[16px] justify-between items-center bg-[#FFFFFF] border border-[#E5E7EB] rounded-xl active:bg-[#F9FAFB] transition-colors"
-          >
-            <div className="flex flex-row gap-3 items-center">
-              <FileSpreadsheet className="h-6 w-6 text-[#0062FF]" strokeWidth={2} />
-              <div className="flex flex-col gap-0.5">
-                <div className="text-[15px] text-[#1A1A1A] font-body font-semibold text-left">Excel 导入</div>
-                <div className="text-[12px] text-[#9CA3AF] font-caption text-left">上传 .xlsx 表格文件</div>
+            <div className="flex w-full flex-row items-center gap-0">
+              <BackButton className="-ml-2" />
+              <div className="text-[20px]/[normal] text-[#1A1A1A] font-heading font-bold">
+                导入学生名单
               </div>
             </div>
-            <svg viewBox="0 0 24 24" className="w-5 h-5 text-[#9CA3AF]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-          <input ref={fileInputRef} type="file" accept=".xlsx" className="hidden" onChange={handleFileChange} />
+            <div className="text-[13px]/[1.7] font-body text-[#6B7280]">
+              导入后这份名单就是班级花名册，通知、考勤、班费都将按名单点名。
+            </div>
 
-          {/* 模板下载：按模板填写可避免表头/列顺序不识别 */}
-          <div className="flex w-full items-center justify-between -mt-2 px-1">
-            <span className="text-[11px] text-[#9CA3AF] font-caption">首次导入建议先下载模板填写</span>
-            <button
-              type="button"
-              onClick={handleDownloadTemplate}
-              disabled={downloadingTemplate}
-              className="flex items-center gap-1 text-[12px] text-[#0062FF] font-body font-medium active:opacity-70 disabled:opacity-50"
-            >
-              <Download className="h-3.5 w-3.5" strokeWidth={2} />
-              {downloadingTemplate ? '下载中...' : '下载模板'}
-            </button>
-          </div>
+            {/* 推荐方式：Excel 导入 */}
+            <div className="flex w-full flex-col overflow-hidden rounded-2xl bg-white shadow-soft">
+              <div className="flex w-full items-center gap-2 px-4 pt-4">
+                <span className="rounded-md bg-[#EBF3FF] px-1.5 py-0.5 text-[10px] font-body font-semibold text-[#0062FF]">
+                  推荐
+                </span>
+                <span className="text-[15px] font-heading font-semibold text-[#1A1A1A]">
+                  Excel 导入
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors active:bg-[#F8FAFC]"
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#EBF3FF]">
+                  <FileSpreadsheet className="h-5 w-5 text-[#0062FF]" strokeWidth={2} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[14px] font-body font-semibold text-[#1A1A1A]">
+                    {selectedFile ? '重新选择文件' : '上传 .xlsx 表格'}
+                  </div>
+                  <div className="mt-0.5 text-[11px] font-caption text-[#94A3B8]">
+                    需包含 学号 / 姓名 / 手机号 三列
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-[#CBD5E1]" strokeWidth={2} />
+              </button>
+              <div className="mx-4 mb-3 flex items-center justify-between rounded-xl bg-[#F8FAFC] px-3 py-2">
+                <span className="text-[11px] font-caption text-[#94A3B8]">
+                  首次导入建议先下载模板
+                </span>
+                <button
+                  type="button"
+                  onClick={handleDownloadTemplate}
+                  disabled={downloadingTemplate}
+                  className="flex items-center gap-1 text-[12px] font-body font-medium text-[#0062FF] active:opacity-70 disabled:opacity-50"
+                >
+                  {downloadingTemplate ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
+                  ) : (
+                    <Download className="h-3.5 w-3.5" strokeWidth={2} />
+                  )}
+                  {downloadingTemplate ? '下载中' : '下载模板'}
+                </button>
+              </div>
+            </div>
+            <input ref={fileInputRef} type="file" accept=".xlsx" className="hidden" onChange={handleFileChange} />
 
-          {/* 已选择文件后显示上传确认 */}
-          {selectedFile && (
-            <>
-              {/* 文件信息 */}
-              <div className="w-full p-4 bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 flex items-center justify-center bg-[#0062FF] rounded-lg">
+            {/* 已选择文件后的确认区 */}
+            {selectedFile && (
+              <div className="flex w-full flex-col gap-3">
+                <div className="flex w-full items-center gap-3 rounded-2xl bg-[#EFF6FF] p-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0062FF]">
                     <FileSpreadsheet className="h-5 w-5 text-white" strokeWidth={2} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[14px] text-[#1A1A1A] font-body font-medium truncate">{selectedFile.name}</div>
-                    <div className="text-[11px] text-[#4B5563] font-caption">{(selectedFile.size / 1024).toFixed(1)} KB</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[14px] font-body font-medium text-[#1A1A1A]">
+                      {selectedFile.name}
+                    </div>
+                    <div className="mt-0.5 text-[11px] font-caption text-[#64748B]">
+                      {(selectedFile.size / 1024).toFixed(1)} KB · 已选择
+                    </div>
                   </div>
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); reset(); }}
-                    className="text-[12px] text-[#EF4444] font-body font-medium"
+                    onClick={reset}
+                    aria-label="清除已选文件"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-[#94A3B8] active:opacity-70"
                   >
-                    重新选择
+                    <X className="h-4 w-4" strokeWidth={2} />
                   </button>
                 </div>
-              </div>
 
-              {/* 同步模式开关 */}
-              <div className="w-full flex flex-row items-center justify-between p-4 bg-[#FFFFFF] border border-[#E5E7EB] rounded-lg">
-                <div className="flex flex-col gap-1">
-                  <div className="text-[14px] text-[#1A1A1A] font-body font-medium">同步模式</div>
-                  <div className="text-[11px] text-[#4B5563] font-caption">
-                    开启后以新名单为准，移除不在名单中的成员（群主除外）
+                <div className="flex w-full flex-row items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-soft">
+                  <div className="flex min-w-0 flex-col gap-1">
+                    <div className="text-[14px] font-body font-medium text-[#1A1A1A]">同步模式</div>
+                    <div className="text-[11px]/[1.6] font-caption text-[#94A3B8]">
+                      开启后以新名单为准，移除不在名单中的成员（群主除外）
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={syncMode}
+                    onClick={() => setSyncMode(!syncMode)}
+                    className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                      syncMode ? 'bg-[#0062FF]' : 'bg-[#D1D5DB]'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                        syncMode ? 'translate-x-[22px]' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex w-full flex-col gap-1.5 rounded-2xl bg-[#EFF6FF] p-4">
+                  <div className="text-[12px] font-body font-semibold text-[#0062FF]">
+                    Excel 表头要求
+                  </div>
+                  <div className="text-[11px]/[1.7] font-caption text-[#3B82F6]">
+                    必须包含三列表头：
+                    <span className="font-semibold">学号</span> ｜{' '}
+                    <span className="font-semibold">姓名</span> ｜{' '}
+                    <span className="font-semibold">手机号</span>
                   </div>
                 </div>
+
                 <button
                   type="button"
-                  onClick={() => setSyncMode(!syncMode)}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${syncMode ? 'bg-[#0062FF]' : 'bg-[#D1D5DB]'}`}
+                  onClick={handleUpload}
+                  className="flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-[#0062FF] text-[16px] font-body font-semibold text-white shadow-[0_10px_20px_rgba(0,98,255,0.22)] transition-transform active:scale-[0.99]"
                 >
-                  <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${syncMode ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+                  {syncMode ? '开始同步名单' : '开始导入名单'}
                 </button>
               </div>
+            )}
 
-              {/* 格式提示 */}
-              <div className="w-full p-4 bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg">
-                <div className="text-[12px] text-[#1E40AF] font-body font-medium mb-2">Excel 表头要求</div>
-                <div className="text-[11px] text-[#3B82F6] font-caption leading-relaxed">
-                  必须包含三列表头：<br />
-                  <span className="font-semibold">学号</span> | <span className="font-semibold">姓名</span> | <span className="font-semibold">手机号</span>
-                </div>
+            {/* 更多导入方式 */}
+            <div className="mt-1 flex w-full flex-col gap-2">
+              <div className="text-[12px] font-body font-semibold text-[#64748B]">
+                更多导入方式
               </div>
-            </>
-          )}
-
-          {/* 教务系统导入（暂未开放） */}
-          <button
-            type="button"
-            disabled
-            className="box-border w-full h-[64px] shrink-0 flex flex-row gap-3 p-[16px] justify-between items-center bg-[#FAFAFA] border border-[#E5E7EB] rounded-xl cursor-default"
-          >
-            <div className="flex flex-row gap-3 items-center">
-              <Database className="h-6 w-6 text-[#9CA3AF]" strokeWidth={2} />
-              <div className="flex flex-col gap-0.5">
-                <div className="flex flex-row items-center gap-1.5">
-                  <span className="text-[15px] text-[#9CA3AF] font-body font-semibold text-left">教务系统导入</span>
-                  <span className="rounded-md bg-[#F3F4F6] px-1.5 py-0.5 text-[10px] font-body text-[#6B7280]">即将上线</span>
-                </div>
-                <div className="text-[12px] text-[#C0C4CC] font-caption text-left">从学校系统同步</div>
-              </div>
-            </div>
-            <svg viewBox="0 0 24 24" className="w-5 h-5 text-[#D1D5DB]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-
-          {/* QQ 群导入（暂未开放） */}
-          <button
-            type="button"
-            disabled
-            className="box-border w-full h-[64px] shrink-0 flex flex-row gap-3 p-[16px] justify-between items-center bg-[#FAFAFA] border border-[#E5E7EB] rounded-xl cursor-default"
-          >
-            <div className="flex flex-row gap-3 items-center">
-              <MessageCircle className="h-6 w-6 text-[#9CA3AF]" strokeWidth={2} />
-              <div className="flex flex-col gap-0.5">
-                <div className="flex flex-row items-center gap-1.5">
-                  <span className="text-[15px] text-[#9CA3AF] font-body font-semibold text-left">QQ 群导入</span>
-                  <span className="rounded-md bg-[#F3F4F6] px-1.5 py-0.5 text-[10px] font-body text-[#6B7280]">即将上线</span>
-                </div>
-                <div className="text-[12px] text-[#C0C4CC] font-caption text-left">从 QQ 群成员导入</div>
+              <div className="flex w-full flex-col overflow-hidden rounded-2xl bg-white shadow-soft">
+                {[
+                  { icon: Database, title: '教务系统导入', subtitle: '从学校系统同步' },
+                  { icon: MessageCircle, title: 'QQ 群导入', subtitle: '从 QQ 群成员导入' },
+                  { icon: MessageSquare, title: '微信群导入', subtitle: '从微信群成员导入' },
+                ].map((row, index) => {
+                  const Icon = row.icon;
+                  return (
+                    <div
+                      key={row.title}
+                      className={`flex w-full items-center gap-3 px-4 py-3.5 ${
+                        index > 0 ? 'border-t border-[#F1F5F9]' : ''
+                      }`}
+                    >
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F1F5F9]">
+                        <Icon className="h-5 w-5 text-[#94A3B8]" strokeWidth={1.8} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[14px] font-body font-medium text-[#64748B]">
+                            {row.title}
+                          </span>
+                          <span className="rounded-md bg-[#F1F5F9] px-1.5 py-0.5 text-[10px] font-body text-[#94A3B8]">
+                            即将上线
+                          </span>
+                        </div>
+                        <div className="mt-0.5 text-[11px] font-caption text-[#CBD5E1]">
+                          {row.subtitle}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-            <svg viewBox="0 0 24 24" className="w-5 h-5 text-[#D1D5DB]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
 
-          {/* 微信群导入（暂未开放） */}
-          <button
-            type="button"
-            disabled
-            className="box-border w-full h-[64px] shrink-0 flex flex-row gap-3 p-[16px] justify-between items-center bg-[#FAFAFA] border border-[#E5E7EB] rounded-xl cursor-default"
-          >
-            <div className="flex flex-row gap-3 items-center">
-              <MessageSquare className="h-6 w-6 text-[#9CA3AF]" strokeWidth={2} />
-              <div className="flex flex-col gap-0.5">
-                <div className="flex flex-row items-center gap-1.5">
-                  <span className="text-[15px] text-[#9CA3AF] font-body font-semibold text-left">微信群导入</span>
-                  <span className="rounded-md bg-[#F3F4F6] px-1.5 py-0.5 text-[10px] font-body text-[#6B7280]">即将上线</span>
-                </div>
-                <div className="text-[12px] text-[#C0C4CC] font-caption text-left">从微信群成员导入</div>
-              </div>
-            </div>
-            <svg viewBox="0 0 24 24" className="w-5 h-5 text-[#D1D5DB]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-
-          <div className="flex-1" />
-
-          {/* 开始导入按钮（选择文件后显示） */}
-          {selectedFile && (
-            <button
-              type="button"
-              onClick={handleUpload}
-              className="w-full h-[52px] rounded-lg bg-[#0062FF] text-white text-[16px] font-body font-semibold active:opacity-80 transition-opacity"
-            >
-              {syncMode ? '开始同步名单' : '开始导入名单'}
-            </button>
-          )}
-          <div className="w-full h-[24px]" />
+            <div className="h-2" />
+          </div>
         </div>
       </PhoneFrame>
     );
@@ -339,13 +355,27 @@ export default function ImportStudents() {
   // ==================== Step: UPLOADING ====================
   if (step === 'uploading') {
     return (
-      <PhoneFrame>
-        <div className="w-full [flex:1_1_0] flex flex-col gap-4 p-[20px] justify-center items-center">
-          <div className="text-[20px] text-[#1A1A1A] font-heading font-bold">正在上传文件...</div>
-          <div className="w-full h-2 bg-[#E5E7EB] rounded-full overflow-hidden">
-            <div className="h-full bg-[#0062FF] transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+      <PhoneFrame reserveSafeAreaTop safeAreaTopClassName="bg-[#F7F8FA]">
+        <StatusBar />
+        <div className="flex w-full flex-1 flex-col items-center justify-center gap-5 bg-[#F7F8FA] px-8">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EBF3FF]">
+            <UploadCloud className="h-7 w-7 text-[#0062FF]" strokeWidth={1.8} />
           </div>
-          <div className="text-[14px] text-[#4B5563] font-body">{uploadProgress}%</div>
+          <div className="text-[17px] font-heading font-bold text-[#1A1A1A]">正在上传名单</div>
+          <div className="w-full max-w-[260px] truncate text-center text-[12px] font-body text-[#94A3B8]">
+            {selectedFile?.name}
+          </div>
+          <div className="w-full max-w-[240px]">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-[#E5E7EB]">
+              <div
+                className="h-full rounded-full bg-[#0062FF] transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+            <div className="mt-2 text-center text-[12px] font-data font-semibold text-[#0062FF]">
+              {uploadProgress}%
+            </div>
+          </div>
         </div>
       </PhoneFrame>
     );
@@ -354,11 +384,14 @@ export default function ImportStudents() {
   // ==================== Step: IMPORTING ====================
   if (step === 'importing') {
     return (
-      <PhoneFrame>
-        <div className="w-full [flex:1_1_0] flex flex-col gap-4 p-[20px] justify-center items-center">
-          <div className="w-16 h-16 border-4 border-[#0062FF] border-t-transparent rounded-full animate-spin" />
-          <div className="text-[20px] text-[#1A1A1A] font-heading font-bold">正在解析名单...</div>
-          <div className="text-[14px] text-[#4B5563] font-body">请稍候，正在处理 {selectedFile?.name}</div>
+      <PhoneFrame reserveSafeAreaTop safeAreaTopClassName="bg-[#F7F8FA]">
+        <StatusBar />
+        <div className="flex w-full flex-1 flex-col items-center justify-center gap-4 bg-[#F7F8FA] px-8">
+          <Loader2 className="h-12 w-12 animate-spin text-[#0062FF]" strokeWidth={2} />
+          <div className="text-[17px] font-heading font-bold text-[#1A1A1A]">正在解析名单</div>
+          <div className="max-w-[260px] truncate text-center text-[12px] font-body text-[#94A3B8]">
+            请稍候，正在处理 {selectedFile?.name}
+          </div>
         </div>
       </PhoneFrame>
     );
@@ -369,77 +402,99 @@ export default function ImportStudents() {
     const hasErrors = result.errors.length > 0 || result.duplicateStudentNos.length > 0;
 
     return (
-      <PhoneFrame>
-        <div className="box-border w-full h-[62px] shrink-0 flex flex-row gap-0 p-[12px_24px_0px_24px] justify-between items-center bg-[#FFFFFF]">
-          <div className="text-[14px]/[normal] text-[#1A1A1A] font-data font-semibold text-left">9:41</div>
-          <div className="text-[14px]/[normal] text-[#1A1A1A] font-data font-normal text-left">100%</div>
-        </div>
-        <div className="box-border w-full [flex:1_1_0] flex flex-col gap-4 p-[0px_24px] justify-start items-start overflow-y-auto">
-          <div className="box-border w-full h-[60px] shrink-0 flex flex-row gap-0 justify-start items-start"></div>
-          <div className="flex flex-row items-center gap-0 w-full">
+      <PhoneFrame reserveSafeAreaTop safeAreaTopClassName="bg-[#F7F8FA]">
+        <StatusBar />
+        <div className="box-border w-full flex-1 flex flex-col items-start gap-4 overflow-y-auto bg-[#F7F8FA] px-5 pb-6">
+          <div className="w-full h-2 shrink-0" />
+
+          <div className="flex w-full flex-row items-center gap-0">
             <BackButton className="-ml-2" onClick={finish} />
-            <div className="text-[20px]/[normal] text-[#1A1A1A] font-heading font-bold text-left">导入结果</div>
+            <div className="text-[20px]/[normal] text-[#1A1A1A] font-heading font-bold">
+              导入结果
+            </div>
           </div>
 
-          {/* Success card */}
-          <div className="w-full flex flex-col gap-3 p-6 bg-[#0062FF0D] border border-[#BFDBFE] rounded-xl">
-            <div className="flex flex-row gap-3 items-center">
-              <div className="w-10 h-10 flex flex-row gap-0 justify-center items-center bg-[#10B981] rounded-full">
-                <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
+          {/* 结果概览 */}
+          <div className="flex w-full items-center gap-3 rounded-2xl bg-white p-4 shadow-soft">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#ECFDF5]">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#10B981]">
+                <Check className="h-4 w-4 text-white" strokeWidth={3} />
+              </span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[17px] font-heading font-bold text-[#059669]">
+                {result.sync ? '同步完成' : '导入完成'}
               </div>
-              <div className="flex flex-col">
-                <div className="text-[18px] text-[#059669] font-heading font-bold">{result.sync ? '同步完成' : '导入完成'}</div>
-                <div className="text-[12px] text-[#6B7280] font-caption">文件：{selectedFile?.name}</div>
+              <div className="mt-0.5 truncate text-[11px] font-caption text-[#94A3B8]">
+                文件：{selectedFile?.name}
               </div>
             </div>
           </div>
 
-          {/* Stats grid */}
-          <div className="w-full grid grid-cols-2 gap-3">
-            <div className="h-[80px] flex flex-col gap-1 justify-center items-center bg-[#FFFFFF] border border-[#E5E7EB] rounded-lg">
-              <div className="text-[24px] text-[#0062FF] font-heading font-bold">{result.successCount}</div>
-              <div className="text-[11px] text-[#4B5563] font-caption">新增成员</div>
+          {/* 数据统计 */}
+          <div className="grid w-full grid-cols-2 gap-3">
+            <div className="flex h-[80px] flex-col items-center justify-center gap-1 rounded-2xl bg-white shadow-soft">
+              <div className="text-[24px] font-heading font-bold text-[#0062FF]">
+                {result.successCount}
+              </div>
+              <div className="text-[11px] font-caption text-[#64748B]">新增成员</div>
             </div>
             {result.updatedCount > 0 && (
-              <div className="h-[80px] flex flex-col gap-1 justify-center items-center bg-[#FFFFFF] border border-[#E5E7EB] rounded-lg">
-                <div className="text-[24px] text-[#10B981] font-heading font-bold">{result.updatedCount}</div>
-                <div className="text-[11px] text-[#4B5563] font-caption">补全学号</div>
+              <div className="flex h-[80px] flex-col items-center justify-center gap-1 rounded-2xl bg-white shadow-soft">
+                <div className="text-[24px] font-heading font-bold text-[#10B981]">
+                  {result.updatedCount}
+                </div>
+                <div className="text-[11px] font-caption text-[#64748B]">补全学号</div>
               </div>
             )}
             {result.sync ? (
-              <div className="h-[80px] flex flex-col gap-1 justify-center items-center bg-[#FFFFFF] border border-[#E5E7EB] rounded-lg">
-                <div className="text-[24px] text-[#EF4444] font-heading font-bold">{result.removedCount}</div>
-                <div className="text-[11px] text-[#4B5563] font-caption">已移除</div>
+              <div className="flex h-[80px] flex-col items-center justify-center gap-1 rounded-2xl bg-white shadow-soft">
+                <div className="text-[24px] font-heading font-bold text-[#EF4444]">
+                  {result.removedCount}
+                </div>
+                <div className="text-[11px] font-caption text-[#64748B]">已移除</div>
               </div>
             ) : (
-              <div className="h-[80px] flex flex-col gap-1 justify-center items-center bg-[#FFFFFF] border border-[#E5E7EB] rounded-lg">
-                <div className="text-[24px] text-[#F59E0B] font-heading font-bold">{result.duplicateStudentNos.length}</div>
-                <div className="text-[11px] text-[#4B5563] font-caption">已存在</div>
+              <div className="flex h-[80px] flex-col items-center justify-center gap-1 rounded-2xl bg-white shadow-soft">
+                <div className="text-[24px] font-heading font-bold text-[#F59E0B]">
+                  {result.duplicateStudentNos.length}
+                </div>
+                <div className="text-[11px] font-caption text-[#64748B]">已存在</div>
               </div>
             )}
-            <div className="h-[80px] flex flex-col gap-1 justify-center items-center bg-[#FFFFFF] border border-[#E5E7EB] rounded-lg">
-              <div className="text-[24px] text-[#4B5563] font-heading font-bold">{result.errors.length}</div>
-              <div className="text-[11px] text-[#4B5563] font-caption">异常</div>
+            <div className="flex h-[80px] flex-col items-center justify-center gap-1 rounded-2xl bg-white shadow-soft">
+              <div className="text-[24px] font-heading font-bold text-[#64748B]">
+                {result.errors.length}
+              </div>
+              <div className="text-[11px] font-caption text-[#64748B]">异常</div>
             </div>
           </div>
 
-          {/* Error list */}
+          {/* 异常明细 */}
           {hasErrors && (
-            <div className="w-full flex flex-col gap-2">
-              <div className="text-[14px] text-[#1A1A1A] font-heading font-semibold">异常明细</div>
-              <div className="w-full flex flex-col gap-2 max-h-[200px] overflow-y-auto">
+            <div className="flex w-full flex-col gap-2">
+              <div className="text-[13px] font-heading font-semibold text-[#1A1A1A]">异常明细</div>
+              <div className="flex max-h-[200px] w-full flex-col gap-2 overflow-y-auto">
                 {result.duplicateStudentNos.map((sn, idx) => (
-                  <div key={`dup-${idx}`} className="w-full flex flex-row gap-2 items-center p-3 bg-[#FEF3C7] border border-[#FDE68A] rounded-lg">
-                    <span className="text-[12px] text-[#B45309] font-caption">⚠️</span>
-                    <span className="text-[12px] text-[#92400E] font-body">学号 {sn}：已在班级中存在</span>
+                  <div
+                    key={`dup-${idx}`}
+                    className="flex w-full flex-row items-center gap-2 rounded-xl bg-[#FEF3C7] p-3"
+                  >
+                    <span className="text-[12px] font-caption text-[#B45309]">⚠️</span>
+                    <span className="text-[12px] font-body text-[#92400E]">
+                      学号 {sn}：已在班级中存在
+                    </span>
                   </div>
                 ))}
                 {result.errors.map((err, idx) => (
-                  <div key={`err-${idx}`} className="w-full flex flex-row gap-2 items-center p-3 bg-[#FEE2E2] border border-[#FECACA] rounded-lg">
-                    <span className="text-[12px] text-[#B91C1C] font-caption">❌</span>
-                    <span className="text-[12px] text-[#991B1B] font-body">第{err.row}行（{err.studentNo || '空学号'}）：{err.reason}</span>
+                  <div
+                    key={`err-${idx}`}
+                    className="flex w-full flex-row items-center gap-2 rounded-xl bg-[#FEE2E2] p-3"
+                  >
+                    <span className="text-[12px] font-caption text-[#B91C1C]">❌</span>
+                    <span className="text-[12px] font-body text-[#991B1B]">
+                      第{err.row}行（{err.studentNo || '空学号'}）：{err.reason}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -448,24 +503,22 @@ export default function ImportStudents() {
 
           <div className="flex-1" />
 
-          {/* Actions */}
-          <div className="w-full flex flex-col gap-3">
+          <div className="flex w-full flex-col gap-3 pt-2">
             <button
               type="button"
               onClick={finish}
-              className="w-full h-[52px] rounded-lg bg-[#0062FF] text-white text-[16px] font-body font-semibold"
+              className="h-[50px] w-full rounded-xl bg-[#0062FF] text-[16px] font-body font-semibold text-white shadow-[0_10px_20px_rgba(0,98,255,0.22)] active:scale-[0.99]"
             >
               进入班级查看
             </button>
             <button
               type="button"
               onClick={reset}
-              className="w-full h-[52px] rounded-lg bg-[#FFFFFF] border border-[#E5E7EB] text-[#1A1A1A] text-[16px] font-body font-semibold"
+              className="h-[50px] w-full rounded-xl bg-white text-[16px] font-body font-semibold text-[#1A1A1A] shadow-soft active:scale-[0.99]"
             >
               继续导入
             </button>
           </div>
-          <div className="w-full h-[24px]" />
         </div>
       </PhoneFrame>
     );

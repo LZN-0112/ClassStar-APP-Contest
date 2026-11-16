@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 export type FeatureGroupKey = 'affairs' | 'study' | 'manage';
-export type FeatureBadgeKey = 'unread' | 'homework' | 'activity' | 'material';
+export type FeatureBadgeKey = 'unread' | 'homework' | 'activity';
 
 export interface FeatureItem {
   id: string;
@@ -110,7 +110,6 @@ const AFFAIRS_ITEMS: FeatureItem[] = [
     gradient: 'linear-gradient(145deg, #5EEAD4, #0D9488)',
     group: 'affairs',
     path: '/material-library',
-    badge: 'material',
   },
 ];
 

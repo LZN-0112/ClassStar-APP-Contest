@@ -11,6 +11,7 @@ import {
   ChevronRight,
   CircleHelp,
   Info,
+  ListChecks,
   RefreshCw,
   School,
   Sparkles,
@@ -48,6 +49,7 @@ interface RankingItem {
   role: string;
   rank: number;
   score: number | null;
+  hasData: boolean;
   attendanceRate: number | null;
   homeworkRate: number | null;
   activityRate: number | null;
@@ -56,14 +58,102 @@ interface RankingItem {
   activityCount: number;
 }
 
+interface DeductionBlock {
+  attendance: { points: number; absent: number; late: number; cap: number };
+  homework: { points: number; notSubmitted: number; late: number; cap: number };
+  activity: { points: number; absent: number; cap: number };
+  total: number;
+}
+
+interface BonusBlock {
+  perfectAttendance: number;
+  homeworkStreak: number;
+  activityActive: number;
+  total: number;
+}
+
+interface ClassScore {
+  score: number | null;
+  prevScore: number | null;
+  scoreDelta: number | null;
+  gradeKey: string;
+  deductions: DeductionBlock;
+  sample: {
+    members: number;
+    sessions: number;
+    homeworks: number;
+    activities: number;
+    mandatoryActivities: number;
+  };
+}
+
+interface MemberCounts {
+  attendance: { expected: number; present: number; late: number; absent: number; leave: number };
+  homework: { expected: number; onTime: number; late: number; missing: number };
+  activity: {
+    expected: number;
+    participated: number;
+    mandatoryExpected: number;
+    mandatoryParticipated: number;
+  };
+}
+
+interface MyScore {
+  userId: string;
+  name: string;
+  role: string;
+  roleLevel: string;
+  score: number | null;
+  prevScore: number | null;
+  scoreDelta: number | null;
+  rank: number;
+  total: number;
+  scored: number;
+  hasData: boolean;
+  rates: { attendance: number | null; homework: number | null; activity: number | null };
+  classRates: { attendance: number; homework: number; activity: number };
+  deductions: DeductionBlock;
+  bonus: BonusBlock;
+  counts: MemberCounts | null;
+}
+
 interface DashboardData {
   range: number;
   period: { startTime: string; endTime: string };
+  isCommittee: boolean;
   memberCount: number;
+  classScore: ClassScore;
+  myScore: MyScore | null;
+  myTrends: {
+    attendance: RatePoint[];
+    homework: RatePoint[];
+    activity: RatePoint[];
+  } | null;
   metrics: {
-    attendance: { rate: number; present: number; expected: number; sessions: number };
-    homework: { rate: number; submitted: number; expected: number; totalHomeworks: number };
-    activity: { rate: number; participated: number; expected: number; totalActivities: number };
+    attendance: {
+      rate: number;
+      present: number;
+      expected: number;
+      sessions: number;
+      absent: number;
+      late: number;
+      leave: number;
+    };
+    homework: {
+      rate: number;
+      submitted: number;
+      expected: number;
+      totalHomeworks: number;
+      late: number;
+      missing: number;
+    };
+    activity: {
+      rate: number;
+      participated: number;
+      expected: number;
+      totalActivities: number;
+      mandatoryTotal: number;
+    };
     fee: { income: number; expense: number; balance: number };
   };
   previous: {
@@ -124,27 +214,31 @@ const RATE_TREND_META: Record<
 const HELP_ROWS: { title: string; desc: string }[] = [
   {
     title: '考勤签到率',
-    desc: '统计周期内实到人次 ÷ 应到人次（每次签到 × 班级人数），迟到计入实到。',
+    desc: '统计周期内实到人次 ÷ 应到人次（按每次签到实际覆盖的成员计算），迟到计入实到，已批准请假不计入应到。',
   },
   {
     title: '作业提交率',
-    desc: '统计周期内已提交份数 ÷ 应交份数（每份作业 × 班级人数），支持补交。',
+    desc: '已提交份数 ÷ 应交份数（按成员入班时间计算应交），补交计为已交但按迟交扣分。',
   },
   {
     title: '活动参与率',
-    desc: '统计周期内活动报名人数 ÷ 应报名人数（活动场次 × 班级人数）。',
+    desc: '报名并参加人数 ÷ 应参与人数；活动区分强制与自愿，仅强制活动计入考核。',
   },
   {
     title: '班费结余',
     desc: '全部收入减去全部支出，为累计值，不受统计周期影响。',
   },
   {
-    title: '综合评分',
-    desc: '考勤 40% + 作业 35% + 活动 25%；没有数据的指标不计入权重。',
+    title: '综合评分（扣分制）',
+    desc: '100 分基线：缺勤 -0.5/人次、迟到 -0.2/人次、未交作业 -0.5/份、迟交 -0.2/份；考勤与作业各封顶 30 分，总分最低 0 分。',
+  },
+  {
+    title: '个人加分',
+    desc: '全勤 +2、作业全部按时提交 +2、强制活动全部参与 +1，个人综合分最高 100 分。',
   },
   {
     title: '成员排行',
-    desc: '按成员个人的考勤 40% + 作业 35% + 活动 25% 计算综合分并排序，仅统计当前周期。',
+    desc: '按个人综合分（100 − 扣分 + 加分）排序；无参与记录的成员保留并标注「暂无数据」。普通成员仅可查看本人数据。',
   },
 ];
 
@@ -179,9 +273,9 @@ function gradeOf(score: number) {
   return { text: '需要提升', color: '#DC2626' };
 }
 
-function deltaText(delta: number) {
+function deltaText(delta: number, label = '较上期') {
   const arrow = delta > 0 ? '↑' : delta < 0 ? '↓' : '→';
-  return `较上期 ${arrow}${Math.abs(delta).toFixed(1)}%`;
+  return `${label} ${arrow}${Math.abs(delta).toFixed(1)}%`;
 }
 
 interface MetricCardProps {
@@ -192,6 +286,8 @@ interface MetricCardProps {
   progress?: number;
   status: StatusChip;
   delta?: number | null;
+  deltaLabel?: string;
+  hint?: string;
   accent: string;
   onOpen: () => void;
 }
@@ -204,6 +300,8 @@ function MetricCard({
   progress,
   status,
   delta,
+  deltaLabel,
+  hint,
   accent,
   onOpen,
 }: MetricCardProps) {
@@ -247,10 +345,12 @@ function MetricCard({
       <div className="font-body text-[10px] leading-relaxed text-[#94A3B8]">{detail}</div>
 
       <div className="mt-auto flex items-center justify-between border-t border-[#F1F5F9] pt-2">
-        {delta === undefined ? (
+        {hint ? (
+          <span className="font-body text-[10px] text-[#94A3B8]">{hint}</span>
+        ) : delta === undefined ? (
           <span className="font-body text-[10px] text-[#94A3B8]">累计值</span>
         ) : delta === null ? (
-          <span className="font-body text-[10px] text-[#94A3B8]">暂无上期数据</span>
+          <span className="font-body text-[10px] text-[#94A3B8]">暂无对比数据</span>
         ) : (
           <span
             className={`flex items-center gap-0.5 font-data text-[10px] font-semibold ${
@@ -262,7 +362,7 @@ function MetricCard({
             ) : (
               <ArrowDownRight className="h-3 w-3" strokeWidth={2} />
             )}
-            {deltaText(delta)}
+            {deltaText(delta, deltaLabel)}
           </span>
         )}
         <span className="flex items-center gap-0.5 font-body text-[10px] font-medium" style={{ color: accent }}>
@@ -538,6 +638,11 @@ function RankingRow({ item, isMe }: { item: RankingItem; isMe: boolean }) {
               {item.role}
             </span>
           ) : null}
+          {!item.hasData ? (
+            <span className="shrink-0 rounded bg-[#F1F5F9] px-1 py-[1px] font-body text-[9px] text-[#94A3B8]">
+              暂无数据
+            </span>
+          ) : null}
         </div>
         <div className="mt-0.5 flex flex-wrap gap-x-2 font-data text-[9px] text-[#94A3B8]">
           <span>
@@ -571,7 +676,9 @@ export default function DataDashboard() {
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
   const [trendKey, setTrendKey] = useState<TrendKey>('attendance');
+  const [view, setView] = useState<'class' | 'mine'>('class');
   const [helpOpen, setHelpOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   /** 顶栏图标/文字是否已切到深色（相对浅色顶栏底） */
   const [darkInk, setDarkInk] = useState(false);
@@ -663,57 +770,145 @@ export default function DataDashboard() {
     };
   }, [classId, range, reloadKey]);
 
-  const summary = useMemo(() => {
+  const isCommittee = !!data?.isCommittee;
+  const activeView: 'class' | 'mine' = isCommittee ? view : 'mine';
+  const effectiveTrendKey: TrendKey =
+    activeView === 'mine' && trendKey === 'fee' ? 'attendance' : trendKey;
+
+  const viewScore = useMemo(() => {
     if (!data) return null;
-    const { attendance, homework, activity } = data.metrics;
-
-    const parts: { rate: number; weight: number }[] = [];
-    if (attendance.expected > 0) parts.push({ rate: attendance.rate, weight: 0.4 });
-    if (homework.expected > 0) parts.push({ rate: homework.rate, weight: 0.35 });
-    if (activity.expected > 0) parts.push({ rate: activity.rate, weight: 0.25 });
-
-    const weightSum = parts.reduce((sum, item) => sum + item.weight, 0);
-    const score =
-      weightSum > 0
-        ? Math.round(parts.reduce((sum, item) => sum + item.rate * item.weight, 0) / weightSum)
-        : null;
-
-    const prevParts: number[] = [];
-    if (attendance.expected > 0 && data.previous.attendanceRate !== null) {
-      prevParts.push(data.previous.attendanceRate);
+    if (activeView === 'class') {
+      const cs = data.classScore;
+      const score = cs?.score ?? null;
+      const sample = cs?.sample;
+      const eventCount = sample
+        ? sample.sessions + sample.homeworks + sample.activities
+        : 0;
+      return {
+        score,
+        delta: cs?.scoreDelta ?? null,
+        grade: score !== null ? gradeOf(score) : { text: '暂无数据', color: '#94A3B8' },
+        deductions: cs?.deductions ?? null,
+        bonus: null as BonusBlock | null,
+        rankText: null as string | null,
+        sampleNote:
+          score === null
+            ? '本周期暂无考核记录'
+            : eventCount < 3
+              ? '考核样本较少，分数仅供参考'
+              : null,
+      };
     }
-    if (homework.expected > 0 && data.previous.homeworkSubmitRate !== null) {
-      prevParts.push(data.previous.homeworkSubmitRate);
-    }
-    if (activity.expected > 0 && data.previous.activityParticipationRate !== null) {
-      prevParts.push(data.previous.activityParticipationRate);
-    }
-    const prevScore =
-      prevParts.length > 0
-        ? Math.round(prevParts.reduce((sum, value) => sum + value, 0) / prevParts.length)
-        : null;
-
+    const me = data.myScore;
+    const score = me?.score ?? null;
     return {
       score,
-      prevScore,
+      delta: me?.scoreDelta ?? null,
       grade: score !== null ? gradeOf(score) : { text: '暂无数据', color: '#94A3B8' },
-      scoreDelta: score !== null && prevScore !== null ? score - prevScore : null,
+      deductions: me?.deductions ?? null,
+      bonus: me?.bonus ?? null,
+      rankText: me ? `班级第 ${me.rank} / ${me.total} 名` : null,
+      sampleNote: me && !me.hasData ? '本周期暂无你的考核记录' : null,
     };
-  }, [data]);
+  }, [data, activeView]);
+
+  const myRates = data?.myScore?.rates ?? null;
+  const myCounts = data?.myScore?.counts ?? null;
+  const classRates = data?.myScore?.classRates ?? null;
 
   const rankingPreview = useMemo(() => {
     if (!data) return { items: [] as RankingItem[], me: null as RankingItem | null };
-    const items = data.memberRanking.items.filter((item) => (item.score ?? 0) > 0);
-    const me =
-      data.memberRanking.me && (data.memberRanking.me.score ?? 0) > 0
-        ? data.memberRanking.me
-        : null;
-    return { items, me };
+    // 无参与记录的成员保留展示并标注「暂无数据」
+    return { items: data.memberRanking.items, me: data.memberRanking.me };
   }, [data]);
 
   const insights = useMemo(() => {
     if (!data) return [] as Insight[];
     const list: Insight[] = [];
+
+    // 普通成员只基于本人数据生成洞察，不暴露班级明细
+    if (activeView === 'mine') {
+      const me = data.myScore;
+      if (!me || !me.hasData || !me.counts) {
+        return [
+          {
+            tone: 'info',
+            title: '本周期暂无考核记录',
+            desc: '参与签到、按时提交作业或报名活动后，这里会生成你的表现分析。',
+          },
+        ] as Insight[];
+      }
+      const att = me.counts.attendance;
+      if (att.expected > 0) {
+        if (att.absent + att.late === 0) {
+          list.push({
+            tone: 'good',
+            title: '考勤全勤',
+            desc: `${att.expected} 次签到全部到勤，个人加分 +2。`,
+          });
+        } else {
+          list.push({
+            tone: 'warn',
+            title: `考勤扣 ${me.deductions.attendance.points} 分`,
+            desc: `缺勤 ${att.absent} 人次、迟到 ${att.late} 人次；已批准请假 ${att.leave} 次不计入。`,
+          });
+        }
+      }
+      const hw = me.counts.homework;
+      if (hw.expected > 0) {
+        if (hw.missing === 0 && hw.late === 0) {
+          list.push({
+            tone: 'good',
+            title: '作业全部按时完成',
+            desc: `${hw.expected} 份作业全部按时提交，个人加分 +2。`,
+          });
+        } else if (hw.missing === 0) {
+          list.push({
+            tone: 'warn',
+            title: `${hw.late} 份作业迟交`,
+            desc: `迟交每份扣 0.2 分，全部按时提交可加 2 分。`,
+          });
+        } else {
+          list.push({
+            tone: 'warn',
+            title: `${hw.missing} 份作业未交`,
+            desc: '每份未交扣 0.5 分，补交按迟交（-0.2）计，可尽快补交。',
+          });
+        }
+      }
+      const act = me.counts.activity;
+      if (act.mandatoryExpected > 0) {
+        const remaining = act.mandatoryExpected - act.mandatoryParticipated;
+        list.push({
+          tone: remaining === 0 ? 'good' : 'warn',
+          title: remaining === 0 ? '强制活动全部参与' : `还有 ${remaining} 场强制活动未参与`,
+          desc: `本周期强制活动 ${act.mandatoryExpected} 场，已参与 ${act.mandatoryParticipated} 场，全部参与加 1 分。`,
+        });
+      } else if (act.expected > 0) {
+        list.push({
+          tone: 'info',
+          title: `参与 ${act.participated}/${act.expected} 场活动`,
+          desc: '本周期暂无强制活动，自愿活动不计入考核扣分。',
+        });
+      }
+      if (me.total > 1) {
+        list.push({
+          tone: 'info',
+          title: `当前排名 ${me.rank}/${me.total}`,
+          desc: `班级共 ${me.total} 人，${me.scored} 人本周期有考核数据。`,
+        });
+      }
+      return list.slice(0, 4);
+    }
+
+    const ded = data.classScore?.deductions;
+    if (ded && ded.total > 0) {
+      list.push({
+        tone: 'warn',
+        title: `本周期累计扣 ${ded.total} 分`,
+        desc: `考勤 -${ded.attendance.points}（缺勤 ${ded.attendance.absent}、迟到 ${ded.attendance.late}），作业 -${ded.homework.points}（未交 ${ded.homework.notSubmitted}、迟交 ${ded.homework.late}）。`,
+      });
+    }
 
     const attendanceValues = data.trends.attendance
       .map((point) => point.value)
@@ -776,7 +971,7 @@ export default function DataDashboard() {
       list.push({
         tone: 'info',
         title: `举办 ${data.metrics.activity.totalActivities} 场活动`,
-        desc: `平均参与率 ${formatPercent(data.metrics.activity.rate)}。`,
+        desc: `平均参与率 ${formatPercent(data.metrics.activity.rate)}，其中强制活动 ${data.metrics.activity.mandatoryTotal} 场。`,
       });
     } else {
       list.push({
@@ -787,11 +982,11 @@ export default function DataDashboard() {
     }
 
     return list.slice(0, 4);
-  }, [data]);
+  }, [data, activeView]);
 
   const trendConfig = useMemo(() => {
     if (!data) return null;
-    if (trendKey === 'fee') {
+    if (effectiveTrendKey === 'fee') {
       const points = data.trends.fee;
       const labels = points.map((point) => point.date);
       const income = points.map((point) => Number(point.value?.income || 0));
@@ -817,20 +1012,55 @@ export default function DataDashboard() {
       };
     }
 
-    const points = data.trends[trendKey];
-    const labels = points.map((point) => point.date);
-    const values = points.map((point) => point.value);
-    const valid = values.filter((value): value is number => value !== null);
+    const key = effectiveTrendKey;
+    const meta = RATE_TREND_META[key];
+    const classPoints = data.trends[key];
+    const labels = classPoints.map((point) => point.date);
+    const classValues = classPoints.map((point) => point.value);
+
+    if (activeView === 'mine') {
+      const myValues = data.myTrends
+        ? data.myTrends[key].map((point) => point.value)
+        : labels.map(() => null);
+      const myValid = myValues.filter((value): value is number => value !== null);
+      const classValid = classValues.filter((value): value is number => value !== null);
+      const myAverage =
+        myValid.length > 0
+          ? myValid.reduce((sum, value) => sum + value, 0) / myValid.length
+          : 0;
+      const classAverage =
+        classValid.length > 0
+          ? classValid.reduce((sum, value) => sum + value, 0) / classValid.length
+          : null;
+      return {
+        labels,
+        series: [
+          { name: '我', color: meta.color, values: myValues, suffix: '%' },
+          { name: '班级均值', color: '#94A3B8', values: classValues, suffix: '%' },
+        ] as ChartSeries[],
+        scaleMax: 100,
+        axisLabels: ['100%', '50%', '0%'] as [string, string, string],
+        hasData: myValid.length > 0,
+        emptyText: '该周期内暂无我的记录',
+        summary:
+          myValid.length > 0
+            ? `我的平均 ${formatPercent(myAverage)}${
+                classAverage !== null ? ` · 班级平均 ${formatPercent(classAverage)}` : ''
+              }`
+            : '本周期暂无我的记录',
+      };
+    }
+
+    const valid = classValues.filter((value): value is number => value !== null);
     const average =
       valid.length > 0 ? valid.reduce((sum, value) => sum + value, 0) / valid.length : 0;
-    const meta = RATE_TREND_META[trendKey];
     return {
       labels,
       series: [
         {
           name: meta.name,
           color: meta.color,
-          values,
+          values: classValues,
           suffix: '%',
         },
       ] as ChartSeries[],
@@ -843,7 +1073,41 @@ export default function DataDashboard() {
           ? `平均 ${formatPercent(average)} · 最高 ${formatPercent(Math.max(...valid))} · 最低 ${formatPercent(Math.min(...valid))}`
           : '暂无数据',
     };
-  }, [data, trendKey]);
+  }, [data, effectiveTrendKey, activeView]);
+
+  const ded = viewScore?.deductions ?? null;
+  const detailRows = [
+    {
+      label: '考勤',
+      desc: ded
+        ? `缺勤 ${ded.attendance.absent} 人次 × 0.5 + 迟到 ${ded.attendance.late} 人次 × 0.2`
+        : '本周期暂无签到记录',
+      points: ded?.attendance.points ?? 0,
+      cap: ded?.attendance.cap ?? 30,
+    },
+    {
+      label: '作业',
+      desc: ded
+        ? `未交 ${ded.homework.notSubmitted} 份 × 0.5 + 迟交 ${ded.homework.late} 份 × 0.2`
+        : '本周期暂无作业记录',
+      points: ded?.homework.points ?? 0,
+      cap: ded?.homework.cap ?? 30,
+    },
+    {
+      label: '活动',
+      desc: '仅强制活动计入考核，未报名不扣分',
+      points: ded?.activity.points ?? 0,
+      cap: ded?.activity.cap ?? 15,
+    },
+  ];
+  const bonusRows = viewScore?.bonus
+    ? [
+        { label: '全勤', points: viewScore.bonus.perfectAttendance },
+        { label: '作业全部按时提交', points: viewScore.bonus.homeworkStreak },
+        { label: '强制活动全部参与', points: viewScore.bonus.activityActive },
+      ].filter((row) => row.points > 0)
+    : [];
+  const bonusTotal = viewScore?.bonus?.total ?? 0;
 
   const headerRight = (
     <button
@@ -965,7 +1229,7 @@ export default function DataDashboard() {
             去加入班级
           </button>
         </div>
-      ) : !data || !summary || !trendConfig ? (
+      ) : !data || !viewScore || !trendConfig ? (
         loading ? (
           <div className="flex flex-col gap-3">
             <div className="-mt-8 h-[178px] animate-pulse rounded-2xl bg-[#F1F5F9]" />
@@ -1005,7 +1269,9 @@ export default function DataDashboard() {
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-body text-[11px] text-[#64748B]">班级综合表现</span>
+                  <span className="font-body text-[11px] text-[#64748B]">
+                    {activeView === 'class' ? '班级综合表现' : '我的综合表现'}
+                  </span>
                   {loading ? (
                     <RefreshCw
                       className="h-3 w-3 animate-spin text-[#94A3B8]"
@@ -1016,7 +1282,7 @@ export default function DataDashboard() {
                 </div>
                 <div className="mt-1 flex items-baseline gap-2">
                   <span className="font-data text-[32px] font-bold leading-none text-[#0F172A]">
-                    {summary.score ?? '--'}
+                    {viewScore.score ?? '--'}
                   </span>
                   <span className="font-body text-[12px] text-[#94A3B8]">/ 100</span>
                 </div>
@@ -1024,45 +1290,81 @@ export default function DataDashboard() {
                   <span
                     className="rounded-full px-2 py-[3px] font-body text-[10px] font-semibold"
                     style={{
-                      color: summary.grade.color,
-                      backgroundColor: `${summary.grade.color}14`,
+                      color: viewScore.grade.color,
+                      backgroundColor: `${viewScore.grade.color}14`,
                     }}
                   >
-                    {summary.grade.text}
+                    {viewScore.grade.text}
                   </span>
                   <span className="font-body text-[10px] text-[#94A3B8]">
-                    {summary.scoreDelta === null
+                    {viewScore.delta === null
                       ? '暂无上期对比'
-                      : `较上期 ${summary.scoreDelta >= 0 ? '+' : ''}${summary.scoreDelta} 分`}
+                      : `较上期 ${viewScore.delta >= 0 ? '+' : ''}${viewScore.delta} 分`}
                   </span>
                 </div>
+                {viewScore.rankText ? (
+                  <div className="mt-1.5 flex items-center gap-1 font-body text-[10px] text-[#64748B]">
+                    <Trophy className="h-3 w-3" style={{ color: '#F59E0B' }} strokeWidth={2} />
+                    {viewScore.rankText}
+                  </div>
+                ) : null}
+                {viewScore.sampleNote ? (
+                  <div className="mt-1 font-body text-[10px] text-[#B45309]">
+                    {viewScore.sampleNote}
+                  </div>
+                ) : null}
               </div>
 
               <div className="relative flex h-[84px] w-[84px] shrink-0 items-center justify-center">
                 <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full">
                   <circle cx="50" cy="50" r="42" fill="none" stroke="#EEF2F8" strokeWidth="8" />
-                  {summary.score !== null ? (
+                  {viewScore.score !== null ? (
                     <circle
                       cx="50"
                       cy="50"
                       r="42"
                       fill="none"
-                      stroke={summary.grade.color}
+                      stroke={viewScore.grade.color}
                       strokeWidth="8"
                       strokeLinecap="round"
-                      strokeDasharray={`${Math.min(Math.max(summary.score, 0), 100) * 2.639} 263.9`}
+                      strokeDasharray={`${Math.min(Math.max(viewScore.score, 0), 100) * 2.639} 263.9`}
                       transform="rotate(-90 50 50)"
                       className="transition-all duration-700 ease-out"
                     />
                   ) : null}
                 </svg>
                 <div className="relative flex flex-col items-center">
-                  <span className="font-data text-[18px] font-bold leading-none" style={{ color: summary.grade.color }}>
-                    {summary.score ?? '--'}
+                  <span className="font-data text-[18px] font-bold leading-none" style={{ color: viewScore.grade.color }}>
+                    {viewScore.score ?? '--'}
                   </span>
                   <span className="mt-0.5 font-body text-[9px] text-[#94A3B8]">综合分</span>
                 </div>
               </div>
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-1 rounded-xl bg-[#F8FAFC] p-1">
+              {(
+                [
+                  { key: 'class', label: '班级数据' },
+                  { key: 'mine', label: '我的数据' },
+                ] as const
+              ).map((tab) => {
+                const active = activeView === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setView(tab.key)}
+                    className={`rounded-lg py-1.5 font-body text-[11px] transition-colors ${
+                      active
+                        ? 'bg-white font-semibold text-[#0F172A] shadow-[0_1px_4px_rgba(15,23,42,0.08)]'
+                        : 'text-[#64748B]'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="mt-3 grid grid-cols-3 gap-1 rounded-xl bg-[#F8FAFC] p-1">
@@ -1095,98 +1397,205 @@ export default function DataDashboard() {
                 {data.memberCount} 名成员
               </span>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setDetailOpen(true)}
+              className="mt-2.5 flex w-full items-center justify-between rounded-xl bg-[#F8FAFC] px-3 py-2 active:opacity-70"
+            >
+              <span className="flex items-center gap-1.5 font-body text-[11px] font-medium text-[#334155]">
+                <ListChecks className="h-3.5 w-3.5" style={{ color: ACCENT }} strokeWidth={2} />
+                扣分明细
+              </span>
+              <span className="flex items-center gap-1 font-data text-[11px] text-[#64748B]">
+                {viewScore.deductions ? `-${viewScore.deductions.total} 分` : '—'}
+                {viewScore.bonus && viewScore.bonus.total > 0
+                  ? ` · 加 ${viewScore.bonus.total} 分`
+                  : ''}
+                <ChevronRight className="h-3 w-3" strokeWidth={2} />
+              </span>
+            </button>
           </motion.div>
 
           {/* 核心指标 */}
-          <div className="grid grid-cols-2 gap-3">
-            <MetricCard
-              icon={CalendarDays}
-              label="考勤签到率"
-              value={
-                data.metrics.attendance.expected > 0
-                  ? formatPercent(data.metrics.attendance.rate)
-                  : '—'
-              }
-              detail={`${data.metrics.attendance.present}/${data.metrics.attendance.expected} 人次 · ${data.metrics.attendance.sessions} 次签到`}
-              progress={data.metrics.attendance.rate}
-              status={rateStatus(
-                data.metrics.attendance.rate,
-                data.metrics.attendance.expected > 0,
-              )}
-              delta={
-                data.metrics.attendance.expected > 0
-                  ? data.previous.attendanceRate === null
-                    ? null
-                    : Math.round((data.metrics.attendance.rate - data.previous.attendanceRate) * 10) / 10
-                  : null
-              }
-              accent={ACCENT}
-              onOpen={() => navigate('/attendance-report')}
-            />
-            <MetricCard
-              icon={BookOpen}
-              label="作业提交率"
-              value={
-                data.metrics.homework.expected > 0
-                  ? formatPercent(data.metrics.homework.rate)
-                  : '—'
-              }
-              detail={`${data.metrics.homework.submitted}/${data.metrics.homework.expected} 份 · ${data.metrics.homework.totalHomeworks} 次作业`}
-              progress={data.metrics.homework.rate}
-              status={rateStatus(
-                data.metrics.homework.rate,
-                data.metrics.homework.expected > 0,
-              )}
-              delta={
-                data.metrics.homework.expected > 0
-                  ? data.previous.homeworkSubmitRate === null
-                    ? null
-                    : Math.round((data.metrics.homework.rate - data.previous.homeworkSubmitRate) * 10) / 10
-                  : null
-              }
-              accent="#F97316"
-              onOpen={() => navigate('/homework-list')}
-            />
-            <MetricCard
-              icon={Users}
-              label="活动参与率"
-              value={
-                data.metrics.activity.expected > 0
-                  ? formatPercent(data.metrics.activity.rate)
-                  : '—'
-              }
-              detail={`${data.metrics.activity.participated}/${data.metrics.activity.expected} 人次 · ${data.metrics.activity.totalActivities} 场活动`}
-              progress={data.metrics.activity.rate}
-              status={rateStatus(
-                data.metrics.activity.rate,
-                data.metrics.activity.expected > 0,
-              )}
-              delta={
-                data.metrics.activity.expected > 0
-                  ? data.previous.activityParticipationRate === null
-                    ? null
-                    : Math.round((data.metrics.activity.rate - data.previous.activityParticipationRate) * 10) / 10
-                  : null
-              }
-              accent="#7C3AED"
-              onOpen={() => navigate('/activity-list')}
-            />
-            <MetricCard
-              icon={Wallet}
-              label="班费结余"
-              value={`¥${formatMoney(data.metrics.fee.balance)}`}
-              detail={`近 ${data.range} 天收 ¥${formatMoney(data.metrics.fee.income)} · 支 ¥${formatMoney(data.metrics.fee.expense)}`}
-              status={
-                data.metrics.fee.balance < 0
-                  ? { text: '已超支', color: '#DC2626', bg: '#FEE2E2' }
-                  : data.metrics.fee.balance < 100
-                    ? { text: '偏低', color: '#B45309', bg: '#FEF3C7' }
-                    : { text: '正常', color: '#16A34A', bg: '#DCFCE7' }
-              }
-              accent="#2F9E86"
-              onOpen={() => navigate('/finance-report')}
-            />
-          </div>
+          {activeView === 'class' ? (
+            <div className="grid grid-cols-2 gap-3">
+              <MetricCard
+                icon={CalendarDays}
+                label="考勤签到率"
+                value={
+                  data.metrics.attendance.expected > 0
+                    ? formatPercent(data.metrics.attendance.rate)
+                    : '—'
+                }
+                detail={`${data.metrics.attendance.present}/${data.metrics.attendance.expected} 人次 · ${data.metrics.attendance.sessions} 次签到`}
+                progress={data.metrics.attendance.rate}
+                status={rateStatus(
+                  data.metrics.attendance.rate,
+                  data.metrics.attendance.expected > 0,
+                )}
+                delta={
+                  data.metrics.attendance.expected > 0
+                    ? data.previous.attendanceRate === null
+                      ? null
+                      : Math.round((data.metrics.attendance.rate - data.previous.attendanceRate) * 10) / 10
+                    : null
+                }
+                accent={ACCENT}
+                onOpen={() => navigate('/attendance-report')}
+              />
+              <MetricCard
+                icon={BookOpen}
+                label="作业提交率"
+                value={
+                  data.metrics.homework.expected > 0
+                    ? formatPercent(data.metrics.homework.rate)
+                    : '—'
+                }
+                detail={`${data.metrics.homework.submitted}/${data.metrics.homework.expected} 份 · ${data.metrics.homework.totalHomeworks} 次作业`}
+                progress={data.metrics.homework.rate}
+                status={rateStatus(
+                  data.metrics.homework.rate,
+                  data.metrics.homework.expected > 0,
+                )}
+                delta={
+                  data.metrics.homework.expected > 0
+                    ? data.previous.homeworkSubmitRate === null
+                      ? null
+                      : Math.round((data.metrics.homework.rate - data.previous.homeworkSubmitRate) * 10) / 10
+                    : null
+                }
+                accent="#F97316"
+                onOpen={() => navigate('/homework-list')}
+              />
+              <MetricCard
+                icon={Users}
+                label="活动参与率"
+                value={
+                  data.metrics.activity.expected > 0
+                    ? formatPercent(data.metrics.activity.rate)
+                    : '—'
+                }
+                detail={`${data.metrics.activity.participated}/${data.metrics.activity.expected} 人次 · ${data.metrics.activity.totalActivities} 场活动`}
+                progress={data.metrics.activity.rate}
+                status={rateStatus(
+                  data.metrics.activity.rate,
+                  data.metrics.activity.expected > 0,
+                )}
+                delta={
+                  data.metrics.activity.expected > 0
+                    ? data.previous.activityParticipationRate === null
+                      ? null
+                      : Math.round((data.metrics.activity.rate - data.previous.activityParticipationRate) * 10) / 10
+                    : null
+                }
+                accent="#7C3AED"
+                onOpen={() => navigate('/activity-list')}
+              />
+              <MetricCard
+                icon={Wallet}
+                label="班费结余"
+                value={`¥${formatMoney(data.metrics.fee.balance)}`}
+                detail={`近 ${data.range} 天收 ¥${formatMoney(data.metrics.fee.income)} · 支 ¥${formatMoney(data.metrics.fee.expense)}`}
+                status={
+                  data.metrics.fee.balance < 0
+                    ? { text: '已超支', color: '#DC2626', bg: '#FEE2E2' }
+                    : data.metrics.fee.balance < 100
+                      ? { text: '偏低', color: '#B45309', bg: '#FEF3C7' }
+                      : { text: '正常', color: '#16A34A', bg: '#DCFCE7' }
+                }
+                accent="#2F9E86"
+                onOpen={() => navigate('/finance-report')}
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <MetricCard
+                icon={CalendarDays}
+                label="我的出勤率"
+                value={myRates?.attendance == null ? '—' : formatPercent(myRates.attendance)}
+                detail={
+                  myCounts && myCounts.attendance.expected > 0
+                    ? `${myCounts.attendance.present}/${myCounts.attendance.expected} 人次 · 班级 ${formatPercent(classRates?.attendance ?? 0)}`
+                    : '本周期暂无签到记录'
+                }
+                progress={myRates?.attendance ?? undefined}
+                status={rateStatus(myRates?.attendance ?? 0, myRates?.attendance != null)}
+                delta={
+                  myRates?.attendance != null && classRates
+                    ? Math.round((myRates.attendance - classRates.attendance) * 10) / 10
+                    : null
+                }
+                deltaLabel="对比班级"
+                accent={ACCENT}
+                onOpen={() => navigate('/attendance-report')}
+              />
+              <MetricCard
+                icon={BookOpen}
+                label="我的作业"
+                value={myRates?.homework == null ? '—' : formatPercent(myRates.homework)}
+                detail={
+                  myCounts && myCounts.homework.expected > 0
+                    ? `${myCounts.homework.expected - myCounts.homework.missing}/${myCounts.homework.expected} 份 · 缺交 ${myCounts.homework.missing} 份`
+                    : '本周期暂无作业记录'
+                }
+                progress={myRates?.homework ?? undefined}
+                status={rateStatus(myRates?.homework ?? 0, myRates?.homework != null)}
+                delta={
+                  myRates?.homework != null && classRates
+                    ? Math.round((myRates.homework - classRates.homework) * 10) / 10
+                    : null
+                }
+                deltaLabel="对比班级"
+                accent="#F97316"
+                onOpen={() => navigate('/homework-list')}
+              />
+              <MetricCard
+                icon={Users}
+                label="我的活动参与"
+                value={myRates?.activity == null ? '—' : formatPercent(myRates.activity)}
+                detail={
+                  myCounts && myCounts.activity.mandatoryExpected > 0
+                    ? `${myCounts.activity.participated}/${myCounts.activity.expected} 人次 · 强制 ${myCounts.activity.mandatoryParticipated}/${myCounts.activity.mandatoryExpected}`
+                    : myCounts && myCounts.activity.expected > 0
+                      ? `${myCounts.activity.participated}/${myCounts.activity.expected} 人次 · 无强制活动`
+                      : '本周期暂无活动记录'
+                }
+                progress={myRates?.activity ?? undefined}
+                status={rateStatus(myRates?.activity ?? 0, myRates?.activity != null)}
+                delta={
+                  myRates?.activity != null && classRates
+                    ? Math.round((myRates.activity - classRates.activity) * 10) / 10
+                    : null
+                }
+                deltaLabel="对比班级"
+                accent="#7C3AED"
+                onOpen={() => navigate('/activity-list')}
+              />
+              <MetricCard
+                icon={Trophy}
+                label="班级排名"
+                value={
+                  data.myScore && data.myScore.hasData ? `第 ${data.myScore.rank} 名` : '--'
+                }
+                detail={
+                  data.myScore
+                    ? `共 ${data.myScore.total} 人 · ${data.myScore.scored} 人有考核数据`
+                    : '本周期暂无排名'
+                }
+                status={
+                  !data.myScore || !data.myScore.hasData
+                    ? { text: '暂无数据', color: '#64748B', bg: '#F1F5F9' }
+                    : data.myScore.rank <= Math.max(1, Math.ceil(data.myScore.total * 0.3))
+                      ? { text: '名列前茅', color: '#B45309', bg: '#FEF3C7' }
+                      : { text: '继续加油', color: '#1565D8', bg: '#E8F0FF' }
+                }
+                hint="按综合分排序"
+                accent="#F59E0B"
+                onOpen={() => setDetailOpen(true)}
+              />
+            </div>
+          )}
 
           {/* 趋势分析 */}
           <div className="w-full rounded-2xl border border-[#EDF1F7] bg-white p-4 shadow-[0_6px_18px_-12px_rgba(15,23,42,0.25)]">
@@ -1199,27 +1608,33 @@ export default function DataDashboard() {
               </div>
             </div>
 
-            <div className="mt-2.5 grid grid-cols-4 gap-0.5 rounded-lg bg-[#F8FAFC] p-0.5">
-              {TREND_TABS.map((tab) => {
-                const active = trendKey === tab.key;
-                return (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setTrendKey(tab.key)}
-                    className={`rounded-md py-1 font-body text-[10px] transition-colors ${
-                      active
-                        ? 'bg-white font-semibold text-[#0F172A] shadow-[0_1px_3px_rgba(15,23,42,0.1)]'
-                        : 'text-[#64748B]'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
+            <div
+              className={`mt-2.5 grid ${
+                activeView === 'class' ? 'grid-cols-4' : 'grid-cols-3'
+              } gap-0.5 rounded-lg bg-[#F8FAFC] p-0.5`}
+            >
+              {TREND_TABS.filter((tab) => activeView === 'class' || tab.key !== 'fee').map(
+                (tab) => {
+                  const active = effectiveTrendKey === tab.key;
+                  return (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => setTrendKey(tab.key)}
+                      className={`rounded-md py-1 font-body text-[10px] transition-colors ${
+                        active
+                          ? 'bg-white font-semibold text-[#0F172A] shadow-[0_1px_3px_rgba(15,23,42,0.1)]'
+                          : 'text-[#64748B]'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                },
+              )}
             </div>
 
-            <div className="mt-3" key={`${trendKey}-${range}`}>
+            <div className="mt-3" key={`${effectiveTrendKey}-${range}-${activeView}`}>
               <TrendChart
                 labels={trendConfig.labels}
                 series={trendConfig.series}
@@ -1245,8 +1660,9 @@ export default function DataDashboard() {
             </div>
           </div>
 
-          {/* 成员排行 */}
-          <div className="w-full rounded-2xl border border-[#EDF1F7] bg-white p-4 shadow-[0_6px_18px_-12px_rgba(15,23,42,0.25)]">
+          {/* 成员排行：仅班委可查看班级排行 */}
+          {isCommittee && activeView === 'class' ? (
+            <div className="w-full rounded-2xl border border-[#EDF1F7] bg-white p-4 shadow-[0_6px_18px_-12px_rgba(15,23,42,0.25)]">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <Trophy className="h-4 w-4" style={{ color: '#F59E0B' }} strokeWidth={2} />
@@ -1284,9 +1700,11 @@ export default function DataDashboard() {
             )}
 
             <div className="mt-2 rounded-lg bg-[#F8FAFC] px-2.5 py-2 font-body text-[10px] leading-relaxed text-[#94A3B8]">
-              仅展示本期有参与记录的成员；综合分 = 考勤 40% + 作业 35% + 活动 25%。
+              按个人综合分（100 − 扣分 + 加分）排序；无参与记录的成员保留并标注「暂无数据」；
+              普通成员仅可查看本人数据。
             </div>
-          </div>
+            </div>
+          ) : null}
 
           {/* 数据洞察 */}
           <div className="w-full rounded-2xl border border-[#EDF1F7] bg-white p-4 shadow-[0_6px_18px_-12px_rgba(15,23,42,0.25)]">
@@ -1367,6 +1785,99 @@ export default function DataDashboard() {
           <div className="mt-1.5 rounded-xl bg-[#F8FAFC] p-3 font-body text-[10px] leading-relaxed text-[#94A3B8]">
             统计周期为近 {data?.range ?? range} 天（含今天）。数据每 5 分钟自动刷新一次，
             签到、提交作业或记账后稍等片刻即可看到变化。
+          </div>
+        </div>
+      </BottomSheet>
+
+      {/* 扣分明细 */}
+      <BottomSheet
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        title={activeView === 'class' ? '班级扣分明细' : '我的扣分明细'}
+        maxHeight="78vh"
+      >
+        <div className="flex flex-col gap-3 px-5 pb-[max(24px,env(safe-area-inset-bottom))]">
+          <div className="rounded-xl bg-[#F8FAFC] px-3 py-2">
+            <div className="flex items-center justify-between font-body text-[11px]">
+              <span className="text-[#64748B]">基线分</span>
+              <span className="font-data text-[12px] font-semibold text-[#0F172A]">100 分</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {detailRows.map((row) => (
+              <div key={row.label} className="rounded-xl border border-[#EDF1F7] p-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-body text-[12px] font-semibold text-[#0F172A]">
+                    {row.label}
+                  </span>
+                  <span
+                    className={`font-data text-[12px] font-semibold ${
+                      row.points > 0 ? 'text-[#DC2626]' : 'text-[#16A34A]'
+                    }`}
+                  >
+                    {row.points > 0 ? `-${row.points} 分` : '0 分'}
+                  </span>
+                </div>
+                <div className="mt-1 font-body text-[10px] leading-relaxed text-[#64748B]">
+                  {row.desc}
+                </div>
+                <div className="mt-1 font-body text-[9px] text-[#94A3B8]">
+                  单项封顶 {row.cap} 分
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {bonusRows.length > 0 ? (
+            <div className="rounded-xl border border-[#DCFCE7] bg-[#F0FDF4] p-3">
+              <div className="flex items-center justify-between">
+                <span className="font-body text-[12px] font-semibold text-[#166534]">
+                  个人加分
+                </span>
+                <span className="font-data text-[12px] font-semibold text-[#16A34A]">
+                  +{bonusTotal} 分
+                </span>
+              </div>
+              <div className="mt-1.5 flex flex-col gap-1">
+                {bonusRows.map((row) => (
+                  <div
+                    key={row.label}
+                    className="flex items-center justify-between font-body text-[10px] text-[#166534]"
+                  >
+                    <span>{row.label}</span>
+                    <span className="font-data">+{row.points}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="rounded-xl bg-[#F8FAFC] px-3 py-2.5">
+            <div className="flex items-center justify-between font-body text-[11px]">
+              <span className="text-[#64748B]">已扣分</span>
+              <span className="font-data text-[12px] font-semibold text-[#DC2626]">
+                -{ded?.total ?? 0} 分
+              </span>
+            </div>
+            <div className="mt-1 flex items-center justify-between font-body text-[11px]">
+              <span className="text-[#64748B]">加分</span>
+              <span className="font-data text-[12px] font-semibold text-[#16A34A]">
+                +{bonusTotal} 分
+              </span>
+            </div>
+            <div className="mt-1.5 flex items-center justify-between border-t border-[#E2E8F0] pt-1.5 font-body text-[11px]">
+              <span className="font-semibold text-[#0F172A]">综合分</span>
+              <span className="font-data text-[14px] font-bold text-[#0F172A]">
+                {viewScore?.score ?? '--'}
+              </span>
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-[#F8FAFC] p-3 font-body text-[10px] leading-relaxed text-[#94A3B8]">
+            {activeView === 'class'
+              ? '班级分按全班考勤与作业记录汇总后扣分，考勤、作业各封顶 30 分；活动未报名不扣分。'
+              : '个人分在扣分基础上叠加全勤、作业与强制活动加分，最高 100 分；已批准请假不计入考勤。'}
           </div>
         </div>
       </BottomSheet>

@@ -28,9 +28,9 @@ $icon-bg: #ebf3ff;          // 图标容器背景（主色变体）
 
 // ---------- 表面与背景 ----------
 $surface: #ffffff;          // 卡片、页面内容背景
-$bg: #f8fafc;               // 手机内容区背景
+$bg: #f5f6f8;               // 手机内容区背景（对齐 front index.css --bg）
 $page-bg: #e5e7eb;          // body 背景（桌面端）
-$home-bg: #f5f5f5;          // 首页背景
+$home-bg: #f5f6f8;          // 首页背景（对齐 front 首页 bg-[#F5F6F8]）
 $profile-bg: #f9fafb;       // 个人中心卡片容器背景
 
 // ---------- 文字色 ----------
@@ -76,8 +76,14 @@ $gradient-todo: linear-gradient(-133.249deg, #0062ff 25.619%, #004ecc 74.381%);
 // 2. 字体系统
 // ============================================================
 
-// ---------- 字体族（仅系统字体） ----------
-$font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+// ---------- 字体族 ----------
+// App 端标题使用 Funnel Sans、正文 Inter、数据 Geist；
+// 小程序端无自托管字体文件时自动回退到系统字体，视觉保持一致。
+$font-heading: "Funnel Sans", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+$font-body: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+$font-caption: "Geist", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+$font-data: "Geist Mono", "SF Mono", "PingFang SC", monospace;
+$font-family: $font-body;
 
 // ---------- 字号（rpx，设计稿 px × 2） ----------
 $text-xs: 20rpx;            // 10px - 徽章、角色标签

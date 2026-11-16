@@ -1,69 +1,287 @@
 // ============================================================
-// 消息通知设置
-// 结构参照 front NotificationSettings.tsx
+// 消息通知设置（1:1 对齐 front/src/pages/settings/NotificationSettings.tsx）
+// 结构：SettingsHeader + 通知开关卡片 + 提前时间底部抽屉
 // ============================================================
+
 .notify {
   min-height: 100vh;
-  background: $bg;
+  background-color: #ffffff;
   box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom);
 
   &__body {
-    padding: $page-padding-top $page-padding-x $page-padding-bottom;
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+    padding: 32rpx 40rpx 192rpx;
+    box-sizing: border-box;
   }
 
   &__card {
-    width: 100%;
-    box-sizing: border-box;
-    background: $surface;
-    border: 1rpx solid $border;
-    border-radius: $radius-lg;
-    box-shadow: $shadow-md;
-    padding: 24rpx;
     display: flex;
     flex-direction: column;
+    gap: 8rpx;
+    width: 100%;
+    padding: 24rpx;
+    border-radius: 16rpx;
+    background-color: #ffffff;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
   }
 
   &__row {
     display: flex;
+    flex-direction: row;
     align-items: center;
-    gap: $spacing-3;
+    gap: 24rpx;
+    width: 100%;
     height: 144rpx;
     padding: 0 24rpx;
+    border-radius: 16rpx;
     box-sizing: border-box;
   }
 
   &__row-icon {
-    width: 80rpx;
-    height: 80rpx;
-    border-radius: $radius-lg;
-    background: $accent-50;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 80rpx;
+    height: 80rpx;
     flex-shrink: 0;
+    border-radius: 16rpx;
+    background-color: rgba(0, 98, 255, 0.05);
   }
 
   &__row-info {
-    flex: 1;
-    min-width: 0;
     display: flex;
     flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
     gap: 8rpx;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
   }
 
   &__row-title {
-    font-size: $text-base;
+    font-family: $font-body;
+    font-size: 28rpx;
     font-weight: $font-semibold;
-    color: $text-primary;
+    line-height: normal;
+    color: #1a1a1a;
+    white-space: nowrap;
   }
 
   &__row-subtitle {
-    font-size: $text-11;
-    color: $text-secondary;
+    font-family: $font-body;
+    font-size: 22rpx;
+    font-weight: $font-medium;
+    line-height: normal;
+    color: #4b5563;
+    white-space: nowrap;
+  }
+
+  &__row-right {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16rpx;
+    flex-shrink: 0;
+  }
+
+  &__advance {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 4rpx;
+    height: 52rpx;
+    padding: 0 16rpx;
+    border-radius: 999rpx;
+    background-color: rgba(0, 98, 255, 0.1);
+    box-sizing: border-box;
+
+    &--off {
+      background-color: #f3f4f6;
+    }
+  }
+
+  &__advance-text {
+    font-family: $font-body;
+    font-size: 22rpx;
+    font-weight: $font-semibold;
+    line-height: normal;
+    color: #0062ff;
+    white-space: nowrap;
+  }
+
+  &__advance--off &__advance-text {
+    color: #9ca3af;
   }
 
   &__switch {
-    transform: scale(0.85);
+    position: relative;
+    width: 96rpx;
+    height: 56rpx;
+    flex-shrink: 0;
+    border-radius: 999rpx;
+    background-color: #e5e7eb;
+    transition: background-color 0.2s ease;
+
+    &--on {
+      background-color: #0062ff;
+    }
+
+    &--disabled {
+      opacity: 0.6;
+    }
+  }
+
+  &__switch-knob {
+    position: absolute;
+    top: 8rpx;
+    left: 4rpx;
+    width: 40rpx;
+    height: 40rpx;
+    border-radius: 999rpx;
+    background-color: #ffffff;
+    box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
+    transition: left 0.2s ease;
+
+    .notify__switch--on & {
+      left: 52rpx;
+    }
+  }
+
+  &__tip {
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-family: $font-body;
+    font-size: 22rpx;
+    font-weight: $font-medium;
+    line-height: normal;
+    color: #9ca3af;
+  }
+
+  // 提前时间底部抽屉
+  &__sheet {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 110;
+  }
+
+  &__sheet-mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(15, 23, 42, 0.42);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    animation: notify-fade 0.24s ease-out both;
+  }
+
+  &__sheet-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    max-height: 70vh;
+    border-radius: 48rpx 48rpx 0 0;
+    background-color: #ffffff;
+    box-shadow: 0 -28rpx 88rpx rgba(15, 23, 42, 0.16);
+    animation: notify-slide-up 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+    overflow: hidden;
+  }
+
+  &__sheet-handle-wrap {
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 20rpx 0 8rpx;
+  }
+
+  &__sheet-handle {
+    width: 76rpx;
+    height: 8rpx;
+    border-radius: 999rpx;
+    background-color: #e2e8f0;
+  }
+
+  &__sheet-header {
+    flex-shrink: 0;
+    padding: 12rpx 40rpx 24rpx;
+  }
+
+  &__sheet-title {
+    font-family: $font-heading;
+    font-size: 34rpx;
+    font-weight: $font-semibold;
+    letter-spacing: 0.4rpx;
+    line-height: normal;
+    color: #1a1a1a;
+  }
+
+  &__sheet-list {
+    display: flex;
+    flex-direction: column;
+    padding: 0 16rpx calc(32rpx + env(safe-area-inset-bottom));
+    overflow-y: auto;
+  }
+
+  &__sheet-option {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 100rpx;
+    padding: 0 24rpx;
+    border-radius: 28rpx;
+    box-sizing: border-box;
+
+    &:active {
+      background-color: #f7f9fc;
+    }
+
+    &--disabled {
+      opacity: 0.5;
+    }
+  }
+
+  &__sheet-option-text {
+    font-family: $font-body;
+    font-size: 30rpx;
+    font-weight: $font-normal;
+    line-height: normal;
+    color: #1a1a1a;
+
+    &--selected {
+      font-weight: $font-semibold;
+      color: #0062ff;
+    }
+  }
+}
+
+@keyframes notify-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes notify-slide-up {
+  from {
+    transform: translate3d(0, 100%, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
   }
 }

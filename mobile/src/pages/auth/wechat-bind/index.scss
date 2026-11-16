@@ -1,0 +1,166 @@
+// ============================================================
+// 微信绑定手机号
+// 1:1 对齐 front/src/pages/auth/WechatBind.tsx
+// ============================================================
+.wechat-bind {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #ffffff;
+  box-sizing: border-box;
+
+  &__header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 112rpx;
+    padding: 0 32rpx;
+    box-sizing: border-box;
+    flex-shrink: 0;
+  }
+
+  &__back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: $radius-full;
+
+    &:active {
+      background: #f3f4f6;
+    }
+  }
+
+  &__title {
+    margin-left: 16rpx;
+    font-family: $font-body;
+    font-size: 34rpx;
+    font-weight: $font-semibold;
+    color: #1a1a1a;
+  }
+
+  &__body {
+    padding: 16rpx 48rpx calc(80rpx + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+  }
+
+  &__notice {
+    padding: 32rpx;
+    border-radius: 24rpx;
+    background: #f0f7ff;
+    box-sizing: border-box;
+  }
+
+  &__notice-title {
+    display: block;
+    font-family: $font-body;
+    font-size: 28rpx;
+    font-weight: $font-medium;
+    color: #1a1a1a;
+  }
+
+  &__notice-text {
+    display: block;
+    margin-top: 16rpx;
+    font-family: $font-body;
+    font-size: 24rpx;
+    line-height: 40rpx;
+    color: #4b5563;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+    margin-top: 48rpx;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__label {
+    display: block;
+    margin-bottom: 16rpx;
+    font-family: $font-body;
+    font-size: 26rpx;
+    color: #4b5563;
+  }
+
+  &__input {
+    width: 100%;
+    height: 112rpx;
+    padding: 0 32rpx;
+    border: 2rpx solid #e5e7eb;
+    border-radius: 16rpx;
+    font-family: $font-body;
+    font-size: 28rpx;
+    color: #1a1a1a;
+    background: #ffffff;
+    box-sizing: border-box;
+  }
+
+  &__input--inner {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+
+  &__input-wrap {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 112rpx;
+    padding: 0 32rpx;
+    border: 2rpx solid #e5e7eb;
+    border-radius: 16rpx;
+    box-sizing: border-box;
+  }
+
+  &__toggle {
+    flex-shrink: 0;
+    padding: 0 16rpx;
+    font-family: $font-body;
+    font-size: 26rpx;
+    color: #4b5563;
+  }
+
+  &__placeholder {
+    color: #9ca3af;
+  }
+
+  &__submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 112rpx;
+    margin-top: 64rpx;
+    border-radius: 16rpx;
+    background: #0062ff;
+    box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.05);
+
+    &:active {
+      opacity: 0.9;
+    }
+
+    &--disabled {
+      background: #93c5fd;
+
+      &:active {
+        opacity: 1;
+      }
+    }
+  }
+
+  &__submit-text {
+    font-family: $font-body;
+    font-size: 32rpx;
+    font-weight: $font-semibold;
+    color: #ffffff;
+  }
+}

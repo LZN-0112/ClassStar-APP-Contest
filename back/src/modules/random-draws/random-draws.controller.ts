@@ -54,6 +54,16 @@ export class RandomDrawsController {
     return this.randomDrawsService.cancel(classId, drawId, userId);
   }
 
+  @Post(':drawId/publish')
+  @ApiOperation({ summary: '一键公示抽签结果（通知全班）' })
+  publish(
+    @Param('classId', ParseUUIDPipe) classId: string,
+    @Param('drawId', ParseUUIDPipe) drawId: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.randomDrawsService.publish(classId, drawId, userId);
+  }
+
   @Get()
   @ApiOperation({ summary: '抽签记录列表' })
   findAll(

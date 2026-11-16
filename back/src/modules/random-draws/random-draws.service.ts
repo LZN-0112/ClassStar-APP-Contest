@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '@/common/database/prisma.service';
+import { MessagesService } from '../messages/messages.service';
 import { isSystemAccount } from '@/common/utils/system-account.util';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -17,7 +18,10 @@ import {
 export class RandomDrawsService {
   private readonly logger = new Logger(RandomDrawsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly messagesService: MessagesService,
+  ) {}
 
   async verifyClassAccess(userId: string, classId: string) {
     if (!classId) {
@@ -60,7 +64,7 @@ export class RandomDrawsService {
   }
 
   async create(classId: string, dto: CreateRandomDrawDto, userId: string) {
-    await this.verifyCommittee(userId, classId);
+    const member = await this.verifyClassAccess(userId, classId);
 
     const mainCount = dto.mainCount ?? 1;
     const backupCount = dto.backupCount ?? 0;
@@ -88,9 +92,36 @@ export class RandomDrawsService {
       throw new BadRequestException('候选人人数不足以抽取指定数量');
     }
 
-    const shuffled = this.shuffle(candidates);
-    const mainList = shuffled.slice(0, mainCount);
-    const backupList = shuffled.slice(mainCount, mainCount + backupCount);
+    let mainList: typeof candidates;
+    let backupList: typeof candidates;
+
+    if (dto.mainUserIds || dto.backupUserIds) {
+      // 保存时沿用预览页展示的结果，避免再次随机导致展示与保存不一致
+      const mainIds = dto.mainUserIds || [];
+      const backupIds = dto.backupUserIds || [];
+      if (mainIds.length !== mainCount || backupIds.length !== backupCount) {
+        throw new BadRequestException('抽签结果与抽签人数不一致，请重新抽签');
+      }
+
+      const allIds = [...mainIds, ...backupIds];
+      if (new Set(allIds).size !== allIds.length) {
+        throw new BadRequestException('抽签结果中存在重复成员，请重新抽签');
+      }
+
+      const candidateMap = new Map(candidates.map((m) => [m.user_id, m]));
+      const selected = allIds.map((id) => candidateMap.get(id));
+      if (selected.some((m) => !m)) {
+        throw new BadRequestException('抽签结果中包含无效成员，请重新抽签');
+      }
+
+      const selectedMembers = selected as typeof candidates;
+      mainList = selectedMembers.slice(0, mainCount);
+      backupList = selectedMembers.slice(mainCount);
+    } else {
+      const shuffled = this.shuffle(candidates);
+      mainList = shuffled.slice(0, mainCount);
+      backupList = shuffled.slice(mainCount, mainCount + backupCount);
+    }
 
     const drawId = uuidv4();
 
@@ -101,6 +132,7 @@ export class RandomDrawsService {
             id: drawId,
             class_id: classId,
             created_by: userId,
+            creator_role_level: member.role_level,
             title: this.escapeHtml(dto.title),
             main_count: mainCount,
             backup_count: backupCount,
@@ -154,7 +186,7 @@ export class RandomDrawsService {
    * 预览抽签结果（不入库）
    */
   async preview(classId: string, dto: CreateRandomDrawDto, userId: string) {
-    await this.verifyCommittee(userId, classId);
+    await this.verifyClassAccess(userId, classId);
 
     const mainCount = dto.mainCount ?? 1;
     const backupCount = dto.backupCount ?? 0;
@@ -229,15 +261,95 @@ export class RandomDrawsService {
     return { success: true };
   }
 
+  /**
+   * 一键公示：将班委发起的抽签结果以班级消息形式通知全班
+   */
+  async publish(classId: string, drawId: string, userId: string) {
+    await this.verifyCommittee(userId, classId);
+
+    const record = await this.prisma.random_draw_records.findFirst({
+      where: { id: drawId, class_id: classId },
+      include: {
+        random_draw_members: {
+          orderBy: { created_at: 'asc' },
+          include: { users: { select: { name: true } } },
+        },
+      },
+    });
+
+    if (!record) {
+      throw new NotFoundException('抽签记录不存在');
+    }
+
+    if (record.creator_role_level !== 'owner' && record.creator_role_level !== 'admin') {
+      throw new ForbiddenException('个人抽签记录不能公示给全班');
+    }
+
+    if (record.status === 'cancelled') {
+      throw new BadRequestException('该抽签记录已作废，不能公示');
+    }
+
+    if (record.publicized_at) {
+      throw new BadRequestException('该抽签结果已公示，请勿重复操作');
+    }
+
+    const namesOf = (type: 'main' | 'backup') =>
+      record.random_draw_members
+        .filter((m) => m.draw_type === type)
+        .map((m) => m.users?.name || '未知成员');
+
+    const mainNames = namesOf('main');
+    const backupNames = namesOf('backup');
+    const lines = [
+      `正选（${mainNames.length}人）：${mainNames.join('、') || '无'}`,
+    ];
+    if (backupNames.length) {
+      lines.push(`候补（${backupNames.length}人）：${backupNames.join('、')}`);
+    }
+    lines.push('以上结果由班委抽签产生，请相关同学及时查看中签记录。');
+
+    const message = await this.messagesService.create(
+      classId,
+      {
+        type: 'random_draw',
+        title: `【抽签公示】${record.title}`,
+        content: lines.join('\n'),
+      },
+      userId,
+      { type: 'random_draw', id: drawId },
+    );
+
+    const publicizedAt = new Date();
+    await this.prisma.random_draw_records.update({
+      where: { id: drawId },
+      data: { publicized_at: publicizedAt },
+    });
+
+    return {
+      success: true,
+      messageId: message.id,
+      publicizedAt: publicizedAt.toISOString(),
+    };
+  }
+
   async findAll(classId: string, userId: string, query: QueryRandomDrawsDto) {
     await this.verifyClassAccess(userId, classId);
 
     const { page = 1, pageSize = 10 } = query;
     const skip = (page - 1) * pageSize;
 
+    // 班委发起的记录全班可见；普通成员的记录仅本人可见
+    const where = {
+      class_id: classId,
+      OR: [
+        { created_by: userId },
+        { creator_role_level: { in: ['owner', 'admin'] } },
+      ],
+    };
+
     const [records, total] = await Promise.all([
       this.prisma.random_draw_records.findMany({
-        where: { class_id: classId },
+        where,
         orderBy: { created_at: 'desc' },
         skip,
         take: pageSize,
@@ -246,7 +358,7 @@ export class RandomDrawsService {
           users: { select: { id: true, name: true } },
         },
       }),
-      this.prisma.random_draw_records.count({ where: { class_id: classId } }),
+      this.prisma.random_draw_records.count({ where }),
     ]);
 
     return {
@@ -263,6 +375,7 @@ export class RandomDrawsService {
     const record = await this.prisma.random_draw_records.findFirst({
       where: { id: drawId, class_id: classId },
       include: {
+        users: { select: { id: true, name: true } },
         random_draw_members: {
           orderBy: { created_at: 'asc' },
           include: { users: { select: { id: true, name: true, student_id: true } } },
@@ -270,7 +383,7 @@ export class RandomDrawsService {
       },
     });
 
-    if (!record) {
+    if (!record || (record.created_by !== userId && record.creator_role_level === 'member')) {
       throw new NotFoundException('抽签记录不存在');
     }
 
@@ -287,6 +400,11 @@ export class RandomDrawsService {
       memberCount: record._count.random_draw_members,
       createdAt: record.created_at,
       createdBy: record.users?.name || null,
+      createdById: record.created_by,
+      isCommitteeDraw: record.creator_role_level === 'owner' || record.creator_role_level === 'admin',
+      isPublic: !!record.publicized_at,
+      publicizedAt: record.publicized_at || null,
+      status: record.status,
     };
   }
 
@@ -315,6 +433,12 @@ export class RandomDrawsService {
       main,
       backup,
       createdAt: record.created_at,
+      createdBy: record.users?.name || null,
+      createdById: record.created_by,
+      isCommitteeDraw: record.creator_role_level === 'owner' || record.creator_role_level === 'admin',
+      isPublic: !!record.publicized_at,
+      publicizedAt: record.publicized_at || null,
+      status: record.status,
     };
   }
 }

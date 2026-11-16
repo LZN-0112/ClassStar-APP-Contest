@@ -37,9 +37,14 @@ export interface ClassDetail {
   grade?: string
   major?: string
   announcement?: string
+  description?: string
   qrCodeUrl?: string
+  orgType?: string
+  category?: string
+  logoUrl?: string | null
   materialCount?: number
   archiveCount?: number
+  maxMembers?: number
   createdAt?: string
   ownerId?: string
   memberCount?: number
@@ -54,11 +59,18 @@ export interface ClassMember {
   roleLevel?: 'owner' | 'admin' | 'member'
   isCommittee?: boolean
   avatar?: string
+  studentId?: string | null
+  phone?: string | null
+  verifyStatus?: 'CONFIRMED' | 'PENDING' | 'UNVERIFIED'
+  verifiedAt?: string | null
+  joinedAt?: string
+  isSystemAccount?: boolean
 }
 
 /** 成员列表结果 */
 export interface MembersResult {
   list: ClassMember[]
+  pagination?: { page: number; pageSize: number; total: number; totalPages: number }
   total?: number
 }
 

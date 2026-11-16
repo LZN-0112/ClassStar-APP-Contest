@@ -70,7 +70,7 @@ export default function ListItem({
 
       {showArrow && onClick ? (
         <View className='cx-list-item__arrow'>
-          <Icon name='chevron-right' size={40} strokeWidth={2} />
+          <Icon name='chevron-right' size={40} color='#9CA3AF' strokeWidth={2} />
         </View>
       ) : null}
     </View>

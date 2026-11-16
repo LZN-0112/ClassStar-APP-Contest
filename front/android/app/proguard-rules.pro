@@ -33,6 +33,10 @@
 -keep class com.tencent.wxop.** { *; }
 -keep class com.tencent.mm.sdk.** { *; }
 
+# 极光推送 SDK 与 Cordova 封装（POC）
+-keep class cn.jiguang.** { *; }
+-keep class cn.jpush.** { *; }
+
 # 保留 Parcelable / 枚举序列化字段
 -keepclassmembers enum * {
     public static **[] values();

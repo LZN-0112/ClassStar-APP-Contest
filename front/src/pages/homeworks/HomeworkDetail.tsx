@@ -7,22 +7,32 @@ import {
   AlertCircle,
   Paperclip,
   ClipboardCheck,
+  ClipboardList,
   Send,
   Timer,
   RefreshCw,
   Users,
   ChevronDown,
+  MessageSquare,
+  XCircle,
 } from 'lucide-react';
 import PageLayout from '@/components/layout/PageLayout';
+import AttachmentView, {
+  parseAttachments,
+} from '@/components/homeworks/AttachmentView';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
-import { api, resolveFileUrl } from '@/lib/api';
+import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface Submission {
   id: string;
   content: string | null;
   attachments: unknown;
+  fileUrls?: unknown;
   status: string;
+  score?: string | null;
+  review_comment?: string | null;
+  reviewed_at?: string | null;
   submitted_at: string;
 }
 
@@ -99,23 +109,6 @@ function formatRemaining(dateStr: string, now: number): string {
   return `剩 ${Math.max(1, minutes)} 分钟`;
 }
 
-function parseAttachments(raw: unknown): string[] {
-  if (!raw) return [];
-  if (Array.isArray(raw)) return raw.filter((item): item is string => typeof item === 'string');
-  if (typeof raw === 'string') {
-    try {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed.filter((item): item is string => typeof item === 'string');
-      }
-      return [raw];
-    } catch {
-      return [raw];
-    }
-  }
-  return [];
-}
-
 export default function HomeworkDetail() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -153,10 +146,10 @@ export default function HomeworkDetail() {
     load();
   }, [load]);
 
-  const attachments = useMemo(
-    () => parseAttachments(data?.mySubmission?.attachments),
-    [data?.mySubmission?.attachments],
-  );
+  const attachments = useMemo(() => {
+    const parsed = parseAttachments(data?.mySubmission?.attachments);
+    return parsed.length ? parsed : parseAttachments(data?.mySubmission?.fileUrls);
+  }, [data?.mySubmission]);
 
   const [delayList, setDelayList] = useState<DelayReviewItem[]>([]);
   const [reviewingId, setReviewingId] = useState('');
@@ -201,23 +194,32 @@ export default function HomeworkDetail() {
       : data?.deadline || '';
 
   const overdue = data ? now > new Date(effectiveDeadline).getTime() : false;
-  const canSubmit = Boolean(data) && !overdue;
+  const canSubmit =
+    Boolean(data) &&
+    (!overdue || data?.mySubmission?.status === 'rejected');
   const canApplyDelay =
     Boolean(data) &&
     !data?.mySubmission &&
     delayStatus !== 'pending' &&
     !(delayStatus === 'approved' && !overdue);
 
+  const childStatus = data?.mySubmission?.status;
   const myStatus = (() => {
     if (!data) return '';
     if (isManager) return overdue ? '已截止' : '进行中';
-    if (data.mySubmission) return '已提交';
+    if (data.mySubmission) {
+      if (childStatus === 'approved') return '已通过';
+      if (childStatus === 'rejected') return '已驳回';
+      return '待批改';
+    }
     if (delayStatus === 'pending') return '延时审核中';
     return overdue ? '已逾期' : '待提交';
   })();
 
   const statusStyle: Record<string, string> = {
-    已提交: 'bg-[#F0FDF4] text-[#16A34A]',
+    待批改: 'bg-[#FFFBEB] text-[#B45309]',
+    已通过: 'bg-[#F0FDF4] text-[#16A34A]',
+    已驳回: 'bg-[#FEF2F2] text-[#DC2626]',
     延时审核中: 'bg-[#FFFBEB] text-[#D97706]',
     已逾期: 'bg-[#FEF2F2] text-[#DC2626]',
     待提交: 'bg-[#EFF6FF] text-[#0062FF]',
@@ -311,8 +313,12 @@ export default function HomeworkDetail() {
                 className="shrink-0 text-[11px] font-semibold"
                 style={{ color: overdue ? '#DC2626' : timeProgress.color }}
               >
-                {myStatus === '已提交'
-                  ? '已完成'
+                {data.mySubmission
+                  ? childStatus === 'rejected'
+                    ? '待重新提交'
+                    : childStatus === 'approved'
+                      ? '已完成'
+                      : '待批改'
                   : myStatus === '延时审核中' && !overdue
                     ? '审核中'
                     : formatRemaining(effectiveDeadline, now)}
@@ -367,8 +373,16 @@ export default function HomeworkDetail() {
             </div>
             <button
               type="button"
+              onClick={() => navigate(`/homework-submissions/${data.id}`)}
+              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#0062FF] py-2.5 text-[13px] font-semibold text-white shadow-[0px_4px_12px_0px_#0062FF33]"
+            >
+              <ClipboardList className="h-4 w-4" />
+              查看提交与批改
+            </button>
+            <button
+              type="button"
               onClick={() => navigate('/offline-check')}
-              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#EFF6FF] py-2.5 text-[13px] font-medium text-[#0062FF]"
+              className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#EFF6FF] py-2.5 text-[13px] font-medium text-[#0062FF]"
             >
               <ClipboardCheck className="h-4 w-4" />
               离线核对提交情况
@@ -473,6 +487,56 @@ export default function HomeworkDetail() {
           </div>
         )}
 
+        {/* 批改结果 / 上次批改意见 */}
+        {!isManager && data.mySubmission?.review_comment && (
+          <div
+            className={`rounded-2xl bg-white p-4 shadow-[0px_2px_8px_0px_#0000000D] ring-1 ${
+              childStatus === 'rejected' ? 'ring-[#FECACA]' : 'ring-[#F1F5F9]'
+            }`}
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <span className="flex items-center gap-2 text-[13px] font-semibold text-[#1E293B]">
+                {childStatus === 'rejected' ? (
+                  <XCircle className="h-4 w-4 text-[#EF4444]" />
+                ) : (
+                  <MessageSquare className="h-4 w-4 text-[#0062FF]" />
+                )}
+                {childStatus === 'rejected'
+                  ? '批改结果 · 已驳回'
+                  : childStatus === 'submitted'
+                    ? '上次批改意见'
+                    : '批改结果'}
+              </span>
+              {data.mySubmission.score && (
+                <span className="rounded-full bg-[#EFF6FF] px-2 py-0.5 text-[10px] font-semibold text-[#0062FF]">
+                  {data.mySubmission.score}
+                </span>
+              )}
+            </div>
+            <div
+              className={`rounded-xl p-3 text-[12px] leading-5 ${
+                childStatus === 'rejected'
+                  ? 'bg-[#FEF2F2] text-[#B91C1C]'
+                  : 'bg-[#F8FAFC] text-[#475569]'
+              }`}
+            >
+              {childStatus === 'rejected' ? '驳回原因：' : '评语：'}
+              {data.mySubmission.review_comment}
+            </div>
+            {data.mySubmission.reviewed_at && childStatus !== 'submitted' && (
+              <div className="mt-2 flex items-center gap-1 text-[11px] text-[#94A3B8]">
+                <Clock3 className="h-3.5 w-3.5" />
+                批改于 {formatDateTime(data.mySubmission.reviewed_at)}
+              </div>
+            )}
+            {childStatus === 'rejected' && (
+              <div className="mt-2 text-[11px] text-[#94A3B8]">
+                按驳回意见修改后，可在下方重新提交
+              </div>
+            )}
+          </div>
+        )}
+
         {/* 我的提交 */}
         {data.mySubmission ? (
           <div className="rounded-2xl bg-white p-4 shadow-[0px_2px_8px_0px_#0000000D] ring-1 ring-[#F1F5F9]">
@@ -481,8 +545,12 @@ export default function HomeworkDetail() {
                 <CheckCircle2 className="h-4 w-4 text-[#22C55E]" />
                 我的提交
               </span>
-              <span className="rounded-full bg-[#F0FDF4] px-2 py-0.5 text-[10px] font-semibold text-[#16A34A]">
-                已提交
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                  statusStyle[myStatus] || statusStyle['待批改']
+                }`}
+              >
+                {myStatus}
               </span>
             </div>
             {data.mySubmission.content && (
@@ -491,25 +559,8 @@ export default function HomeworkDetail() {
               </div>
             )}
             {attachments.length > 0 && (
-              <div className="mb-3 grid grid-cols-3 gap-2">
-                {attachments.map((url, index) => (
-                  <a
-                    key={`${url}-${index}`}
-                    href={resolveFileUrl(url)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="aspect-square overflow-hidden rounded-lg bg-[#F1F5F9]"
-                  >
-                    <img
-                      src={resolveFileUrl(url)}
-                      alt={`附件${index + 1}`}
-                      className="h-full w-full object-cover"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  </a>
-                ))}
+              <div className="mb-3">
+                <AttachmentView attachments={attachments} />
               </div>
             )}
             <div className="flex items-center gap-1 text-[11px] text-[#94A3B8]">

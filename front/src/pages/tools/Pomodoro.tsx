@@ -135,7 +135,7 @@ export default function Pomodoro() {
       safeAreaTopClassName="bg-[#EDF4FC]"
     >
       <StatusBar />
-      <div className="relative flex w-full flex-col items-center px-4 pb-[calc(20px+env(safe-area-inset-bottom))] sm:px-5">
+      <div className="relative flex w-full flex-1 flex-col items-center px-4 pb-[calc(16px+env(safe-area-inset-bottom))] sm:px-5">
         {/* 状态色氛围光，随专注/短休息/长休息平滑切换 */}
         <AnimatePresence initial={false}>
           <motion.div
@@ -151,7 +151,7 @@ export default function Pomodoro() {
           />
         </AnimatePresence>
 
-        <div className="relative z-10 flex w-full flex-col items-center">
+        <div className="relative z-10 flex w-full flex-1 flex-col items-center">
           {/* Header */}
           <div className="flex h-12 w-full shrink-0 items-center justify-between">
             <BackButton />
@@ -166,9 +166,9 @@ export default function Pomodoro() {
             </button>
           </div>
 
-          <div className="mt-2 flex w-full flex-col gap-4">
+          <div className="mt-4 flex w-full flex-1 flex-col gap-3.5">
             {/* 计时主卡片 */}
-            <div className="flex w-full flex-col gap-2 rounded-[28px] bg-white/95 p-4 shadow-lift">
+            <div className="flex w-full flex-1 flex-col gap-3 rounded-[28px] bg-white/95 p-4 shadow-lift">
               <div className="flex w-full items-center justify-between px-1">
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.span
@@ -190,7 +190,7 @@ export default function Pomodoro() {
               </div>
 
               {/* 倒计时环 */}
-              <div className="relative mx-auto flex aspect-square w-[min(284px,74vw)] items-center justify-center">
+              <div className="relative mx-auto my-auto flex aspect-square w-[min(300px,80vw)] items-center justify-center">
                 <motion.div
                   aria-hidden
                   className="absolute inset-2 rounded-full"

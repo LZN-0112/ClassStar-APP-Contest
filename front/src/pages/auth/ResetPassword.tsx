@@ -1,13 +1,16 @@
 import PhoneFrame from '@/components/layout/PhoneFrame';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { GradientWave } from '@/components/ui/gradient-wave';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
-  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [emailCode, setEmailCode] = useState('');
+  const [sendingCode, setSendingCode] = useState(false);
+  const [countdown, setCountdown] = useState(0);
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -16,9 +19,45 @@ export default function ResetPassword() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setTimeout(() => setCountdown((v) => v - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
+  /** 发送邮箱验证码：验证码会发送到输入的注册邮箱 */
+  const handleSendCode = async () => {
+    if (sendingCode || countdown > 0) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      toast.error('请输入正确的邮箱');
+      return;
+    }
+    setSendingCode(true);
+    try {
+      const res = await api.post('/auth/reset-password/send-code', { email: email.trim() });
+      const data = res.data?.data || res.data;
+      if (data?.devCode) {
+        // 测试环境未配置 SMTP，后端回传验证码并自动填入
+        setEmailCode(String(data.devCode));
+        toast.success('测试环境验证码已自动填入');
+      } else {
+        toast.success(`验证码已发送至 ${data?.email || email.trim()}，请查收`);
+      }
+      setCountdown(60);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '验证码发送失败，请稍后重试');
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
   const validate = () => {
-    if (!/^1[3-9]\d{9}$/.test(phone)) {
-      toast.error('请输入正确的 11 位手机号');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      toast.error('请输入正确的邮箱');
+      return false;
+    }
+    if (!/^\d{6}$/.test(emailCode)) {
+      toast.error('请输入 6 位邮箱验证码');
       return false;
     }
     if (!oldPassword) {
@@ -41,7 +80,8 @@ export default function ResetPassword() {
     setLoading(true);
     try {
       await api.post('/auth/reset-password', {
-        phone,
+        email: email.trim(),
+        emailCode,
         oldPassword,
         newPassword,
         confirmPassword,
@@ -118,29 +158,54 @@ export default function ResetPassword() {
           data-pencil-name="Subtitle"
           className="box-border absolute left-[16px] top-[219.461px] z-[1] text-left font-body text-[14px]/[normal] font-normal text-[#4B5563] [white-space:nowrap]"
         >
-          验证手机号后设置新密码
+          验证邮箱和旧密码后设置新密码
         </div>
 
-        {/* 手机号 */}
+        {/* 邮箱 */}
         <div
-          data-pencil-name="Phone Input"
+          data-pencil-name="Email Input"
           className="box-border absolute left-[16px] right-[16px] top-[280px] z-[2] flex h-[56px] flex-col items-start justify-center gap-2 rounded-lg border-[1px_solid_#E5E7EB] bg-[#FFFFFF] p-[0px_16px] [box-shadow:0px_2px_8px_0px_#0000000D]"
+        >
+          <input
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="请输入注册邮箱"
+            className="box-border h-full w-full bg-transparent text-left font-body text-[14px]/[normal] font-normal text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none"
+          />
+        </div>
+
+        {/* 邮箱验证码 */}
+        <div
+          data-pencil-name="Email Code Input"
+          className="box-border absolute left-[16px] right-[16px] top-[348px] z-[3] flex h-[56px] flex-row items-center justify-between gap-2 rounded-lg border-[1px_solid_#E5E7EB] bg-[#FFFFFF] p-[0px_16px] [box-shadow:0px_2px_8px_0px_#0000000D]"
         >
           <input
             type="tel"
             inputMode="numeric"
-            autoComplete="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="请输入手机号"
-            className="box-border h-full w-full bg-transparent text-left font-body text-[14px]/[normal] font-normal text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none"
+            autoComplete="one-time-code"
+            maxLength={6}
+            value={emailCode}
+            onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            placeholder="请输入邮箱收到的验证码"
+            className="box-border h-full flex-1 bg-transparent text-left font-body text-[14px]/[normal] font-normal text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none"
           />
+          <button
+            type="button"
+            disabled={sendingCode || countdown > 0}
+            onClick={handleSendCode}
+            className="shrink-0 text-center font-body text-[13px]/[normal] font-medium text-[#0062FF] disabled:text-[#9CA3AF]"
+          >
+            {countdown > 0 ? `${countdown}s 后重发` : sendingCode ? '发送中...' : '获取验证码'}
+          </button>
         </div>
 
         {/* 旧密码 */}
         <div
           data-pencil-name="Old Password Input"
-          className="box-border absolute left-[16px] right-[16px] top-[348px] z-[4] flex h-[56px] flex-row items-center justify-between gap-2 rounded-lg border-[1px_solid_#E5E7EB] bg-[#FFFFFF] p-[0px_16px] [box-shadow:0px_2px_8px_0px_#0000000D]"
+          className="box-border absolute left-[16px] right-[16px] top-[416px] z-[4] flex h-[56px] flex-row items-center justify-between gap-2 rounded-lg border-[1px_solid_#E5E7EB] bg-[#FFFFFF] p-[0px_16px] [box-shadow:0px_2px_8px_0px_#0000000D]"
         >
           <input
             type={showOldPassword ? 'text' : 'password'}
@@ -172,7 +237,7 @@ export default function ResetPassword() {
         {/* 新密码 */}
         <div
           data-pencil-name="New Password Input"
-          className="box-border absolute left-[16px] right-[16px] top-[416px] z-[5] flex h-[56px] flex-row items-center justify-between gap-2 rounded-lg border-[1px_solid_#E5E7EB] bg-[#FFFFFF] p-[0px_16px] [box-shadow:0px_2px_8px_0px_#0000000D]"
+          className="box-border absolute left-[16px] right-[16px] top-[484px] z-[5] flex h-[56px] flex-row items-center justify-between gap-2 rounded-lg border-[1px_solid_#E5E7EB] bg-[#FFFFFF] p-[0px_16px] [box-shadow:0px_2px_8px_0px_#0000000D]"
         >
           <input
             type={showNewPassword ? 'text' : 'password'}
@@ -204,7 +269,7 @@ export default function ResetPassword() {
         {/* 确认新密码 */}
         <div
           data-pencil-name="Confirm Password Input"
-          className="box-border absolute left-[16px] right-[16px] top-[484px] z-[6] flex h-[56px] flex-row items-center justify-between gap-2 rounded-lg border-[1px_solid_#E5E7EB] bg-[#FFFFFF] p-[0px_16px] [box-shadow:0px_2px_8px_0px_#0000000D]"
+          className="box-border absolute left-[16px] right-[16px] top-[552px] z-[6] flex h-[56px] flex-row items-center justify-between gap-2 rounded-lg border-[1px_solid_#E5E7EB] bg-[#FFFFFF] p-[0px_16px] [box-shadow:0px_2px_8px_0px_#0000000D]"
         >
           <input
             type={showConfirmPassword ? 'text' : 'password'}
@@ -236,7 +301,7 @@ export default function ResetPassword() {
         {/* 确认重置 */}
         <div
           data-pencil-name="Reset Button"
-          className={`box-border absolute left-[16px] right-[16px] top-[566px] z-[7] flex h-[52px] flex-col items-center justify-center gap-2 rounded-lg p-[0px_16px] [box-shadow:0px_4px_16px_0px_#0000000D] ${
+          className={`box-border absolute left-[16px] right-[16px] top-[634px] z-[7] flex h-[52px] flex-col items-center justify-center gap-2 rounded-lg p-[0px_16px] [box-shadow:0px_4px_16px_0px_#0000000D] ${
             loading ? 'bg-[#93C5FD]' : 'bg-[#0062FF]'
           }`}
           onClick={handleReset}

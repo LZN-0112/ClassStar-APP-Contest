@@ -1,112 +1,264 @@
-// 导入学生页样式
-.impt {
+// ============================================================
+// 导入学生名单
+// 1:1 对齐 front/src/pages/class/ImportStudents.tsx
+// ============================================================
+.import {
   min-height: 100vh;
-  background: $bg;
+  background-color: $surface;
   box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom);
+
+  &--center {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
 
   &__body {
-    padding: 24rpx $page-padding-x $page-padding-bottom;
     display: flex;
     flex-direction: column;
-    gap: 24rpx;
+    gap: 32rpx;
+    padding: 0 48rpx;
+    box-sizing: border-box;
   }
 
-  &__hint {
-    font-size: $text-sm;
-    color: $text-secondary;
-    line-height: $leading-normal;
+  &__spacer {
+    width: 100%;
+    height: 120rpx;
+    flex-shrink: 0;
   }
 
-  // ------ 选择文件 ------
-  &__drop {
-    min-height: 260rpx;
-    background: $surface;
-    border: 1rpx dashed $gray-300;
-    border-radius: $radius-lg;
+  &__header {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    justify-content: center;
-    gap: 16rpx;
-    padding: 32rpx;
+    width: 100%;
   }
 
-  &__drop-title {
-    font-size: $text-base;
-    font-weight: $font-semibold;
-    color: $text-primary;
-  }
-
-  &__drop-sub {
-    font-size: $text-xs;
-    color: $text-tertiary;
-    text-align: center;
-  }
-
-  &__file {
-    background: $surface;
-    border: 1rpx solid $border;
-    border-radius: $radius-md;
-    padding: $card-padding;
-    display: flex;
-    align-items: center;
-    gap: 20rpx;
-  }
-
-  &__file-icon {
-    width: 72rpx;
-    height: 72rpx;
-    border-radius: $radius-md;
-    background: $icon-bg;
+  &__back {
+    width: 64rpx;
+    height: 64rpx;
+    margin-left: -16rpx;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
   }
 
-  &__file-info {
+  &__header-title {
+    font-family: $font-heading;
+    font-size: 40rpx;
+    line-height: 1.2;
+    font-weight: $font-bold;
+    color: $text-primary;
+  }
+
+  &__lead {
+    font-size: $text-base;
+    color: $text-secondary;
+    margin-bottom: 16rpx;
+  }
+
+  // ---------- 导入方式 ----------
+  &__method {
+    width: 100%;
+    height: 128rpx;
+    box-sizing: border-box;
+    padding: 32rpx;
+    border: 1rpx solid $border;
+    border-radius: $radius-lg;
+    background-color: $surface;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+
+    &:active {
+      background-color: #f9fafb;
+    }
+
+    &--disabled {
+      background-color: #fafafa;
+
+      &:active {
+        background-color: #fafafa;
+      }
+    }
+  }
+
+  &__method-main {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 24rpx;
+    min-width: 0;
+  }
+
+  &__method-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
+    min-width: 0;
+  }
+
+  &__method-title-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12rpx;
+  }
+
+  &__method-title {
+    font-family: $font-body;
+    font-size: 30rpx;
+    font-weight: $font-semibold;
+    color: $text-primary;
+
+    &--disabled {
+      color: #9ca3af;
+    }
+  }
+
+  &__method-desc {
+    font-family: $font-caption;
+    font-size: $text-sm;
+    color: #9ca3af;
+
+    &--disabled {
+      color: #c0c4cc;
+    }
+  }
+
+  &__soon {
+    padding: 4rpx 12rpx;
+    border-radius: $radius-sm;
+    background-color: #f3f4f6;
+  }
+
+  &__soon-text {
+    font-size: $text-xs;
+    color: $text-weak;
+  }
+
+  // ---------- 模板下载 ----------
+  &__template-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: -16rpx;
+    padding: 0 8rpx;
+    box-sizing: border-box;
+  }
+
+  &__template-tip {
+    font-family: $font-caption;
+    font-size: $text-xs;
+    color: #9ca3af;
+  }
+
+  &__template-btn {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8rpx;
+
+    &:active {
+      opacity: 0.7;
+    }
+
+    &--loading {
+      opacity: 0.5;
+    }
+  }
+
+  &__template-btn-text {
+    font-size: $text-sm;
+    font-weight: $font-medium;
+    color: $primary;
+  }
+
+  // ---------- 已选文件 ----------
+  &__selected {
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+    width: 100%;
+  }
+
+  &__file {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 32rpx;
+    border: 1rpx solid #bfdbfe;
+    border-radius: $radius-lg;
+    background-color: #eff6ff;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 24rpx;
+  }
+
+  &__file-icon {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: $radius-md;
+    background-color: $primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__file-main {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 6rpx;
   }
 
   &__file-name {
     font-size: $text-base;
-    color: $text-primary;
     font-weight: $font-medium;
+    color: $text-primary;
     overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
-  &__file-sub {
+  &__file-size {
+    font-family: $font-caption;
     font-size: $text-xs;
     color: $text-secondary;
   }
 
   &__file-reset {
     font-size: $text-sm;
-    color: $danger;
     font-weight: $font-medium;
+    color: #ef4444;
     flex-shrink: 0;
+
+    &:active {
+      opacity: 0.7;
+    }
   }
 
-  // ------ 同步模式 ------
+  // ---------- 同步模式 ----------
   &__sync {
-    background: $surface;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 32rpx;
     border: 1rpx solid $border;
     border-radius: $radius-md;
-    padding: $card-padding;
+    background-color: $surface;
     display: flex;
+    flex-direction: row;
     align-items: center;
     justify-content: space-between;
     gap: 24rpx;
   }
 
-  &__sync-info {
+  &__sync-main {
     flex: 1;
     min-width: 0;
     display: flex;
@@ -116,241 +268,335 @@
 
   &__sync-title {
     font-size: $text-base;
-    color: $text-primary;
-    font-weight: $font-semibold;
-  }
-
-  &__sync-sub {
-    font-size: $text-11;
-    color: $text-secondary;
-    line-height: $leading-normal;
-  }
-
-  &__sync-switch {
-    transform: scale(0.9);
-    flex-shrink: 0;
-  }
-
-  // ------ 格式说明 ------
-  &__tip {
-    background: $accent-50;
-    border: 1rpx solid $accent-100;
-    border-radius: $radius-md;
-    padding: $card-padding;
-    display: flex;
-    flex-direction: column;
-    gap: 12rpx;
-  }
-
-  &__tip-head {
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
-  }
-
-  &__tip-title {
-    font-size: $text-sm;
-    color: #1e40af;
     font-weight: $font-medium;
-  }
-
-  &__tip-text {
-    font-size: $text-11;
-    color: $primary-light;
-    line-height: $leading-normal;
-  }
-
-  // ------ 提交 ------
-  &__submit {
-    margin-top: 8rpx;
-  }
-
-  // ------ 加载中 ------
-  &__loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 24rpx;
-    padding: $page-padding-x;
-    padding-top: 240rpx;
-  }
-
-  &__loading-icon {
-    width: 128rpx;
-    height: 128rpx;
-    border-radius: $radius-full;
-    background: $accent-50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  &__spinner {
-    width: 96rpx;
-    height: 96rpx;
-    border-radius: 50%;
-    border: 6rpx solid $accent-200;
-    border-top-color: $primary;
-    animation: impt-spin 0.8s linear infinite;
-  }
-
-  &__loading-title {
-    font-size: $text-xl;
     color: $text-primary;
-    font-weight: $font-bold;
   }
 
-  &__loading-sub {
-    font-size: $text-sm;
+  &__sync-desc {
+    font-family: $font-caption;
+    font-size: $text-xs;
     color: $text-secondary;
   }
 
-  &__bar {
+  &__switch {
+    position: relative;
+    width: 88rpx;
+    height: 48rpx;
+    border-radius: $radius-full;
+    background-color: #d1d5db;
+    flex-shrink: 0;
+    transition: background-color 0.2s ease;
+
+    &--on {
+      background-color: $primary;
+    }
+  }
+
+  &__switch-knob {
+    position: absolute;
+    top: 4rpx;
+    left: 4rpx;
+    width: 40rpx;
+    height: 40rpx;
+    border-radius: $radius-full;
+    background-color: #ffffff;
+    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease;
+
+    &--on {
+      transform: translateX(44rpx);
+    }
+  }
+
+  // ---------- 表头要求 ----------
+  &__format {
     width: 100%;
-    height: 12rpx;
-    background: $gray-100;
-    border-radius: $radius-full;
-    overflow: hidden;
+    box-sizing: border-box;
+    padding: 32rpx;
+    border: 1rpx solid #bfdbfe;
+    border-radius: $radius-md;
+    background-color: #eff6ff;
   }
 
-  &__bar-fill {
-    height: 100%;
-    background: $primary;
-    border-radius: $radius-full;
-    transition: width 0.2s ease;
+  &__format-title {
+    display: block;
+    font-size: $text-sm;
+    font-weight: $font-medium;
+    color: #1e40af;
+    margin-bottom: 16rpx;
   }
 
-  &__loading-pct {
-    font-size: $text-base;
-    color: $primary;
-    font-weight: $font-semibold;
+  &__format-desc {
+    font-family: $font-caption;
+    font-size: $text-xs;
+    line-height: $leading-relaxed;
+    color: #3b82f6;
   }
 
-  // ------ 结果 ------
-  &__success-card {
-    background: $accent-50;
-    border: 1rpx solid $accent-100;
-    border-radius: $radius-lg;
-    padding: 48rpx $card-padding;
-    display: flex;
-    align-items: center;
-    gap: 24rpx;
+  // ---------- 底部 ----------
+  &__grow {
+    flex: 1;
+    min-height: 32rpx;
   }
 
-  &__success-badge {
-    width: 80rpx;
-    height: 80rpx;
-    border-radius: $radius-full;
-    background: $success;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  &__bottom-gap {
+    width: 100%;
+    height: 48rpx;
     flex-shrink: 0;
   }
 
-  &__success-info {
-    display: flex;
-    flex-direction: column;
-    gap: 8rpx;
-  }
-
-  &__success-title {
-    font-size: $text-xl;
-    color: #059669;
-    font-weight: $font-bold;
-  }
-
-  &__success-sub {
-    font-size: $text-xs;
-    color: $text-weak;
-  }
-
-  &__stats {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16rpx;
-  }
-
-  &__stat {
-    background: $surface;
-    border: 1rpx solid $border;
+  &__submit {
+    width: 100%;
+    height: 104rpx;
     border-radius: $radius-md;
-    padding: 32rpx 16rpx;
+    background-color: $primary;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 8rpx;
-  }
+    justify-content: center;
 
-  &__stat-value {
-    font-size: $text-22;
-    font-weight: $font-bold;
-
-    &--primary {
-      color: $primary;
-    }
-    &--success {
-      color: $success;
-    }
-    &--warning {
-      color: $warning;
-    }
-    &--danger {
-      color: $danger;
+    &:active {
+      opacity: 0.8;
     }
   }
 
-  &__stat-label {
-    font-size: $text-11;
-    color: $text-secondary;
-  }
-
-  &__issues {
-    display: flex;
-    flex-direction: column;
-    gap: 12rpx;
-  }
-
-  &__issues-title {
-    font-size: $text-base;
-    color: $text-primary;
+  &__submit-text {
+    font-family: $font-body;
+    font-size: 32rpx;
     font-weight: $font-semibold;
-  }
-
-  &__issue {
-    display: flex;
-    align-items: center;
-    gap: 12rpx;
-    padding: 20rpx;
-    border-radius: $radius-md;
-
-    &--warning {
-      background: #fef3c7;
-      border: 1rpx solid #fde68a;
-    }
-    &--danger {
-      background: #fee2e2;
-      border: 1rpx solid #fecaca;
-    }
-  }
-
-  &__issue-text {
-    flex: 1;
-    font-size: $text-sm;
-    color: $text-primary;
-    line-height: $leading-normal;
+    color: $text-inverse;
   }
 
   &__actions {
     display: flex;
     flex-direction: column;
-    gap: 20rpx;
-    margin-top: 8rpx;
+    gap: 24rpx;
+    width: 100%;
+  }
+
+  &__secondary {
+    width: 100%;
+    height: 104rpx;
+    border-radius: $radius-md;
+    border: 1rpx solid $border;
+    background-color: $surface;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:active {
+      opacity: 0.8;
+    }
+  }
+
+  &__secondary-text {
+    font-family: $font-body;
+    font-size: 32rpx;
+    font-weight: $font-semibold;
+    color: $text-primary;
+  }
+
+  // ---------- 上传 / 解析中 ----------
+  &__center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 32rpx;
+    padding: 40rpx;
+    box-sizing: border-box;
+    min-height: 60vh;
+  }
+
+  &__center-title {
+    font-family: $font-heading;
+    font-size: 40rpx;
+    font-weight: $font-bold;
+    color: $text-primary;
+  }
+
+  &__center-desc {
+    font-size: $text-base;
+    color: $text-secondary;
+    text-align: center;
+  }
+
+  &__progress {
+    width: 100%;
+    height: 16rpx;
+    border-radius: $radius-full;
+    background-color: $border;
+    overflow: hidden;
+  }
+
+  &__progress-bar {
+    height: 100%;
+    border-radius: $radius-full;
+    background-color: $primary;
+    transition: width 0.3s ease;
+  }
+
+  &__spinner {
+    width: 128rpx;
+    height: 128rpx;
+    border: 8rpx solid $primary;
+    border-top-color: transparent;
+    border-radius: $radius-full;
+    animation: import-spin 0.8s linear infinite;
+  }
+
+  // ---------- 结果 ----------
+  &__result {
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+    width: 100%;
+  }
+
+  &__success {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 48rpx;
+    border: 1rpx solid #bfdbfe;
+    border-radius: $radius-lg;
+    background-color: rgba(0, 98, 255, 0.05);
+  }
+
+  &__success-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 24rpx;
+  }
+
+  &__success-icon {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: $radius-full;
+    background-color: #10b981;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__success-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__success-title {
+    font-family: $font-heading;
+    font-size: 36rpx;
+    font-weight: $font-bold;
+    color: #059669;
+  }
+
+  &__success-sub {
+    font-family: $font-caption;
+    font-size: $text-sm;
+    color: $text-weak;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__stats {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 24rpx;
+    width: 100%;
+  }
+
+  &__stat {
+    width: calc((100% - 24rpx) / 2);
+    height: 160rpx;
+    box-sizing: border-box;
+    border: 1rpx solid $border;
+    border-radius: $radius-md;
+    background-color: $surface;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+  }
+
+  &__stat-value {
+    font-family: $font-heading;
+    font-size: 48rpx;
+    font-weight: $font-bold;
+    line-height: 1;
+  }
+
+  &__stat-label {
+    font-family: $font-caption;
+    font-size: $text-xs;
+    color: $text-secondary;
+  }
+
+  &__errors {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+    width: 100%;
+  }
+
+  &__errors-title {
+    font-family: $font-heading;
+    font-size: $text-base;
+    font-weight: $font-semibold;
+    color: $text-primary;
+  }
+
+  &__errors-scroll {
+    width: 100%;
+    max-height: 400rpx;
+  }
+
+  &__error {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 24rpx;
+    border-radius: $radius-md;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16rpx;
+    margin-bottom: 16rpx;
+
+    &--warn {
+      background-color: #fef3c7;
+      border: 1rpx solid #fde68a;
+    }
+
+    &--danger {
+      background-color: #fee2e2;
+      border: 1rpx solid #fecaca;
+    }
+  }
+
+  &__error-text {
+    flex: 1;
+    font-family: $font-body;
+    font-size: $text-sm;
+
+    &--warn {
+      color: #92400e;
+    }
+
+    &--danger {
+      color: #991b1b;
+    }
   }
 }
 
-@keyframes impt-spin {
+@keyframes import-spin {
+  from {
+    transform: rotate(0deg);
+  }
   to {
     transform: rotate(360deg);
   }

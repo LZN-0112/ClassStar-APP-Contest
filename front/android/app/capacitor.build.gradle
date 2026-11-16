@@ -14,7 +14,8 @@ dependencies {
     implementation project(':capacitor-filesystem')
     implementation project(':capacitor-share')
     implementation project(':capacitor-status-bar')
-
+    implementation "cn.jiguang.sdk:jcore:5.6.0"
+    implementation "cn.jiguang.sdk:jpush:6.3.0"
 }
 
 

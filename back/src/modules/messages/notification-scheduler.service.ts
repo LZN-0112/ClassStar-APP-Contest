@@ -2,12 +2,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../../common/database/prisma.service';
+import { PushService } from '../push/push.service';
 
 @Injectable()
 export class NotificationSchedulerService {
   private readonly logger = new Logger(NotificationSchedulerService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly push: PushService,
+  ) {}
 
   /**
    * 每分钟执行一次，处理到期的催办提醒
@@ -130,18 +134,19 @@ export class NotificationSchedulerService {
     }
 
     // 使用事务创建催办通知并更新提醒状态
+    const reminderMessageId = uuidv4();
+    const reminderTitle = `【催办】${message.title}`;
+    const reminderContent = `您有一条通知尚未签收：${message.title}，请尽快处理。`;
     await this.prisma.$transaction(async (tx) => {
       // 同一次催办只生成一条通知，避免每个未签收成员各生成一条导致列表重复
-      const reminderMessageId = uuidv4();
-
       await tx.messages.create({
         data: {
           id: reminderMessageId,
           class_id: message.class_id,
           publisher_id: message.publisher_id,
           type: 'reminder',
-          title: `【催办】${message.title}`,
-          content: `您有一条通知尚未签收：${message.title}，请尽快处理。`,
+          title: reminderTitle,
+          content: reminderContent,
           require_ack: false,
           status: 'published',
         },
@@ -167,6 +172,18 @@ export class NotificationSchedulerService {
 
     this.logger.log(
       `催办通知已发送，覆盖 ${unackedMembers.length} 位未签收成员 (message_id: ${message.id})`,
+    );
+
+    // 推送为旁路能力：只催未签收成员，失败不影响催办通知入库
+    void this.push.sendMessagePush(
+      unackedMembers.map((m) => m.user_id),
+      {
+        title: reminderTitle,
+        content: reminderContent,
+        messageId: reminderMessageId,
+        classId: message.class_id,
+        type: 'reminder',
+      },
     );
   }
 }

@@ -1,153 +1,213 @@
 // ============================================================
-// 扫码页面（全屏黑底扫描）
+// 扫一扫
+// 1:1 对齐 front/src/pages/tools/ScanPage.tsx
 // ============================================================
 .scan {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  width: 100%;
-  height: 100vh;
-  background: #000000;
+  background: #0f172a;
+  overflow: hidden;
 
-  &__top {
-    width: 100%;
-    height: 88rpx;
-    padding: 0 32rpx;
+  &__stage {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  // 小程序使用系统扫码界面，这里用暗色取景层复刻 App 的画面基调
+  &__camera {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: radial-gradient(120% 80% at 50% 30%, #1e293b 0%, #0f172a 60%, #020617 100%);
+  }
+
+  &__head {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+    padding: 16rpx 32rpx 24rpx;
     box-sizing: border-box;
-    flex-shrink: 0;
   }
 
-  &__back {
-    width: 72rpx;
-    height: 72rpx;
+  &__icon-btn {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: 28rpx;
+    background: rgba(15, 23, 42, 0.55);
     display: flex;
     align-items: center;
     justify-content: center;
+
+    &:active {
+      opacity: 0.7;
+    }
   }
 
   &__title {
-    font-size: 34rpx;
-    font-weight: 600;
+    font-family: $font-body;
+    font-size: 28rpx;
+    font-weight: $font-medium;
     color: #ffffff;
   }
 
-  &__top-spacer {
-    width: 72rpx;
-    height: 72rpx;
+  &__frame-wrap {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   &__frame {
     position: relative;
     width: 520rpx;
     height: 520rpx;
-    margin-top: 120rpx;
-    border-radius: 16rpx;
+    border-radius: 20rpx;
+    border: 2rpx solid rgba(255, 255, 255, 0.25);
+    box-sizing: border-box;
   }
 
-  &__frame-corner {
+  &__corner {
     position: absolute;
     width: 64rpx;
     height: 64rpx;
-    border-color: #0062ff;
-    border-style: solid;
-    border-width: 0;
+    border: 0 solid $primary;
+    box-sizing: border-box;
 
     &--tl {
-      top: 0;
-      left: 0;
-      border-top-width: 8rpx;
-      border-left-width: 8rpx;
-      border-top-left-radius: 16rpx;
+      top: -2rpx;
+      left: -2rpx;
+      border-top-width: 6rpx;
+      border-left-width: 6rpx;
+      border-top-left-radius: 20rpx;
     }
+
     &--tr {
-      top: 0;
-      right: 0;
-      border-top-width: 8rpx;
-      border-right-width: 8rpx;
-      border-top-right-radius: 16rpx;
+      top: -2rpx;
+      right: -2rpx;
+      border-top-width: 6rpx;
+      border-right-width: 6rpx;
+      border-top-right-radius: 20rpx;
     }
+
     &--bl {
-      bottom: 0;
-      left: 0;
-      border-bottom-width: 8rpx;
-      border-left-width: 8rpx;
-      border-bottom-left-radius: 16rpx;
+      bottom: -2rpx;
+      left: -2rpx;
+      border-bottom-width: 6rpx;
+      border-left-width: 6rpx;
+      border-bottom-left-radius: 20rpx;
     }
+
     &--br {
-      bottom: 0;
-      right: 0;
-      border-bottom-width: 8rpx;
-      border-right-width: 8rpx;
-      border-bottom-right-radius: 16rpx;
+      bottom: -2rpx;
+      right: -2rpx;
+      border-bottom-width: 6rpx;
+      border-right-width: 6rpx;
+      border-bottom-right-radius: 20rpx;
     }
   }
 
-  &__frame-line {
+  &__line {
     position: absolute;
-    left: 24rpx;
-    right: 24rpx;
-    top: 16rpx;
+    left: 12rpx;
+    right: 12rpx;
     height: 4rpx;
-    background: linear-gradient(
-      to right,
-      transparent,
-      #0062ff,
-      transparent
-    );
-    animation: scan-line 2s ease-in-out infinite;
+    background: linear-gradient(90deg, rgba(0, 98, 255, 0), #4da3ff, rgba(0, 98, 255, 0));
+    box-shadow: 0 0 24rpx rgba(0, 98, 255, 0.9);
+    animation: scan-sweep 2.2s ease-in-out infinite alternate;
   }
 
   &__hint {
-    margin-top: 56rpx;
-    font-size: 28rpx;
-    color: rgba(255, 255, 255, 0.8);
-  }
-
-  &__bottom {
     position: absolute;
-    left: 0;
-    right: 0;
-    bottom: calc(160rpx + env(safe-area-inset-bottom));
+    left: 32rpx;
+    right: 32rpx;
+    bottom: 96rpx;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    gap: 8rpx;
   }
 
-  &__btn {
-    width: 320rpx;
-    height: 112rpx;
-    border-radius: 56rpx;
-    background: #0062ff;
+  &__hint-text {
+    font-family: $font-body;
+    font-size: 26rpx;
+    color: rgba(255, 255, 255, 0.8);
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  &__hint-text--error {
+    color: #f87171;
+  }
+
+  &__hint-sub {
+    font-family: $font-body;
+    font-size: 22rpx;
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  &__toolbar {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 16rpx;
+    padding: 24rpx 32rpx calc(32rpx + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+    background: #0f172a;
+    flex-shrink: 0;
+  }
 
-    &--loading {
-      opacity: 0.6;
+  &__album {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8rpx;
+
+    &:active {
+      opacity: 0.7;
     }
   }
 
-  &__btn-text {
-    font-size: 28rpx;
-    font-weight: 600;
-    color: #ffffff;
+  &__album-icon {
+    width: 96rpx;
+    height: 96rpx;
+    border-radius: 32rpx;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__album-text {
+    font-family: $font-body;
+    font-size: 24rpx;
+    color: rgba(255, 255, 255, 0.7);
   }
 }
 
-@keyframes scan-line {
-  0% {
-    top: 16rpx;
+@keyframes scan-sweep {
+  from {
+    top: 12rpx;
   }
-  50% {
-    top: calc(100% - 20rpx);
-  }
-  100% {
-    top: 16rpx;
+  to {
+    top: calc(100% - 16rpx);
   }
 }

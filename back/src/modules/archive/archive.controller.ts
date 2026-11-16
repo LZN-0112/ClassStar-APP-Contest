@@ -1,15 +1,19 @@
 import {
   Controller,
   Get,
+  Post,
   Param,
   Query,
   Res,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Response } from 'express';
 import { ArchiveService } from './archive.service';
 import { ExportArchiveDto } from './dto/archive.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '@/common/decorators/current-user.decorator';
 
 @ApiTags('班级档案')
 @ApiBearerAuth()
@@ -21,6 +25,16 @@ export class ArchiveController {
   @ApiOperation({ summary: '获取班级学期档案列表' })
   async listArchives(@Param('classId') classId: string) {
     return this.archiveService.listArchives(classId);
+  }
+
+  @Post('classes/:classId/archives/semester')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '生成本学期档案（仅群主或管理员）' })
+  async createSemesterArchive(
+    @Param('classId') classId: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.archiveService.createSemesterArchive(classId, userId);
   }
 
   @Get('classes/:classId/archives/:archiveId')

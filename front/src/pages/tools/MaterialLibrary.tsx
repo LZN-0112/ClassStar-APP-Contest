@@ -111,6 +111,14 @@ export default function MaterialLibrary() {
     fetchSummary();
   }, [fetchSummary]);
 
+  // 进入资料库即视为已查看：上报已读水位，首页“资料”角标随之清零
+  useEffect(() => {
+    if (!classId) return;
+    api.post('/material/viewed', null, { params: { classId } }).catch(() => {
+      // 上报失败不阻塞资料库使用，下次进入会重新上报
+    });
+  }, [classId]);
+
   // 搜索防抖 400ms，避免每输入一个字就请求一次
   useEffect(() => {
     if (searchTimer.current) window.clearTimeout(searchTimer.current);

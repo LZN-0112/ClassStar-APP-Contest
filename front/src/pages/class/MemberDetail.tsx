@@ -33,6 +33,8 @@ interface MemberDetailData {
   verifyStatus?: 'CONFIRMED' | 'PENDING' | 'UNVERIFIED';
   verifiedAt?: string | null;
   joinedAt: string;
+  /** 名单占位账号（未激活）：班委可代改资料、重置临时密码 */
+  isPlaceholder?: boolean;
 }
 
 const VERIFY_STATUS_TEXT: Record<NonNullable<MemberDetailData['verifyStatus']>, string> = {
@@ -456,34 +458,38 @@ export default function MemberDetail() {
                     </div>
                   </div>
                 </button>
-                <button
-                  type="button"
-                  disabled={actionLoading}
-                  onClick={openProfileSheet}
-                  className="flex w-full flex-row items-center gap-3 rounded-xl px-1 py-3 text-left active:bg-[#F8FAFC] disabled:opacity-60"
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#EBF3FF]">
-                    <Pencil className="h-[18px] w-[18px] text-[#0062FF]" strokeWidth={2} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[13px] font-body font-medium text-[#1A1A1A]">修正姓名与学号</div>
-                    <div className="text-[11px] font-body text-[#9CA3AF]">成员填写有误时可代为修改，保存后视为已确认</div>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  disabled={actionLoading}
-                  onClick={() => setConfirmAction('reset')}
-                  className="flex w-full flex-row items-center gap-3 rounded-xl px-1 py-3 text-left active:bg-[#F8FAFC] disabled:opacity-60"
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F6]">
-                    <KeyRound className="h-[18px] w-[18px] text-[#6B7280]" strokeWidth={2} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[13px] font-body font-medium text-[#1A1A1A]">重置登录密码</div>
-                    <div className="text-[11px] font-body text-[#9CA3AF]">生成一次性临时密码，仅本页显示</div>
-                  </div>
-                </button>
+                {member.isPlaceholder && (
+                  <>
+                    <button
+                      type="button"
+                      disabled={actionLoading}
+                      onClick={openProfileSheet}
+                      className="flex w-full flex-row items-center gap-3 rounded-xl px-1 py-3 text-left active:bg-[#F8FAFC] disabled:opacity-60"
+                    >
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#EBF3FF]">
+                        <Pencil className="h-[18px] w-[18px] text-[#0062FF]" strokeWidth={2} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[13px] font-body font-medium text-[#1A1A1A]">修正姓名与学号</div>
+                        <div className="text-[11px] font-body text-[#9CA3AF]">仅未激活的名单成员可由班委代为修正</div>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={actionLoading}
+                      onClick={() => setConfirmAction('reset')}
+                      className="flex w-full flex-row items-center gap-3 rounded-xl px-1 py-3 text-left active:bg-[#F8FAFC] disabled:opacity-60"
+                    >
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F4F6]">
+                        <KeyRound className="h-[18px] w-[18px] text-[#6B7280]" strokeWidth={2} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[13px] font-body font-medium text-[#1A1A1A]">生成临时密码</div>
+                        <div className="text-[11px] font-body text-[#9CA3AF]">仅未激活的名单成员可生成，一次性显示</div>
+                      </div>
+                    </button>
+                  </>
+                )}
                 {canRemoveMember && (
                   <button
                     type="button"

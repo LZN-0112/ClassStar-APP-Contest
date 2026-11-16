@@ -1,18 +1,28 @@
 .actstats {
   min-height: 100vh;
-  background: $bg;
-  box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom);
+  background: $surface;
 
   &__body {
-    padding: 0 $page-padding-x;
-    padding-top: 40rpx;
+    padding: $page-padding-top $page-padding-x calc(40rpx + env(safe-area-inset-bottom));
     display: flex;
     flex-direction: column;
-    gap: 24rpx;
+    gap: 40rpx;
+    box-sizing: border-box;
   }
 
+  &__activity-title {
+    width: 100%;
+    font-size: $text-13;
+    font-weight: $font-medium;
+    color: $text-secondary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // ---------- 统计 ----------
   &__stat-row {
+    width: 100%;
     display: flex;
     flex-direction: row;
     gap: 24rpx;
@@ -20,85 +30,177 @@
 
   &__stat-card {
     flex: 1;
-    box-shadow: $shadow-sm;
-    background: $surface;
-    border-radius: $radius-xl;
     padding: 32rpx;
     display: flex;
     flex-direction: column;
-    gap: 12rpx;
     align-items: center;
+    gap: 12rpx;
+    background: $surface;
+    border-radius: $radius-xl;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
   }
 
   &__stat-num {
     font-size: 56rpx;
-    font-weight: 700;
+    font-weight: $font-bold;
     color: #004ecc;
+    white-space: nowrap;
   }
 
   &__stat-label {
     font-size: $text-11;
-    font-weight: 600;
+    font-weight: $font-semibold;
     color: $text-secondary;
+    white-space: nowrap;
+  }
+
+  // ---------- 筛选 ----------
+  &__filters {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    gap: 16rpx;
+  }
+
+  &__filter {
+    height: 64rpx;
+    padding: 16rpx 32rpx;
+    border-radius: $radius-full;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+
+    &--active {
+      background: $primary;
+    }
+  }
+
+  &__filter-text {
+    font-size: $text-11;
+    font-weight: $font-semibold;
+    color: $text-secondary;
+    white-space: nowrap;
+
+    &--active {
+      color: $text-inverse;
+    }
+  }
+
+  // ---------- 列表 ----------
+  &__group {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
   }
 
   &__group-title {
     font-size: $text-11;
-    font-weight: 600;
+    font-weight: $font-semibold;
     color: $text-secondary;
+    white-space: nowrap;
   }
 
   &__list {
+    width: 100%;
     display: flex;
     flex-direction: column;
     gap: 16rpx;
   }
 
-  &__card {
-    box-shadow: $shadow-sm;
-    background: $surface;
+  &__placeholder,
+  &__error {
+    width: 100%;
+    height: 240rpx;
     border-radius: $radius-xl;
+    background: #f9fafb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: $text-base;
+    color: $text-weak;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  &__error {
+    height: 320rpx;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__retry {
+    padding: 16rpx 32rpx;
+    border-radius: $radius-md;
+    background: $primary;
+    font-size: $text-13;
+    font-weight: $font-medium;
+    color: $text-inverse;
+  }
+
+  &__card {
+    width: 100%;
     padding: 32rpx;
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 20rpx;
+    background: $surface;
+    border-radius: $radius-xl;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
     box-sizing: border-box;
   }
 
   &__card-head {
+    width: 100%;
     display: flex;
     flex-direction: row;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
   }
 
   &__name {
+    flex: 1;
+    min-width: 0;
     font-size: $text-lg;
-    font-weight: 600;
+    font-weight: $font-semibold;
     color: $text-primary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__status {
+    flex-shrink: 0;
     font-size: $text-11;
-    font-weight: 500;
-    color: #f59e0b;
+    font-weight: $font-medium;
+    white-space: nowrap;
 
-    &--approve {
+    &--pending {
+      color: #f59e0b;
+    }
+
+    &--approved {
       color: #22c55e;
     }
 
-    &--reject {
+    &--rejected {
       color: #ef4444;
     }
   }
 
   &__info {
     font-size: $text-xs;
-    font-weight: 400;
+    font-weight: $font-normal;
     color: $text-secondary;
   }
 
   &__actions {
+    width: 100%;
     display: flex;
     flex-direction: row;
     gap: 20rpx;
@@ -107,7 +209,7 @@
   &__btn {
     flex: 1;
     height: 72rpx;
-    border-radius: $radius-lg;
+    border-radius: $radius-md;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -117,16 +219,21 @@
     }
 
     &--reject {
-      background: #ef44441a;
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    &--disabled {
+      opacity: 0.6;
     }
   }
 
   &__btn-text {
-    font-size: $text-sm;
-    font-weight: 600;
+    font-size: $text-13;
+    font-weight: $font-semibold;
+    white-space: nowrap;
 
     &--approve {
-      color: #ffffff;
+      color: $text-inverse;
     }
 
     &--reject {

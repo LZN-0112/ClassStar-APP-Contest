@@ -16,6 +16,7 @@ import {
   getOrgTypeMeta,
   type OrgType,
 } from '@/utils/org';
+import { ScanLine } from 'lucide-react';
 
 interface ClassInfo {
   id: string;
@@ -362,6 +363,15 @@ export default function JoinClass() {
               placeholder="请输入班级码"
               className="box-border w-full h-[56px] shrink-0 [box-shadow:0px_2px_8px_0px_#0000000D] flex flex-col gap-2 p-[0px_16px] justify-center items-start bg-[#FFFFFF] border border-[#E5E7EB] rounded-lg text-[14px] font-body text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none focus:border-[#0062FF]"
             />
+            <button
+              type="button"
+              data-pencil-name="Scan Button"
+              onClick={() => navigate('/scan')}
+              className="box-border flex h-[44px] w-full shrink-0 flex-row items-center justify-center gap-2 rounded-lg border border-[#0062FF] bg-[#0062FF0D] text-[14px] font-body font-semibold text-[#0062FF] active:opacity-80"
+            >
+              <ScanLine className="h-[18px] w-[18px]" strokeWidth={2} />
+              扫一扫班级二维码
+            </button>
             <input
               data-pencil-name="Real Name Input"
               type="text"

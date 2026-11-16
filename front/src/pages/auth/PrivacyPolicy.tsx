@@ -17,8 +17,13 @@ const sections = [
         1. <span className="text-[#0062FF]">账号信息</span>：您在注册时提供的手机号码、姓名等基本信息。
         {'\n'}2. <span className="text-[#0062FF]">班级信息</span>：您所属班级的名称、班级成员列表等。
         {'\n'}3. <span className="text-[#0062FF]">使用记录</span>：您在使用本软件过程中产生的考勤记录、作业提交记录、活动报名记录、投票记录等操作数据。
-        {'\n'}4. <span className="text-[#0062FF]">设备信息</span>：设备型号、操作系统版本、网络类型等基础设备信息。
+        {'\n'}4. <span className="text-[#0062FF]">设备信息</span>：设备型号、操作系统版本、网络类型、推送注册标识（Registration ID）等基础设备信息。
         {'\n'}5. <span className="text-[#0062FF]">日志信息</span>：IP地址、访问时间、页面浏览记录等服务日志。
+        {'\n'}6. <span className="text-[#0062FF]">系统权限</span>：仅在您主动使用对应功能时申请，拒绝不影响其他功能：
+        {'\n'}   - 相机：扫码签到、拍摄作业/活动照片、人脸打卡；
+        {'\n'}   - 相册/文件：上传头像、作业附件、班级资料；
+        {'\n'}   - 位置：定位打卡、活动签到；
+        {'\n'}   - 麦克风：语音输入（仅录音转文字，不上传原始录音）。
       </>
     ),
   },
@@ -74,7 +79,8 @@ const sections = [
         {'\n'}1. <span className="text-[#0062FF]">访问权</span>：您可以查看本软件收集的您的个人信息；
         {'\n'}2. <span className="text-[#0062FF]">更正权</span>：您可以要求更正不准确的个人信息；
         {'\n'}3. <span className="text-[#0062FF]">删除权</span>：在符合法律法规的前提下，您可以请求删除您的个人信息；
-        {'\n'}4. <span className="text-[#0062FF]">注销权</span>：您可以随时注销账号，注销后我们将停止收集并使用您的信息。
+        {'\n'}4. <span className="text-[#0062FF]">撤回同意权</span>：您可在「我的 → 设置 → 隐私设置 → 撤回隐私授权」中随时撤回授权，撤回后需重新同意方可继续使用；
+        {'\n'}5. <span className="text-[#0062FF]">注销权</span>：您可在「我的 → 设置 → 账号与安全 → 注销账号」中提交注销申请。注销后账号不可恢复，我们将停止收集并使用您的信息，并对账号信息进行删除或匿名化处理。班级群主/管理员需先转让管理权限。
       </>
     ),
   },
@@ -95,10 +101,31 @@ const sections = [
     ),
   },
   {
-    title: '十、联系我们',
+    title: '十、第三方 SDK 清单',
     content: (
       <>
-        如您对本政策有任何疑问、意见或建议，请通过软件内<span className="text-[#0062FF]">"帮助与反馈"</span>功能与我们联系。我们将在合理期限内予以回复。
+        为实现微信登录/绑定与班级消息推送功能，本软件接入以下第三方 SDK：
+        {'\n'}1. <span className="text-[#0062FF]">微信 OpenSDK</span>
+        {'\n'}   提供方：深圳市腾讯计算机系统有限公司
+        {'\n'}   使用目的：微信授权登录、绑定/解绑微信账号
+        {'\n'}   收集信息：微信账号标识（OpenID/UnionID）、授权码、设备型号与系统版本
+        {'\n'}   初始化时机：仅在您主动点击「微信登录/绑定」时初始化
+        {'\n'}   隐私政策：https://support.weixin.qq.com/cgi-bin/mmsupportacctnodeweb-bin/pages/RYiYJkLOrQwu0nb8
+        {'\n'}2. <span className="text-[#0062FF]">极光推送 SDK（JPush）</span>
+        {'\n'}   提供方：深圳市和讯华谷信息技术有限公司
+        {'\n'}   使用目的：向您发送班级通知、考勤与作业提醒等消息推送
+        {'\n'}   收集信息：推送注册标识（Registration ID）、设备型号、操作系统版本、应用包名与版本、网络类型
+        {'\n'}   初始化时机：仅在您同意本隐私政策后初始化，未同意前不会收集上述信息
+        {'\n'}   隐私政策：https://www.jiguang.cn/license/privacy
+        {'\n'}3. 本软件未接入广告、统计分析等其它第三方 SDK；您的个人信息不会用于广告推送。
+      </>
+    ),
+  },
+  {
+    title: '十一、联系我们',
+    content: (
+      <>
+        如您对本政策有任何疑问、意见或建议，请通过软件内<span className="text-[#0062FF]">"帮助与反馈"</span>功能与我们联系。我们将在合理期限（不超过15个工作日）内予以回复。
       </>
     ),
   },
@@ -154,9 +181,9 @@ export default function PrivacyPolicy() {
         <div className="box-border w-full flex-1 overflow-y-auto bg-[#F5F5F5] p-[16px]">
           <div className="mb-[16px] rounded-lg bg-[#FFFFFF] p-[16px] [box-shadow:0px_2px_8px_0px_#0000000D]">
             <p className="font-body text-[13px]/[22px] font-normal text-[#4B5563]">
-              更新日期：2026年9月3日
+              更新日期：2026年11月14日
               <br />
-              生效日期：2026年9月3日
+              生效日期：2026年11月14日
             </p>
           </div>
 

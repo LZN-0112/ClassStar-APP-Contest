@@ -65,7 +65,7 @@ export default function ExportArchive() {
     <PhoneFrame>
       <div
         data-pencil-name="Unified Header"
-        className="box-border w-full h-[267.99px] shrink-0 flex flex-col gap-0 justify-start items-start [background-image:linear-gradient(-0.602deg,_#defcff_-5.192%,_#076cab_98.566%,_#32c9fd_46.687%)] bg-no-repeat bg-[length:100%_100%] rounded-[0px_0px_24px_24px]"
+        className="box-border w-full h-[267.99px] shrink-0 flex flex-col gap-0 justify-start items-start [background-image:linear-gradient(-0.602deg,_#eaf3ff_-5.192%,_#0b4fd6_98.566%,_#2e7dff_46.687%)] bg-no-repeat bg-[length:100%_100%] rounded-[0px_0px_24px_24px]"
       >
         <div
           data-pencil-name="Status Bar"

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ClipboardCheck, Keyboard, ScanLine, FileText, Clock, ShieldAlert } from 'lucide-react';
 import PageLayout from '@/components/layout/PageLayout';
+import SelectSheet from '@/components/ui/SelectSheet';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
@@ -110,25 +111,19 @@ export default function OfflineCheckHome() {
         {/* 作业选择 */}
         <div className="box-border flex w-full flex-col gap-2">
           <div className="text-[11px]/[normal] font-body font-semibold text-[#6B7280]">选择作业</div>
-          <div className="box-border flex h-[56px] w-full flex-row items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-4 shadow-soft">
-            <FileText className="h-5 w-5 shrink-0 text-[#0062FF]" />
-            <select
-              value={selectedHomework}
-              onChange={(e) => setSelectedHomework(e.target.value)}
-              disabled={loading || homeworkList.length === 0}
-              className="w-full flex-1 bg-transparent text-[14px] font-body font-medium text-[#1A1A1A] outline-none disabled:text-[#94A3B8]"
-            >
-              {homeworkList.length === 0 ? (
-                <option value="">{loading ? '加载中...' : '暂无可核对的作业'}</option>
-              ) : (
-                homeworkList.map((h) => (
-                  <option key={h.id} value={h.id}>
-                    {h.title}
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
+          <SelectSheet
+            value={selectedHomework}
+            onChange={setSelectedHomework}
+            options={homeworkList.map((h) => ({
+              value: h.id,
+              label: h.title,
+              hint: h.subject,
+            }))}
+            placeholder={loading ? '加载中...' : '暂无可核对的作业'}
+            title="选择作业"
+            icon={<FileText className="h-5 w-5 text-[#0062FF]" strokeWidth={2} />}
+            disabled={loading || homeworkList.length === 0}
+          />
           {!loading && homeworkList.length === 0 && (
             <div className="text-[11px] text-[#94A3B8]">发布作业后即可使用批量或截图核对</div>
           )}
@@ -144,7 +139,7 @@ export default function OfflineCheckHome() {
             className="box-border flex w-full flex-row items-center gap-4 rounded-2xl bg-white p-4 text-left shadow-soft active:opacity-90 disabled:opacity-50"
           >
             <div className="box-border flex h-[48px] w-[48px] shrink-0 flex-col items-center justify-center rounded-xl bg-[#DBEAFE]">
-              <Keyboard className="h-[24px] w-[24px] text-[#076CAB]" strokeWidth={2} />
+              <Keyboard className="h-[24px] w-[24px] text-[#0062FF]" strokeWidth={2} />
             </div>
             <div className="flex flex-1 flex-col gap-1">
               <div className="text-[14px]/[normal] font-body font-semibold text-[#1E293B]">批量输入学号核对</div>
@@ -171,7 +166,7 @@ export default function OfflineCheckHome() {
             className="box-border flex w-full flex-row items-center gap-4 rounded-2xl bg-white p-4 text-left shadow-soft active:opacity-90 disabled:opacity-50"
           >
             <div className="box-border flex h-[48px] w-[48px] shrink-0 flex-col items-center justify-center rounded-xl bg-[#DBEAFE]">
-              <ScanLine className="h-[24px] w-[24px] text-[#076CAB]" strokeWidth={2} />
+              <ScanLine className="h-[24px] w-[24px] text-[#0062FF]" strokeWidth={2} />
             </div>
             <div className="flex flex-1 flex-col gap-1">
               <div className="text-[14px]/[normal] font-body font-semibold text-[#1E293B]">上传截图识别核对</div>

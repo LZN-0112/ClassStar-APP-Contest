@@ -34,6 +34,16 @@ export class CreateRandomDrawDto {
   @IsArray()
   @IsString({ each: true, message: '排除用户ID必须是字符串' })
   excludedUserIds?: string[] = [];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true, message: '正选用户ID必须是字符串' })
+  mainUserIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true, message: '候补用户ID必须是字符串' })
+  backupUserIds?: string[];
 }
 
 export class QueryRandomDrawsDto {

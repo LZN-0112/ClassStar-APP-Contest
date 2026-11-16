@@ -140,16 +140,18 @@ export default function MessageList() {
                 通知
               </div>
             </div>
-            <button
-              type="button"
-              data-pencil-name="Publish"
-              onClick={() => navigate('/publish-message')}
-              className="box-border h-[32px] shrink-0 flex flex-row gap-1 px-3 justify-center items-center bg-[#0062FF] rounded-full active:opacity-80"
-            >
-              <div className="text-[13px]/[normal] box-border text-[#FFFFFF] font-body font-medium text-left [white-space:nowrap]">
-                发布通知
-              </div>
-            </button>
+            {(user?.roleLevel === 'owner' || user?.roleLevel === 'admin') && (
+              <button
+                type="button"
+                data-pencil-name="Publish"
+                onClick={() => navigate('/publish-message')}
+                className="box-border h-[32px] shrink-0 flex flex-row gap-1 px-3 justify-center items-center bg-[#0062FF] rounded-full active:opacity-80"
+              >
+                <div className="text-[13px]/[normal] box-border text-[#FFFFFF] font-body font-medium text-left [white-space:nowrap]">
+                  发布通知
+                </div>
+              </button>
+            )}
           </div>
           <div
             data-pencil-name="List"

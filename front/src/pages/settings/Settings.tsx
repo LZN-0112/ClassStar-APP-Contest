@@ -5,6 +5,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useStatusBarStyle } from '@/hooks/useStatusBarStyle';
 import { api } from '@/lib/api';
+import { unregisterPushToken } from '@/lib/push';
 import { isNative } from '@/lib/capacitor';
 import { cn } from '@/lib/utils';
 import {
@@ -23,8 +24,8 @@ import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-/** 封面高度：滚动此距离后顶栏完全落下（220 ≈ 屏高的 27%，只留标题区） */
-const COVER_H = 220;
+/** 封面高度：与数据看板保持一致（200 ≈ 屏高的 25%，只留标题区） */
+const COVER_H = 200;
 
 function clamp01(v: number) {
   return v < 0 ? 0 : v > 1 ? 1 : v;
@@ -187,6 +188,8 @@ export default function Settings() {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
     try {
+      // 先解绑本机推送标识（需在清除 token 之前）
+      await unregisterPushToken();
       await api.post('/auth/logout');
       toast.success('已退出登录');
     } catch {

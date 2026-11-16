@@ -1,97 +1,314 @@
 // ============================================================
-// 账号与安全页面
+// 账号与安全（1:1 对齐 front/src/pages/settings/AccountSecurity.tsx）
 // ============================================================
+
 .asec {
   min-height: 100vh;
-  background: $bg;
-  box-sizing: border-box;
+  background-color: #ffffff;
   padding-bottom: env(safe-area-inset-bottom);
+  box-sizing: border-box;
 
   &__body {
-    padding: 24rpx $page-padding-x 40rpx;
     display: flex;
     flex-direction: column;
-    gap: 32rpx;
+    gap: 40rpx;
+    padding: 32rpx 40rpx 40rpx;
+    box-sizing: border-box;
   }
 
   &__group {
-    display: flex;
-    flex-direction: column;
-    gap: 16rpx;
+    position: relative;
+    height: 512rpx;
+    flex-shrink: 0;
+
+    &--auto {
+      height: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16rpx;
+    }
   }
 
   &__group-title {
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-family: $font-body;
     font-size: 22rpx;
-    font-weight: 600;
-    color: $text-secondary;
-    padding-left: 8rpx;
+    font-weight: $font-semibold;
+    line-height: normal;
+    color: #4b5563;
+    white-space: nowrap;
+  }
+
+  &__group--auto &__group-title {
+    position: static;
   }
 
   &__card {
-    background: $surface;
-    border: 1rpx solid $border;
-    border-radius: $radius-lg;
+    position: absolute;
+    left: 0;
+    top: 48rpx;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
     padding: 8rpx;
-    box-shadow: $shadow-md;
-    overflow: hidden;
+    border-radius: 16rpx;
+    border: 1rpx solid #e5e7eb;
+    background-color: #ffffff;
+    box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
 
     &--danger {
-      background: #fee2e2;
+      position: static;
+      width: 100%;
+      background-color: #fef2f2;
       border-color: #fecaca;
       box-shadow: none;
     }
   }
 
   &__row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
     height: 112rpx;
     padding: 0 24rpx;
-    display: flex;
-    align-items: center;
-    gap: 24rpx;
-
-    & + & {
-      border-top: 1rpx solid $border;
-    }
+    box-sizing: border-box;
 
     &:active {
-      opacity: 0.7;
+      background-color: #f9fafb;
     }
-  }
 
-  &__row--danger {
-    &:active {
-      opacity: 0.8;
+    &--disabled {
+      opacity: 0.6;
+      pointer-events: none;
     }
   }
 
   &__row-icon {
-    width: 72rpx;
-    height: 72rpx;
-    border-radius: $radius-md;
-    background: rgba($primary, 0.05);
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 72rpx;
+    height: 72rpx;
+    flex-shrink: 0;
+    border-radius: 16rpx;
+    background-color: rgba(0, 98, 255, 0.05);
 
     &--danger {
-      background: #fee2e2;
+      background-color: #fee2e2;
     }
   }
 
   &__row-label {
     flex: 1;
     min-width: 0;
+    margin-left: 24rpx;
+    font-family: $font-body;
     font-size: 28rpx;
-    font-weight: 500;
-    color: $text-primary;
+    font-weight: $font-medium;
+    color: #1a1a1a;
 
     &--danger {
-      color: #dc2626;
+      color: #991b1b;
     }
   }
 
-  &__row-tag {
+  &__row-text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    margin-left: 24rpx;
+  }
+
+  &__row-title {
+    font-family: $font-body;
+    font-size: 28rpx;
+    font-weight: $font-medium;
+    color: #1a1a1a;
+    white-space: nowrap;
+  }
+
+  &__row-email {
+    display: block;
+    max-width: 280rpx;
+    margin-top: 4rpx;
+    overflow: hidden;
+    font-family: $font-body;
+    font-size: 22rpx;
+    line-height: normal;
+    color: #9ca3af;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__row-right {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 16rpx;
+  }
+
+  &__row-value {
+    font-family: $font-body;
+    font-size: 24rpx;
+    color: #4b5563;
+    white-space: nowrap;
+  }
+
+  &__row-action {
+    font-family: $font-body;
+    font-size: 24rpx;
+    font-weight: $font-medium;
+    color: #0062ff;
+    white-space: nowrap;
+  }
+
+  &__tag {
     display: flex;
     align-items: center;
+    justify-content: center;
+    height: 48rpx;
+    padding: 0 20rpx;
+    border-radius: 999rpx;
+    box-sizing: border-box;
+
+    &--primary {
+      background-color: #0062ff;
+    }
+
+    &--muted {
+      background-color: #f3f4f6;
+    }
+  }
+
+  &__tag-text {
+    font-family: $font-body;
+    font-size: 22rpx;
+    font-weight: $font-semibold;
+    color: #ffffff;
+    white-space: nowrap;
+
+    &--muted {
+      color: #9ca3af;
+    }
+  }
+
+  // ---------- 绑定邮箱弹层 ----------
+  &__sheet {
+    display: flex;
+    flex-direction: column;
+    padding: 8rpx 0 16rpx;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 32rpx;
+  }
+
+  &__field-label {
+    margin-bottom: 16rpx;
+    font-family: $font-body;
+    font-size: 22rpx;
+    font-weight: $font-semibold;
+    line-height: 1;
+    color: #4b5563;
+  }
+
+  &__input-box {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 112rpx;
+    padding: 0 32rpx;
+    border-radius: 16rpx;
+    border: 1rpx solid #e5e7eb;
+    background-color: #ffffff;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
+  }
+
+  &__input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    font-family: $font-body;
+    font-size: 28rpx;
+    color: #1a1a1a;
+  }
+
+  &__placeholder {
+    color: #9ca3af;
+  }
+
+  &__sheet-tip {
+    padding: 24rpx 32rpx;
+    margin-bottom: 32rpx;
+    border-radius: 24rpx;
+    background-color: #f0f7ff;
+  }
+
+  &__sheet-tip-text {
+    font-family: $font-body;
+    font-size: 25rpx;
+    line-height: 40rpx;
+    color: #1d4ed8;
+  }
+
+  &__code-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    height: 64rpx;
+    margin-left: 16rpx;
+    padding: 0 24rpx;
+    border-radius: 12rpx;
+    background-color: #ebf2ff;
+    box-sizing: border-box;
+
+    &--disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+  }
+
+  &__code-btn-text {
+    font-family: $font-body;
+    font-size: 24rpx;
+    font-weight: $font-semibold;
+    color: #0062ff;
+    white-space: nowrap;
+  }
+
+  &__submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 104rpx;
+    border-radius: 16rpx;
+    background-color: #0062ff;
+    box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.05);
+
+    &:active {
+      opacity: 0.8;
+    }
+
+    &--disabled {
+      background-color: #93c5fd;
+      pointer-events: none;
+    }
+  }
+
+  &__submit-text {
+    font-family: $font-body;
+    font-size: 32rpx;
+    font-weight: $font-semibold;
+    color: #ffffff;
   }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Bell, Download, Users, CheckCircle, AlertCircle } from 'lucide-react';
 import PageLayout from '@/components/layout/PageLayout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -43,6 +43,7 @@ function formatDateTime(iso?: string) {
 export default function MessageStats() {
   const navigate = useNavigate();
   const { messageId: routeMessageId } = useParams<{ messageId: string }>();
+  const [searchParams] = useSearchParams();
   const location = useLocation();
   const { user } = useCurrentUser();
   const stateMessageId = (location.state as { id?: string } | null)?.id;
@@ -55,12 +56,13 @@ export default function MessageStats() {
   const [reloadKey, setReloadKey] = useState(0);
   const [reminding, setReminding] = useState(false);
 
-  const classId = user?.classId;
+  // 从推送进入的通知可能属于用户当前未选中的组织，优先使用链接携带的 classId
+  const classId = searchParams.get('classId') || user?.classId;
 
   useEffect(() => {
     if (!messageId) {
       toast.error('通知ID缺失');
-      navigate('/message-list', { replace: true });
+      navigate('/messages', { replace: true });
       return;
     }
 
@@ -223,7 +225,7 @@ export default function MessageStats() {
                 key={student.userId}
                 className="box-border flex h-[52px] w-full shrink-0 flex-row items-center gap-3 rounded-xl bg-white px-4 shadow-soft"
               >
-                <div className="box-border flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-full bg-[#076CAB]">
+                <div className="box-border flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-full bg-[#0062FF]">
                   <div className="text-[12px]/[normal] font-body font-semibold text-white">{student.name.charAt(0)}</div>
                 </div>
                 <div className="flex flex-1 flex-row items-center justify-between">

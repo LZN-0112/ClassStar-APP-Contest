@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, Text } from '@tarojs/components'
+import { Text, View } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 
 import { Icon } from '@/components/ui'
@@ -37,21 +37,35 @@ export default function GpsMethod({ classId, attendanceId, attendance, onSuccess
   const [userLng, setUserLng] = useState<number | null>(null)
   const [distance, setDistance] = useState<number | null>(null)
 
-  const toast = (title: string) => Taro.showToast({ title, icon: 'none' })
+  const hasCenter = attendance.latitude != null && attendance.longitude != null
+  const radius = attendance.checkRadius ?? 500
+  const inRange = !hasCenter || (distance != null && distance <= radius)
 
   const handleLocate = async () => {
     setLocating(true)
     try {
-      const pos = await getLocation()
-      setUserLat(pos.latitude)
-      setUserLng(pos.longitude)
-      if (attendance.latitude != null && attendance.longitude != null) {
-        setDistance(
-          Math.round(calcDistance(attendance.latitude, attendance.longitude, pos.latitude, pos.longitude))
+      const coords = await getLocation()
+      setUserLat(coords.latitude)
+      setUserLng(coords.longitude)
+      if (hasCenter) {
+        const dist = calcDistance(
+          Number(attendance.latitude),
+          Number(attendance.longitude),
+          coords.latitude,
+          coords.longitude
         )
+        setDistance(Math.round(dist))
+      } else {
+        setDistance(null)
       }
-    } catch {
-      toast('定位失败，请重试')
+    } catch (err) {
+      Taro.showToast({
+        title:
+          err instanceof Error && /auth|deny/i.test(err.message)
+            ? '请允许定位权限'
+            : '定位失败，请重试',
+        icon: 'none'
+      })
     } finally {
       setLocating(false)
     }
@@ -59,7 +73,7 @@ export default function GpsMethod({ classId, attendanceId, attendance, onSuccess
 
   const handleCheckIn = async () => {
     if (userLat == null || userLng == null) {
-      toast('请先获取定位')
+      Taro.showToast({ title: '请先获取定位', icon: 'none' })
       return
     }
     setLoading(true)
@@ -69,68 +83,107 @@ export default function GpsMethod({ classId, attendanceId, attendance, onSuccess
         latitude: userLat,
         longitude: userLng
       })
-      Taro.showToast({ title: '签到成功', icon: 'success' })
+      Taro.showToast({ title: '签到成功！', icon: 'success' })
       onSuccess()
     } catch (err) {
-      toast(err instanceof Error ? err.message : '签到失败')
+      Taro.showToast({
+        title: err instanceof Error ? err.message : '签到失败',
+        icon: 'none'
+      })
     } finally {
       setLoading(false)
     }
   }
 
-  const inRange = distance != null && distance <= (attendance.checkRadius || 500)
-
   return (
-    <View className='attdmethod'>
-      <View className='attdmethod__banner attdmethod__banner--blue'>
-        <View className='attdmethod__banner-head'>
-          <Icon name='map-pin' size={32} color='#0369A1' strokeWidth={2} />
-          <Text className='attdmethod__banner-title'>定位签到</Text>
+    <View className='attmethod'>
+      <View className='attmethod__banner attmethod__banner--gps'>
+        <View className='attmethod__banner-title attmethod__banner-title--gps'>
+          <Icon name='map-pin' size={32} color='#0369A1' />
+          <Text>定位签到</Text>
         </View>
-        <Text className='attdmethod__banner-sub'>
-          {attendance.location ? `签到地点：${attendance.location}` : '请在签到地点范围内完成定位签到'}
+        <Text className='attmethod__banner-desc'>
+          {attendance.location
+            ? `签到地点：${attendance.location}`
+            : '请在签到地点范围内完成定位签到'}
         </Text>
-        {attendance.checkRadius ? (
-          <Text className='attdmethod__banner-sub'>有效范围：{attendance.checkRadius} 米</Text>
-        ) : null}
+        {hasCenter ? (
+          <Text className='attmethod__banner-desc'>有效范围：{radius} 米</Text>
+        ) : (
+          <View className='attmethod__banner-note'>
+            <Text>发起人未设置签到点坐标，本次不校验距离，班委将结合签到记录核对</Text>
+          </View>
+        )}
       </View>
 
-      <View className='attdmethod__panel'>
-        <View className={`attdmethod__navi ${userLat != null ? 'attdmethod__navi--ok' : ''}`}>
-          <Icon name='navigation' size={64} color={userLat != null ? '#16A34A' : '#9CA3AF'} strokeWidth={2} />
+      <View className='attmethod__panel'>
+        <View
+          className={`attmethod__gps-circle ${
+            userLat != null ? 'attmethod__gps-circle--active' : ''
+          }`}
+        >
+          <Icon
+            name='navigation'
+            size={64}
+            color={userLat != null ? '#16A34A' : '#9CA3AF'}
+          />
         </View>
         {userLat != null ? (
-          <View className='attdmethod__center'>
-            <Text className='attdmethod__center-title'>定位成功</Text>
-            <Text className='attdmethod__center-sub'>
+          <View className='attmethod__gps-result'>
+            <Text className='attmethod__gps-success'>定位成功</Text>
+            <Text className='attmethod__gps-coords'>
               {userLat.toFixed(6)}, {userLng!.toFixed(6)}
             </Text>
             {distance != null ? (
-              <Text className={`attdmethod__distance ${inRange ? 'attdmethod__distance--ok' : 'attdmethod__distance--bad'}`}>
+              <Text
+                className={`attmethod__gps-distance ${
+                  inRange ? 'attmethod__gps-distance--in' : 'attmethod__gps-distance--out'
+                }`}
+              >
                 距签到点 {distance} 米 {inRange ? '✓ 在范围内' : '✗ 超出范围'}
               </Text>
             ) : null}
           </View>
         ) : (
-          <View className='attdmethod__center'>
-            <Text className='attdmethod__center-sub'>尚未定位</Text>
-            <Text className='attdmethod__center-hint'>点击下方按钮获取当前位置</Text>
+          <View className='attmethod__gps-result'>
+            <Text className='attmethod__gps-idle'>尚未定位</Text>
+            <Text className='attmethod__gps-idle-hint'>点击下方按钮获取当前位置</Text>
           </View>
         )}
       </View>
 
       {userLat == null ? (
-        <View className='attdmethod__btn' onClick={handleLocate}>
-          <Icon name='navigation' size={32} color='#FFFFFF' strokeWidth={2} />
-          <Text className='attdmethod__btn-text'>{locating ? '定位中...' : '获取定位'}</Text>
+        <View
+          className={`attmethod__primary-btn ${locating ? 'attmethod__btn--disabled' : ''}`}
+          onClick={() => {
+            if (!locating) void handleLocate()
+          }}
+        >
+          <Icon name='navigation' size={32} color='#FFFFFF' />
+          <Text>{locating ? '定位中...' : '获取定位'}</Text>
         </View>
       ) : (
-        <View
-          className={`attdmethod__btn ${!inRange ? 'attdmethod__btn--disabled' : ''}`}
-          onClick={handleCheckIn}
-        >
-          <Text className='attdmethod__btn-text'>{loading ? '签到中...' : '立即签到'}</Text>
-        </View>
+        <>
+          <View
+            className={`attmethod__primary-btn attmethod__primary-btn--rounded ${
+              loading || !inRange ? 'attmethod__btn--disabled' : ''
+            }`}
+            onClick={() => {
+              if (!loading && inRange) void handleCheckIn()
+            }}
+          >
+            <Text>{loading ? '签到中...' : '立即签到'}</Text>
+          </View>
+          <View
+            className={`attmethod__outline-btn ${locating || loading ? 'attmethod__btn--disabled' : ''}`}
+            onClick={() => {
+              if (!locating && !loading) void handleLocate()
+            }}
+          >
+            <Icon name='navigation' size={32} color='#0062FF' />
+            <Text>{locating ? '重新定位中...' : '定位不准？重新定位'}</Text>
+          </View>
+        </>
       )}
     </View>
   )

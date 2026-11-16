@@ -1,104 +1,210 @@
 .attreport {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background-color: $bg;
+  min-height: 100vh;
+  background: $surface;
 
   &__body {
-    flex: 1;
-    padding: $spacing-4 $page-padding-x $page-padding-bottom;
+    padding: $page-padding-top $page-padding-x calc(40rpx + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: $card-gap;
     box-sizing: border-box;
-    overflow-y: auto;
-    background-color: $surface;
   }
 
-  &__title {
-    font-size: $text-28;
-    font-weight: $font-bold;
-    color: $text-primary;
+  &__loading {
+    padding: 128rpx 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  &__subtitle {
-    display: block;
+  &__loading-text {
     font-size: $text-base;
-    color: $text-secondary;
-    margin: $spacing-2 0 $spacing-4;
+    color: $text-tertiary;
   }
 
+  &__state {
+    padding: 128rpx 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24rpx;
+  }
+
+  &__state-text {
+    font-size: $text-base;
+    color: $text-weak;
+  }
+
+  &__retry {
+    height: 72rpx;
+    padding: 0 40rpx;
+    border-radius: $radius-md;
+    background: $primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: $text-base;
+    font-weight: $font-medium;
+    color: $text-inverse;
+  }
+
+  &__summary {
+    font-size: $text-sm;
+    color: $text-weak;
+  }
+
+  // ---------- 概览 ----------
   &__stats {
     display: flex;
-    flex-direction: row;
-    gap: $spacing-3;
-    margin-bottom: $spacing-4;
+    gap: 24rpx;
   }
 
   &__stat {
     flex: 1;
-    height: 160rpx;
-    background-color: $surface;
-    border-radius: $radius-md;
+    padding: 32rpx;
+    border-radius: $radius-xl;
+    background: $surface;
     box-shadow: $shadow-md;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     gap: 8rpx;
+    box-sizing: border-box;
   }
 
   &__stat-value {
-    font-size: $text-28;
+    font-family: $font-heading;
+    font-size: $text-3xl;
     font-weight: $font-bold;
-    color: $text-primary;
+
+    &--rate {
+      color: $primary;
+    }
+
+    &--leave {
+      color: #b45309;
+    }
+
+    &--absent {
+      color: #dc2626;
+    }
   }
 
   &__stat-label {
-    font-size: $text-xs;
+    font-size: $text-11;
     color: $text-weak;
   }
 
-  &__chart {
-    border: 1rpx solid $border;
-    border-radius: $radius-md;
-    padding: $spacing-4;
+  // ---------- 场次明细 ----------
+  &__sessions {
     display: flex;
     flex-direction: column;
-    gap: $spacing-3;
+    gap: 16rpx;
   }
 
-  &__chart-title {
-    font-size: $text-lg;
+  &__sessions-title {
+    font-size: $text-sm;
     font-weight: $font-semibold;
-    color: $text-primary;
+    color: $text-weak;
   }
 
-  &__bars {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-end;
-    gap: $spacing-2;
-    height: 240rpx;
-  }
-
-  &__bar {
-    flex: 1;
-    background-color: $primary;
-    border-radius: 4rpx;
-  }
-
-  &__export {
-    margin-top: $spacing-4;
-    height: 104rpx;
-    background-color: $primary;
-    border-radius: $radius-md;
-    box-shadow: $shadow-md;
+  &__empty {
+    padding: 96rpx 0;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
-  &__export-text {
-    font-size: $text-lg;
+  &__empty-text {
+    font-size: $text-base;
+    color: $text-tertiary;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__item {
+    padding: 32rpx;
+    border-radius: $radius-xl;
+    background: $surface;
+    box-shadow: $shadow-md;
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+    box-sizing: border-box;
+  }
+
+  &__item-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+  }
+
+  &__item-title-wrap {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 16rpx;
+  }
+
+  &__item-title {
+    min-width: 0;
+    font-size: $text-base;
     font-weight: $font-semibold;
+    color: $text-primary;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__item-time {
+    flex-shrink: 0;
+    font-size: $text-11;
+    color: $text-tertiary;
+  }
+
+  &__pill {
+    flex-shrink: 0;
+    padding: 4rpx 16rpx;
+    border-radius: $radius-full;
+    font-size: $text-11;
+  }
+
+  &__item-stats {
+    display: flex;
+    align-items: center;
+    gap: 32rpx;
+    font-size: $text-11;
+    color: $text-weak;
+  }
+
+  &__item-total {
+    margin-left: auto;
+  }
+
+  // ---------- 导出 ----------
+  &__export {
+    width: 100%;
+    height: 96rpx;
+    border-radius: $radius-md;
+    background: $primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    font-size: $text-base;
+    font-weight: $font-medium;
     color: $text-inverse;
+    box-sizing: border-box;
+
+    &--disabled {
+      opacity: 0.5;
+    }
   }
 }

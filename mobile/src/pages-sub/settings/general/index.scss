@@ -1,72 +1,239 @@
 // ============================================================
-// 通用设置
-// 结构参照 front GeneralSettings.tsx：基础偏好 / 存储管理 / 关于
+// 通用设置（1:1 对齐 front/src/pages/settings/GeneralSettings.tsx）
+// 结构：SettingsHeader + 基础偏好/存储管理/关于 分组 + 清除缓存抽屉
 // ============================================================
-.gene {
+
+.gen {
   min-height: 100vh;
-  background: $bg;
+  background-color: #ffffff;
   box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom);
 
   &__body {
-    padding: $page-padding-top $page-padding-x $page-padding-bottom;
     display: flex;
     flex-direction: column;
-    gap: $spacing-lg;
+    gap: 48rpx;
+    padding: 32rpx 40rpx 40rpx;
+    box-sizing: border-box;
   }
 
   &__group {
     display: flex;
     flex-direction: column;
-    gap: $spacing-sm;
+    gap: 16rpx;
+    width: 100%;
   }
 
   &__group-title {
-    font-size: $text-11;
+    font-family: $font-body;
+    font-size: 22rpx;
     font-weight: $font-semibold;
-    color: $text-secondary;
+    line-height: normal;
+    color: #4b5563;
+    white-space: nowrap;
   }
 
-  &__card {
-    width: 100%;
-    box-sizing: border-box;
-    background: $surface;
-    border: 1rpx solid $border;
-    border-radius: $radius-lg;
-    box-shadow: $shadow-md;
-    padding: 8rpx 24rpx;
+  &__rows {
     display: flex;
     flex-direction: column;
+    gap: 8rpx;
+    width: 100%;
   }
 
   &__row {
     display: flex;
+    flex-direction: row;
     align-items: center;
+    gap: 24rpx;
+    width: 100%;
     height: 112rpx;
+    padding: 0 24rpx;
     box-sizing: border-box;
+    border-radius: 12rpx;
 
     &:active {
-      opacity: 0.7;
+      background-color: #f8fafc;
     }
   }
 
   &__row-label {
-    flex: 1;
-    min-width: 0;
-    font-size: $text-base;
+    font-family: $font-body;
+    font-size: 28rpx;
     font-weight: $font-medium;
-    color: $text-primary;
+    line-height: normal;
+    color: #1a1a1a;
+    white-space: nowrap;
   }
 
   &__row-right {
     display: flex;
+    flex-direction: row;
     align-items: center;
-    gap: $spacing-2;
+    gap: 16rpx;
+    flex: 1;
+    justify-content: flex-end;
+    min-width: 0;
   }
 
   &__row-value {
-    font-size: $text-base;
+    font-family: $font-body;
+    font-size: 28rpx;
     font-weight: $font-medium;
-    color: $text-secondary;
+    line-height: normal;
+    color: #4b5563;
+    text-align: right;
+
+    &--muted {
+      color: #9ca3af;
+    }
+
+    &--primary {
+      font-weight: $font-bold;
+      color: #0062ff;
+    }
+  }
+
+  // 清除缓存底部抽屉
+  &__sheet {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 110;
+  }
+
+  &__sheet-mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(15, 23, 42, 0.42);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    animation: gen-fade 0.24s ease-out both;
+  }
+
+  &__sheet-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    max-height: 60vh;
+    border-radius: 48rpx 48rpx 0 0;
+    background-color: #ffffff;
+    box-shadow: 0 -28rpx 88rpx rgba(15, 23, 42, 0.16);
+    animation: gen-slide-up 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+    overflow: hidden;
+  }
+
+  &__sheet-handle-wrap {
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 20rpx 0 8rpx;
+  }
+
+  &__sheet-handle {
+    width: 76rpx;
+    height: 8rpx;
+    border-radius: 999rpx;
+    background-color: #e2e8f0;
+  }
+
+  &__sheet-header {
+    flex-shrink: 0;
+    padding: 12rpx 40rpx 24rpx;
+  }
+
+  &__sheet-title {
+    font-family: $font-heading;
+    font-size: 34rpx;
+    font-weight: $font-semibold;
+    letter-spacing: 0.4rpx;
+    line-height: normal;
+    color: #1a1a1a;
+  }
+
+  &__sheet-desc-wrap {
+    flex-shrink: 0;
+    padding: 0 40rpx 24rpx;
+  }
+
+  &__sheet-desc {
+    font-family: $font-body;
+    font-size: 26rpx;
+    font-weight: $font-normal;
+    line-height: 1.7;
+    color: #4b5563;
+  }
+
+  &__sheet-footer {
+    display: flex;
+    flex-direction: row;
+    gap: 24rpx;
+    flex-shrink: 0;
+    padding: 8rpx 40rpx calc(32rpx + env(safe-area-inset-bottom));
+  }
+
+  &__sheet-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    height: 96rpx;
+    border-radius: 28rpx;
+
+    &--cancel {
+      background-color: #f2f5f9;
+    }
+
+    &--primary {
+      background-image: linear-gradient(180deg, #2e7dff 0%, #0062ff 100%);
+      box-shadow: 0 20rpx 40rpx rgba(0, 98, 255, 0.24);
+    }
+
+    &--disabled {
+      opacity: 0.6;
+    }
+
+    &:active {
+      opacity: 0.85;
+    }
+  }
+
+  &__sheet-btn-text {
+    font-family: $font-body;
+    font-size: 30rpx;
+    font-weight: $font-semibold;
+    line-height: normal;
+
+    &--cancel {
+      color: #475569;
+    }
+
+    &--primary {
+      color: #ffffff;
+    }
+  }
+}
+
+@keyframes gen-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes gen-slide-up {
+  from {
+    transform: translate3d(0, 100%, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
   }
 }

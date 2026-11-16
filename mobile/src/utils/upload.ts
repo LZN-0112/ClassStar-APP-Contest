@@ -172,9 +172,114 @@ function fileNameFromPath(filePath: string): string {
   return seg[seg.length - 1] || ''
 }
 
+/**
+ * 上传班费票据图片到 /fee/upload-bill
+ * 后端返回 { billUrl, billKey }，记账时提交 billKey 即可
+ */
+export async function uploadFeeBill(
+  filePath: string,
+  classId?: string
+): Promise<{ billUrl: string; billKey: string }> {
+  const headers = await buildAuthHeaders(true)
+  const targetClassId = classId || getClassId()
+  return new Promise((resolve, reject) => {
+    Taro.uploadFile({
+      url: `${API_BASE_URL}/fee/upload-bill?classId=${encodeURIComponent(targetClassId)}`,
+      filePath,
+      name: 'file',
+      timeout: 30000,
+      header: headers,
+      success: (res) => {
+        let data: Record<string, unknown> = {}
+        try {
+          const parsed = JSON.parse(res.data) as { data?: Record<string, unknown> }
+          data = parsed?.data || {}
+        } catch {
+          data = {}
+        }
+        const billKey = (data.billKey as string) || ''
+        const billUrl = (data.billUrl as string) || ''
+        if (billKey || billUrl) resolve({ billKey, billUrl })
+        else reject(new Error('上传失败：未获取到票据信息'))
+      },
+      fail: (err) => reject(new Error(err.errMsg || '上传失败'))
+    })
+  })
+}
+
 /** 获取当前班级 ID */
 function getClassId(): string {
   return useUserStore.getState().currentClassId || ''
+}
+
+export interface MaterialUploadResult {
+  id: string
+  fileName: string
+  fileUrl: string
+  fileSize: number
+  folderName: string | null
+}
+
+/**
+ * 上传资料到班级资料库 /material/upload（支持分类文件夹）
+ * @param filePath 本地临时文件路径
+ * @param options 班级 / 文件名 / 分类
+ */
+export async function uploadMaterialFile(
+  filePath: string,
+  options: {
+    classId?: string
+    fileName?: string
+    folderName?: string
+    onProgress?: (percent: number) => void
+  } = {}
+): Promise<MaterialUploadResult> {
+  const headers = await buildAuthHeaders(true)
+  const classId = options.classId || getClassId()
+  const formData: Record<string, string> = { classId }
+  if (options.fileName) formData.fileName = options.fileName
+  if (options.folderName) formData.folderName = options.folderName
+
+  return new Promise((resolve, reject) => {
+    const task = Taro.uploadFile({
+      url: `${API_BASE_URL}/material/upload`,
+      filePath,
+      name: 'file',
+      formData,
+      timeout: 120000,
+      header: headers,
+      success: (res) => {
+        let data: Record<string, unknown> = {}
+        let message = ''
+        try {
+          const parsed = JSON.parse(res.data) as {
+            data?: Record<string, unknown>
+            message?: string
+          }
+          data = parsed?.data || {}
+          message = parsed?.message || ''
+        } catch {
+          data = {}
+        }
+        const fileUrl = (data.fileUrl as string) || ''
+        if (fileUrl) {
+          resolve({
+            id: (data.id as string) || '',
+            fileName: (data.fileName as string) || options.fileName || fileNameFromPath(filePath),
+            fileUrl,
+            fileSize: Number(data.fileSize || 0),
+            folderName: (data.folderName as string) || options.folderName || null
+          })
+        } else {
+          reject(new Error(message || '上传失败：未获取到文件地址'))
+        }
+      },
+      fail: (err) => reject(new Error(err.errMsg || '上传失败'))
+    })
+    if (options.onProgress) {
+      task.onProgressUpdate((res) => options.onProgress?.(res.progress || 0))
+    }
+  })
 }
 
 /** 清除 CSRF 缓存（登出时调用） */

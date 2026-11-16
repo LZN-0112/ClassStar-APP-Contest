@@ -45,7 +45,7 @@ export default {
         'pill': '9999px',
       },
       backgroundImage: {
-        'gradient-a': 'linear-gradient(180deg, #076CAB 0%, #32C9FD 55%, #DEFCFF 100%)',
+        'gradient-a': 'linear-gradient(180deg, #2E7DFF 0%, #6EA8FF 55%, #EAF3FF 100%)',
         'gradient-b': 'linear-gradient(180deg, #1986E6 0%, #8ACAE5 55%, #DEFCFF 100%)',
       },
       boxShadow: {

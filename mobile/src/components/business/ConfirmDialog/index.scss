@@ -1,0 +1,149 @@
+// ============================================================
+// ConfirmDialog 二次确认弹窗（1:1 对齐 App ConfirmDialog）
+// ============================================================
+
+.cx-confirm {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 110;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 48rpx;
+  box-sizing: border-box;
+
+  &__mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(15, 23, 42, 0.42);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    animation: cx-confirm-fade 0.24s ease-out both;
+  }
+
+  &__card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 612rpx;
+    padding: 52rpx 44rpx 40rpx;
+    border-radius: 48rpx;
+    background-color: #ffffff;
+    box-shadow: 0 48rpx 120rpx rgba(15, 23, 42, 0.24);
+    box-sizing: border-box;
+    animation: cx-confirm-pop 0.3s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+  }
+
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 116rpx;
+    height: 116rpx;
+    margin: 0 auto 32rpx;
+    border-radius: 38rpx;
+    background-color: #eef4ff;
+
+    &--danger {
+      background-color: #fdecec;
+    }
+  }
+
+  &__title {
+    display: block;
+    text-align: center;
+    font-family: $font-body;
+    font-size: 35rpx;
+    font-weight: $font-semibold;
+    line-height: 1.4;
+    color: #1a1a1a;
+  }
+
+  &__desc {
+    display: block;
+    margin-top: 16rpx;
+    text-align: center;
+    font-family: $font-body;
+    font-size: 25rpx;
+    line-height: 1.7;
+    color: #6b7280;
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    margin-top: 40rpx;
+  }
+
+  &__confirm {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 94rpx;
+    border-radius: 28rpx;
+    font-family: $font-body;
+    font-size: 30rpx;
+    font-weight: $font-semibold;
+    letter-spacing: 0.6rpx;
+    color: #ffffff;
+    background-image: linear-gradient(180deg, #2e7dff 0%, #0062ff 100%);
+    box-shadow: 0 20rpx 40rpx rgba(0, 98, 255, 0.24);
+
+    &:active {
+      opacity: 0.9;
+    }
+
+    &--danger {
+      background-image: linear-gradient(180deg, #f76b6b 0%, #e5484d 100%);
+      box-shadow: 0 20rpx 40rpx rgba(229, 72, 77, 0.24);
+    }
+
+    &--loading {
+      opacity: 0.6;
+    }
+  }
+
+  &__cancel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 80rpx;
+    margin-top: 16rpx;
+    border-radius: 24rpx;
+    font-family: $font-body;
+    font-size: 28rpx;
+    font-weight: $font-medium;
+    color: #64748b;
+
+    &:active {
+      opacity: 0.7;
+    }
+  }
+}
+
+@keyframes cx-confirm-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cx-confirm-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

@@ -1,90 +1,132 @@
 .attmy {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background-color: #ffffff;
+  min-height: 100vh;
+  background: $surface;
 
   &__body {
-    flex: 1;
     padding: 32rpx 40rpx 192rpx;
-    box-sizing: border-box;
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    gap: 40rpx;
+    box-sizing: border-box;
   }
 
+  // ---------- 筛选 Tabs ----------
   &__tabs {
     display: flex;
-    flex-direction: row;
-    gap: $spacing-2;
-    margin-bottom: $spacing-4;
+    flex-wrap: wrap;
+    gap: 16rpx;
   }
 
   &__tab {
-    padding: 16rpx 32rpx;
+    height: 64rpx;
+    padding: 8rpx 32rpx;
     border-radius: $radius-full;
-    background-color: $gray-100;
+    background: #f3f4f6;
     display: flex;
     align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
 
     &--active {
-      background-color: $primary;
+      background: $primary;
     }
   }
 
   &__tab-text {
-    font-size: $text-xs;
+    font-size: $text-11;
     font-weight: $font-semibold;
-    color: $text-weak;
+    color: $text-secondary;
+    white-space: nowrap;
 
     &--active {
       color: $text-inverse;
     }
   }
 
-  &__section-title {
-    font-size: $text-xs;
-    font-weight: $font-semibold;
-    color: $text-weak;
-    margin-bottom: $spacing-2;
+  // ---------- 考勤记录 ----------
+  &__group {
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
   }
 
-  &__loading,
-  &__empty {
+  &__section-title {
+    font-size: $text-11;
+    font-weight: $font-semibold;
+    color: $text-secondary;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__placeholder {
     width: 100%;
     height: 240rpx;
-    border-radius: $radius-lg;
-    background-color: $gray-50;
+    border-radius: $radius-xl;
+    background: #f9fafb;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
   }
 
-  &__loading-text,
-  &__empty-text {
-    font-size: $text-sm;
+  &__placeholder-text {
+    font-size: $text-base;
     color: $text-weak;
+  }
+
+  &__error {
+    width: 100%;
+    padding: 64rpx 32rpx;
+    border-radius: $radius-xl;
+    background: #f9fafb;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24rpx;
+    box-sizing: border-box;
+  }
+
+  &__error-text {
+    font-size: $text-base;
+    color: $text-weak;
+    text-align: center;
+  }
+
+  &__retry {
+    height: 80rpx;
+    padding: 0 40rpx;
+    border-radius: $radius-md;
+    background: $primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: $text-13;
+    font-weight: $font-medium;
+    color: $text-inverse;
   }
 
   &__card {
     width: 100%;
-    height: 160rpx;
-    border-radius: $radius-lg;
-    box-shadow: $shadow-md;
-    background-color: $surface;
+    min-height: 160rpx;
+    padding: 32rpx;
+    border-radius: $radius-md;
+    background: $surface;
+    box-shadow: 0 4rpx 16rpx 0 rgba(0, 0, 0, 0.05);
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: $spacing-3;
-    padding: $spacing-4;
+    gap: 24rpx;
     box-sizing: border-box;
-    margin-bottom: $spacing-2;
   }
 
   &__date {
     width: 112rpx;
-    height: 100%;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -93,19 +135,21 @@
   }
 
   &__day {
-    font-size: $text-28;
+    font-family: $font-heading;
+    font-size: $text-2xl;
     font-weight: $font-bold;
     color: $text-primary;
   }
 
   &__weekday {
-    font-size: $text-xs;
+    font-size: $text-11;
+    font-weight: $font-medium;
     color: $text-secondary;
   }
 
   &__info {
     flex: 1;
-    height: 100%;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -114,24 +158,37 @@
   }
 
   &__title {
+    max-width: 100%;
     font-size: $text-lg;
     font-weight: $font-bold;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   &__time {
-    font-size: $text-xs;
+    max-width: 100%;
+    font-size: $text-11;
+    font-weight: $font-medium;
     color: $text-secondary;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   &__tag {
-    padding: 8rpx 16rpx;
+    height: 44rpx;
+    padding: 4rpx 16rpx;
     border-radius: $radius-full;
     display: flex;
     align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
   }
 
   &__tag-text {
-    font-size: $text-xs;
+    font-size: $text-11;
     font-weight: $font-semibold;
+    white-space: nowrap;
   }
 }

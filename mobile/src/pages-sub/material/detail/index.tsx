@@ -1,126 +1,292 @@
-import { useState } from 'react'
-import { View, Text } from '@tarojs/components'
+// ============================================================
+// 资料文件详情
+// 1:1 对齐 front/src/pages/tools/MaterialDetail.tsx
+// 含：文件名片、图片/视频/音频/文本预览、文件信息、下载
+// ============================================================
+import { useEffect, useState } from 'react'
+import { Audio, Image, Text, Video, View } from '@tarojs/components'
 import Taro, { useLoad } from '@tarojs/taro'
 
-import { NavBar, ListLoading } from '@/components/business'
-import { Button, Icon } from '@/components/ui'
+import { PageHeader } from '@/components/business'
+import { Icon } from '@/components/ui'
 import { materialApi } from '@/services'
-import { useAuth } from '@/utils'
-import { downloadFile } from '@/utils/native'
+import { resolveFileUrl } from '@/services/request'
+import { useUserStore } from '@/stores'
+import {
+  formatFileSize,
+  formatFullDate,
+  formatRelativeTime,
+  getMaterialType,
+  isNewMaterial
+} from '@/utils/material'
+import type { MaterialFileItem } from '@/utils/material'
 import './index.scss'
 
-interface MaterialDetailData {
-  id: string
-  fileName: string
-  fileUrl?: string
-  fileSize: number
-  folderName?: string | null
-  uploaderName?: string | null
-  downloadCount?: number
+interface MaterialDetailData extends MaterialFileItem {
   fileType?: string
-  createdAt?: string
-}
-
-function formatFileSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-}
-
-function formatDate(dateStr?: string) {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 export default function MaterialDetail() {
-  const { requireLogin } = useAuth()
-
+  const [fileId, setFileId] = useState('')
   const [detail, setDetail] = useState<MaterialDetailData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [downloading, setDownloading] = useState(false)
+  const [previewText, setPreviewText] = useState<string | null>(null)
 
-  const fileIdRef = { id: '' }
+  useLoad((query) => {
+    setFileId(query?.fileId || '')
+  })
 
-  useLoad((o) => {
-    if (!requireLogin()) return
-    const fid = (o?.fileId as string) || ''
-    if (!fid) {
+  const type = detail ? getMaterialType(detail.fileName) : null
+  const fileUrl = detail ? resolveFileUrl(detail.fileUrl) : ''
+
+  const fetchDetail = async (id = fileId) => {
+    if (!id) {
       setLoading(false)
       return
     }
-    fileIdRef.id = fid
-    fetchDetail(fid)
-  })
-
-  const fetchDetail = async (fid: string) => {
     setLoading(true)
+    setLoadError(false)
     try {
-      const res: any = await materialApi.getDetail(fid)
-      setDetail(res?.data ? res.data : res)
+      const res = (await materialApi.getDetail(id)) as unknown as MaterialDetailData
+      setDetail(res || null)
     } catch {
-      setDetail(null)
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
   }
 
+  useEffect(() => {
+    if (fileId) void fetchDetail(fileId)
+    else setLoading(false)
+  }, [fileId])
+
+  // 文本类文件读取前 3000 字做预览
+  useEffect(() => {
+    setPreviewText(null)
+    if (!detail || !type || type.preview !== 'text') return
+    let cancelled = false
+    Taro.request<string>({
+      url: resolveFileUrl(detail.fileUrl),
+      responseType: 'text'
+    })
+      .then((res) => {
+        const text = typeof res.data === 'string' ? res.data : ''
+        if (!cancelled) setPreviewText(text ? text.slice(0, 3000) : null)
+      })
+      .catch(() => {
+        if (!cancelled) setPreviewText(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [detail?.id, detail?.fileUrl, type?.preview])
+
   const handleDownload = async () => {
-    if (!detail?.fileUrl || downloading) return
+    if (!detail || downloading) return
     setDownloading(true)
     try {
-      await downloadFile(detail.fileUrl)
-      fetchDetail(fileIdRef.id)
+      const token = useUserStore.getState().accessToken
+      const res = await Taro.downloadFile({
+        url: resolveFileUrl(`/material/${detail.id}/download`),
+        header: token ? { Authorization: `Bearer ${token}` } : undefined
+      })
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        throw new Error('下载失败，请稍后重试')
+      }
+      try {
+        await Taro.openDocument({ filePath: res.tempFilePath, showMenu: true })
+      } catch {
+        Taro.showToast({ title: '下载成功', icon: 'success' })
+      }
+      setDetail((prev) =>
+        prev ? { ...prev, downloadCount: (prev.downloadCount || 0) + 1 } : prev
+      )
     } catch (err) {
-      Taro.showToast({ title: err instanceof Error ? err.message : '下载失败', icon: 'none' })
+      Taro.showToast({
+        title: err instanceof Error ? err.message : '下载失败',
+        icon: 'none'
+      })
     } finally {
       setDownloading(false)
     }
   }
 
-  const Row = ({ label, value }: { label: string; value: string }) => (
-    <View className='matdetail__row'>
-      <Text className='matdetail__row-label'>{label}</Text>
-      <Text className='matdetail__row-value'>{value}</Text>
-    </View>
+  const head = (
+    <PageHeader
+      title='文件详情'
+      variant='b'
+      decor='file-text'
+      coverHeight={180}
+    />
   )
+
+  if (loading) {
+    return (
+      <View className='matdetail'>
+        {head}
+        <View className='matdetail__body'>
+          <View className='matdetail__skeleton matdetail__skeleton--lg' />
+          <View className='matdetail__skeleton matdetail__skeleton--md' />
+        </View>
+      </View>
+    )
+  }
+
+  if (loadError || !detail || !type) {
+    return (
+      <View className='matdetail'>
+        {head}
+        <View className='matdetail__body'>
+          <View className='matdetail__state'>
+            <View className='matdetail__state-icon'>
+              <Icon name='refresh-cw' size={56} color='#DC2626' strokeWidth={2} />
+            </View>
+            <Text className='matdetail__state-title'>
+              {loadError ? '文件信息加载失败' : '文件不存在'}
+            </Text>
+            {loadError ? (
+              <View
+                className='matdetail__state-btn'
+                hoverClass='matdetail__state-btn--hover'
+                onClick={() => fetchDetail()}
+              >
+                <Text>重新加载</Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+      </View>
+    )
+  }
 
   return (
     <View className='matdetail'>
-      <NavBar title='文件详情' />
+      {head}
 
       <View className='matdetail__body'>
-        {loading ? (
-          <ListLoading rows={6} />
-        ) : !detail ? (
-          <View className='matdetail__empty'>
-            <Icon name='file-text' size={72} color='#9CA3AF' strokeWidth={2} />
-            <Text className='matdetail__empty-text'>文件不存在</Text>
+        {/* 文件名片 */}
+        <View className='matdetail__card'>
+          <View className='matdetail__file-icon' style={{ backgroundColor: type.bg }}>
+            <Icon name={type.icon} size={64} color={type.color} strokeWidth={2} />
+          </View>
+          <Text className='matdetail__file-name'>{detail.fileName}</Text>
+          <View className='matdetail__file-chips'>
+            <Text
+              className='matdetail__type-pill'
+              style={{ backgroundColor: type.bg, color: type.color }}
+            >
+              {type.label}
+            </Text>
+            <Text className='matdetail__meta'>{formatFileSize(detail.fileSize)}</Text>
+            <Text className='matdetail__meta-dot'>·</Text>
+            <Text className='matdetail__meta'>{formatRelativeTime(detail.createdAt)}上传</Text>
+            {isNewMaterial(detail.createdAt) ? (
+              <Text className='matdetail__new-pill'>新资料</Text>
+            ) : null}
+          </View>
+        </View>
+
+        {/* 预览 */}
+        {type.preview !== 'none' ? (
+          <View className='matdetail__preview'>
+            <View className='matdetail__preview-head'>
+              <Text className='matdetail__preview-title'>预览</Text>
+              {type.preview === 'image' ? (
+                <Text className='matdetail__preview-hint'>点击图片放大</Text>
+              ) : null}
+            </View>
+
+            {type.preview === 'image' ? (
+              <View
+                className='matdetail__image-wrap'
+                onClick={() =>
+                  Taro.previewImage({ current: fileUrl, urls: [fileUrl] })
+                }
+              >
+                <Image className='matdetail__image' src={fileUrl} mode='aspectFit' />
+              </View>
+            ) : null}
+
+            {type.preview === 'video' ? (
+              <Video
+                className='matdetail__video'
+                src={fileUrl}
+                controls
+                showCenterPlayBtn
+                objectFit='contain'
+              />
+            ) : null}
+
+            {type.preview === 'audio' ? (
+              <View className='matdetail__audio'>
+                <View className='matdetail__audio-icon'>
+                  <Icon name='music' size={44} color='#DB2777' strokeWidth={2} />
+                </View>
+                <Audio className='matdetail__audio-player' src={fileUrl} controls />
+              </View>
+            ) : null}
+
+            {type.preview === 'text' ? (
+              <View className='matdetail__text'>
+                {previewText ? (
+                  <>
+                    <Text className='matdetail__text-content'>{previewText}</Text>
+                    {previewText.length >= 3000 ? (
+                      <Text className='matdetail__text-tip'>
+                        内容较长，仅展示前 3000 字，完整内容请下载查看
+                      </Text>
+                    ) : null}
+                  </>
+                ) : (
+                  <View className='matdetail__text-empty'>预览加载失败，请下载后查看</View>
+                )}
+              </View>
+            ) : null}
           </View>
         ) : (
-          <View className='matdetail__content'>
-            <View className='matdetail__head'>
-              <View className='matdetail__file-icon'>
-                <Icon name='file-text' size={64} color='#0062FF' strokeWidth={2} />
-              </View>
-              <Text className='matdetail__title'>{detail.fileName}</Text>
-              <Text className='matdetail__meta'>
-                {formatFileSize(detail.fileSize || 0)} · {formatDate(detail.createdAt)} 上传
-              </Text>
-            </View>
-
-            <View className='matdetail__rows'>
-              <Row label='上传者' value={detail.uploaderName || '未知'} />
-              <Row label='下载次数' value={String(detail.downloadCount ?? 0)} />
-              {detail.fileType ? <Row label='文件类型' value={detail.fileType} /> : null}
-              {detail.folderName ? <Row label='所属分类' value={detail.folderName} /> : null}
-            </View>
-
-            <Button type='primary' size='lg' block loading={downloading} onClick={handleDownload}>
-              {downloading ? '下载中...' : '下载文件'}
-            </Button>
+          <View className='matdetail__tip'>
+            <Icon name='info' size={32} color='#0062FF' strokeWidth={2} />
+            <Text className='matdetail__tip-text'>
+              该类型文件暂不支持小程序内预览，下载后可用手机自带应用打开。
+            </Text>
           </View>
         )}
+
+        {/* 文件信息 */}
+        <View className='matdetail__info'>
+          {[
+            { label: '上传者', value: detail.uploaderName || '未知' },
+            { label: '所属分类', value: detail.folderName || '未分类' },
+            { label: '下载次数', value: `${detail.downloadCount || 0} 次` },
+            { label: '上传时间', value: formatFullDate(detail.createdAt) }
+          ].map((item, index, arr) => (
+            <View
+              key={item.label}
+              className={`matdetail__info-row ${
+                index === arr.length - 1 ? '' : 'matdetail__info-row--border'
+              }`}
+            >
+              <Text className='matdetail__info-label'>{item.label}</Text>
+              <Text className='matdetail__info-value'>{item.value}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* 吸底下载 */}
+      <View className='matdetail__footer'>
+        <View
+          className={`matdetail__download ${downloading ? 'matdetail__download--disabled' : ''}`}
+          hoverClass='matdetail__download--hover'
+          onClick={handleDownload}
+        >
+          <Icon name='download' size={36} color='#FFFFFF' strokeWidth={2} />
+          <Text>{downloading ? '下载中...' : '下载文件'}</Text>
+        </View>
+        <Text className='matdetail__footer-tip'>下载后可在手机「文件管理」中查看</Text>
       </View>
     </View>
   )

@@ -3,8 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ShieldCheck } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
+import { acceptPrivacyConsent, hasPrivacyConsent } from '@/lib/privacy-consent';
+import { initPushAfterConsent, syncPushRegistration } from '@/lib/push';
 
-const CONSENT_KEY = 'privacy_consent_v1';
 /** 协议正文页放行渲染，保证用户可在弹窗内点开阅读后返回 */
 const DOC_PATHS = ['/user-agreement', '/privacy-policy'];
 
@@ -17,25 +18,22 @@ const DOC_PATHS = ['/user-agreement', '/privacy-policy'];
 export default function PrivacyConsentGate({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const [consented, setConsented] = useState(() => {
-    try {
-      return localStorage.getItem(CONSENT_KEY) === 'accepted';
-    } catch {
-      return false;
-    }
-  });
+  const [consented, setConsented] = useState(() => hasPrivacyConsent());
   const [declined, setDeclined] = useState(false);
 
-  if (consented || DOC_PATHS.includes(pathname)) {
+  if (consented) {
+    return <>{children}</>;
+  }
+  // 协议正文页放行，用户从弹窗点开后需能看到全文
+  if (DOC_PATHS.includes(pathname)) {
     return <>{children}</>;
   }
 
   const handleAgree = () => {
-    try {
-      localStorage.setItem(CONSENT_KEY, 'accepted');
-    } catch {
-      // 隐私模式下写入失败时仅在本次会话内放行
-    }
+    acceptPrivacyConsent();
+    // 合规要求：用户同意后才初始化推送 SDK、上报设备推送标识
+    initPushAfterConsent();
+    void syncPushRegistration();
     setConsented(true);
   };
 
@@ -53,7 +51,7 @@ export default function PrivacyConsentGate({ children }: { children: React.React
 
   return (
     <>
-      {children}
+      {/* 未同意前不渲染业务路由：避免刷新会话、埋点上报、SDK 初始化在授权前发生 */}
       <div
         className="fixed inset-0 z-[130] flex flex-col items-center justify-center bg-[rgba(15,23,42,0.42)] px-6 backdrop-blur-[2px]"
         style={{

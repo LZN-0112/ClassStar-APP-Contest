@@ -1,5 +1,5 @@
 // API 服务层入口
-export { request, clearCsrfCache } from './request'
+export { request, clearCsrfCache, resolveFileUrl } from './request'
 export * as authApi from './auth'
 export * as classesApi from './classes'
 export { attendanceApi } from './attendance'

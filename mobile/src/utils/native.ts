@@ -4,13 +4,14 @@
 import Taro from '@tarojs/taro'
 
 /** 扫码，返回二维码内容 */
-export function scanCode(): Promise<string> {
+export function scanCode(options?: { onlyFromCamera?: boolean }): Promise<string> {
   return new Promise((resolve, reject) => {
     // #ifdef H5
     reject(new Error('H5 环境不支持扫码'))
     // #endif
     // #ifndef H5
     Taro.scanCode({
+      onlyFromCamera: options?.onlyFromCamera !== false,
       success: (res) => resolve(res.result),
       fail: (err) => reject(new Error(err.errMsg || '扫码失败'))
     })
@@ -46,6 +47,47 @@ export function chooseFile(count: number): Promise<string[]> {
       count,
       type: 'all',
       success: (res) => resolve(res.tempFiles.map((f) => f.path)),
+      fail: (err) => reject(new Error(err.errMsg || '选择文件失败'))
+    })
+    // #endif
+  })
+}
+
+export interface LocalFileMeta {
+  path: string
+  name: string
+  size: number
+}
+
+/** 选择文件并返回名称与大小（资料库上传用） */
+export function chooseFiles(count: number): Promise<LocalFileMeta[]> {
+  return new Promise((resolve, reject) => {
+    // #ifdef H5
+    Taro.chooseImage({
+      count,
+      success: (res) =>
+        resolve(
+          res.tempFilePaths.map((path) => ({
+            path,
+            name: path.split('/').pop() || '未命名文件',
+            size: 0
+          }))
+        ),
+      fail: (err) => reject(new Error(err.errMsg || '选择文件失败'))
+    })
+    // #endif
+    // #ifndef H5
+    Taro.chooseMessageFile({
+      count,
+      type: 'all',
+      success: (res) =>
+        resolve(
+          res.tempFiles.map((f) => ({
+            path: f.path,
+            name: f.name || f.path.split('/').pop() || '未命名文件',
+            size: Number(f.size || 0)
+          }))
+        ),
       fail: (err) => reject(new Error(err.errMsg || '选择文件失败'))
     })
     // #endif
@@ -128,29 +170,57 @@ export function requestPayment(paymentParams: Record<string, string>): Promise<v
   })
 }
 
+/** 文档类型（微信 openDocument 支持的类型） */
+export type DocumentFileType = 'doc' | 'docx' | 'xls' | 'xlsx' | 'ppt' | 'pptx' | 'pdf'
+
+export interface DownloadFileOptions {
+  /** 附加请求头（如 Authorization） */
+  header?: Record<string, string>
+  /** 保存到本地的文件名（含扩展名，建议使用 ASCII 字符） */
+  fileName?: string
+  /** 打开文档时显式指定类型，提升微信端兼容性 */
+  fileType?: DocumentFileType
+}
+
 /** 下载文件并用文档查看器打开，返回本地路径 */
-export function downloadFile(url: string): Promise<string> {
+export function downloadFile(url: string, options: DownloadFileOptions = {}): Promise<string> {
   return new Promise((resolve, reject) => {
+    // #ifdef H5
     Taro.downloadFile({
       url,
+      header: options.header,
       success: (res) => {
         if (res.statusCode < 200 || res.statusCode >= 300) {
           reject(new Error(`下载失败 (${res.statusCode})`))
           return
         }
-        // #ifdef H5
         resolve(res.tempFilePath)
-        // #endif
-        // #ifndef H5
-        Taro.openDocument({
-          filePath: res.tempFilePath,
-          showMenu: true,
-          success: () => resolve(res.tempFilePath),
-          fail: () => resolve(res.tempFilePath)
-        })
-        // #endif
       },
       fail: (err) => reject(new Error(err.errMsg || '下载失败'))
     })
+    // #endif
+    // #ifndef H5
+    Taro.downloadFile({
+      url,
+      header: options.header,
+      filePath: options.fileName ? `${Taro.env.USER_DATA_PATH}/${options.fileName}` : undefined,
+      success: (res) => {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          reject(new Error(`下载失败 (${res.statusCode})`))
+          return
+        }
+        // 指定 filePath 时优先使用持久路径，避免临时文件被清理
+        const localPath = (res as { filePath?: string }).filePath || res.tempFilePath
+        Taro.openDocument({
+          filePath: localPath,
+          fileType: options.fileType,
+          showMenu: true,
+          success: () => resolve(localPath),
+          fail: () => resolve(localPath)
+        })
+      },
+      fail: (err) => reject(new Error(err.errMsg || '下载失败'))
+    })
+    // #endif
   })
 }

@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect } from 'react';
 import { initStatusBar } from '@/lib/capacitor';
-import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { bootstrapPush } from '@/lib/push';
+import { HashRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import PageTransition from '@/components/common/PageTransition';
 import LoadingScreen from '@/components/feedback/LoadingScreen';
@@ -30,7 +31,7 @@ const AIAssistant = lazy(() => import('@/pages/ai-assistant/AIAssistant'));
 
 // 消息与任务
 const Messages = lazy(() => import('@/pages/messages/Messages'));
-const MessageList = lazy(() => import('@/pages/messages/MessageList'));
+
 const MessageDetail = lazy(() => import('@/pages/messages/MessageDetail'));
 const PublishMessage = lazy(() => import('@/pages/messages/PublishMessage'));
 const MessageStats = lazy(() => import('@/pages/messages/MessageStats'));
@@ -55,6 +56,7 @@ const HomeworkDetail = lazy(() => import('@/pages/homeworks/HomeworkDetail'));
 const HomeworkSubmit = lazy(() => import('@/pages/homeworks/HomeworkSubmit'));
 const DelayApply = lazy(() => import('@/pages/homeworks/DelayApply'));
 const MyHomework = lazy(() => import('@/pages/homeworks/MyHomework'));
+const HomeworkSubmissions = lazy(() => import('@/pages/homeworks/HomeworkSubmissions'));
 
 // 活动与报名
 const ActivityList = lazy(() => import('@/pages/activities/ActivityList'));
@@ -92,7 +94,7 @@ const FileList = lazy(() => import('@/pages/archive/FileList'));
 const DownloadStats = lazy(() => import('@/pages/archive/DownloadStats'));
 const ClassArchive = lazy(() => import('@/pages/archive/ClassArchive'));
 const ArchiveDetail = lazy(() => import('@/pages/archive/ArchiveDetail'));
-const ClassElectronicArchive = lazy(() => import('@/pages/archive/ClassElectronicArchive'));
+
 const ExportArchive = lazy(() => import('@/pages/archive/ExportArchive'));
 const DataDashboard = lazy(() => import('@/pages/data/DataDashboard'));
 const SemesterReport = lazy(() => import('@/pages/archive/SemesterReport'));
@@ -165,7 +167,8 @@ function AnimatedRoutes() {
 
         {/* 消息与任务 */}
         <Route path="/messages" element={<PageTransition><Messages /></PageTransition>} />
-        <Route path="/message-list" element={<PageTransition><MessageList /></PageTransition>} />
+        {/* 旧的「通知」列表页已由消息中心取代，保留路由重定向以兼容历史链接 */}
+        <Route path="/message-list" element={<Navigate to="/messages" replace />} />
         <Route path="/message-detail/:messageId" element={<PageTransition><MessageDetail /></PageTransition>} />
         <Route path="/publish-message" element={<AuthRoute><PublishMessage /></AuthRoute>} />
         <Route path="/message-stats" element={<AuthRoute><MessageStats /></AuthRoute>} />
@@ -174,6 +177,7 @@ function AnimatedRoutes() {
         <Route path="/task-board" element={<PageTransition><TaskBoard /></PageTransition>} />
         <Route path="/task-detail/:taskId" element={<PageTransition><TaskDetail /></PageTransition>} />
         <Route path="/publish-task" element={<AuthRoute><PublishTask /></AuthRoute>} />
+        <Route path="/publish-task/:taskId" element={<AuthRoute><PublishTask /></AuthRoute>} />
 
         {/* 考勤 */}
         <Route path="/attendance-list" element={<AuthRoute><AttendanceList /></AuthRoute>} />
@@ -191,6 +195,7 @@ function AnimatedRoutes() {
         <Route path="/homework-submit/:homeworkId" element={<AuthRoute><HomeworkSubmit /></AuthRoute>} />
         <Route path="/delay-apply/:homeworkId" element={<AuthRoute><DelayApply /></AuthRoute>} />
         <Route path="/my-homework" element={<AuthRoute><MyHomework /></AuthRoute>} />
+        <Route path="/homework-submissions/:id" element={<AuthRoute><HomeworkSubmissions /></AuthRoute>} />
 
         {/* 活动与报名 */}
         <Route path="/activity-list" element={<PageTransition><ActivityList /></PageTransition>} />
@@ -204,7 +209,7 @@ function AnimatedRoutes() {
         {/* 投票 */}
         <Route path="/vote-list" element={<PageTransition><VoteList /></PageTransition>} />
         <Route path="/publish-vote" element={<AuthRoute><PublishVote /></AuthRoute>} />
-        <Route path="/vote-options" element={<PageTransition><VoteOptions /></PageTransition>} />
+        <Route path="/vote-options/:voteId" element={<PageTransition><VoteOptions /></PageTransition>} />
 
         {/* 班费与团费 */}
         <Route path="/fee-ledger" element={<AuthRoute><FeeLedger /></AuthRoute>} />
@@ -230,7 +235,6 @@ function AnimatedRoutes() {
         <Route path="/download-stats" element={<AuthRoute><DownloadStats /></AuthRoute>} />
         <Route path="/class-archive" element={<PageTransition><ClassArchive /></PageTransition>} />
         <Route path="/archive-detail" element={<PageTransition><ArchiveDetail /></PageTransition>} />
-        <Route path="/class-electronic-archive" element={<PageTransition><ClassElectronicArchive /></PageTransition>} />
         <Route path="/export-archive" element={<AuthRoute><ExportArchive /></AuthRoute>} />
         <Route path="/data-dashboard" element={<PageTransition><DataDashboard /></PageTransition>} />
         <Route path="/semester-report" element={<PageTransition><SemesterReport /></PageTransition>} />
@@ -294,6 +298,8 @@ export default function App() {
   useEffect(() => {
     // 在 App 挂载后再初始化，确保 Capacitor 的 AndroidBridge 已注入、能读到真实状态栏高度
     void initStatusBar();
+    // 推送 SDK 只在已同意隐私政策后初始化（未同意时内部直接跳过）
+    bootstrapPush();
   }, []);
 
   return (

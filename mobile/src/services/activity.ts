@@ -24,12 +24,15 @@ export const activityApi = {
    */
   publish: (classId: string, data: {
     title: string
+    category?: string
     eventDate: string
     eventTime?: string
     location?: string
+    description?: string
     capacity?: number
     deadline?: string
     coverUrl?: string
+    images?: string[]
   }) => request.post(`/classes/${classId}/activities`, data),
 
   /**
@@ -50,8 +53,11 @@ export const activityApi = {
    * 报名活动
    * POST /classes/:classId/activities/:activityId/register
    */
-  register: (classId: string, activityId: string) =>
-    request.post(`/classes/${classId}/activities/${activityId}/register`),
+  register: (
+    classId: string,
+    activityId: string,
+    data?: { name?: string; studentId?: string; phone?: string; remark?: string }
+  ) => request.post(`/classes/${classId}/activities/${activityId}/register`, data),
 
   /**
    * 取消报名

@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../../common/database/prisma.service';
 import { getActivityStartTime } from '../activities/activity-status.utils';
+import { PushService } from '../push/push.service';
 
 type SourceType = 'homework' | 'attendance' | 'activity' | 'vote';
 
@@ -53,7 +54,10 @@ export class DeadlineReminderService {
   private running = false;
   private activityStartRunning = false;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly push: PushService,
+  ) {}
 
   /**
    * 每分钟扫描一次即将到期的作业/考勤/活动/投票，
@@ -279,6 +283,17 @@ export class DeadlineReminderService {
       throw error;
     }
 
+    // 截止提醒是逐人消息，按人推送（messageRows 与 claimedPlans 顺序一致）
+    claimedPlans.forEach((plan, index) => {
+      void this.push.sendMessagePush([plan.userId], {
+        title: messageRows[index].title,
+        content: messageRows[index].content,
+        messageId: plan.messageId,
+        classId: plan.item.classId,
+        type: 'deadline_reminder',
+      });
+    });
+
     this.logger.log(`已生成 ${claimedPlans.length} 条截止提醒站内消息`);
   }
 
@@ -439,6 +454,19 @@ export class DeadlineReminderService {
       });
       throw error;
     }
+
+    // 活动开始提醒逐人推送
+    claimedPlans.forEach((plan) => {
+      void this.push.sendMessagePush([plan.userId], {
+        title: `【活动提醒】${plan.activity.title}`.slice(0, 200),
+        content: `活动「${plan.activity.title}」将于 ${this.formatDeadline(
+          plan.start,
+        )} 开始，请提前做好准备。地点：${plan.activity.location || '待定'}`,
+        messageId: plan.messageId,
+        classId: plan.activity.class_id,
+        type: 'activity_start',
+      });
+    });
 
     this.logger.log(`已生成 ${claimedPlans.length} 条活动开始提醒站内消息`);
   }

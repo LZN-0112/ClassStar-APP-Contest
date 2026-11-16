@@ -43,7 +43,7 @@ export default function MonitorLogin() {
     localStorage.removeItem('refreshToken');
     try {
       const result = await monitorPost<LoginResult>('/auth/login', {
-        phone: phone.trim(),
+        account: phone.trim(),
         password,
         loginType: 'password',
       });

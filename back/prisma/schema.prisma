@@ -22,6 +22,7 @@ model activities {
   cover_url              String?                  @db.VarChar(500)
   deadline               DateTime?
   status                 String                   @default("registering") @db.VarChar(20)
+  is_mandatory           Boolean                  @default(false)
   created_at             DateTime                 @default(now())
   updated_at             DateTime                 @default(now())
   classes                classes                  @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_act_class")
@@ -176,20 +177,22 @@ enum ClassMemberVerifyStatus {
 }
 
 model class_members {
-  id            String                  @id @db.Char(36)
-  class_id      String                  @db.Char(36)
-  user_id       String                  @db.Char(36)
-  role          String                  @default("学生") @db.VarChar(50)
-  role_level    ClassMemberRoleLevel    @default(member)
-  is_committee  Boolean                 @default(false)
-  verify_status ClassMemberVerifyStatus @default(UNVERIFIED)
-  verified_at   DateTime?
-  verified_by   String?                 @db.Char(36)
-  joined_at     DateTime                @default(now())
-  created_at    DateTime                @default(now())
-  updated_at    DateTime                @updatedAt
-  classes       classes                 @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cm_class")
-  users         users                   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cm_user")
+  id                 String                  @id @db.Char(36)
+  class_id           String                  @db.Char(36)
+  user_id            String                  @db.Char(36)
+  role               String                  @default("学生") @db.VarChar(50)
+  role_level         ClassMemberRoleLevel    @default(member)
+  is_committee       Boolean                 @default(false)
+  verify_status      ClassMemberVerifyStatus @default(UNVERIFIED)
+  verified_at        DateTime?
+  verified_by        String?                 @db.Char(36)
+  joined_at          DateTime                @default(now())
+  /// 上次进入资料库的时间，用于计算“未查看的新增资料”角标
+  material_viewed_at DateTime?
+  created_at         DateTime                @default(now())
+  updated_at         DateTime                @updatedAt
+  classes            classes                 @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cm_class")
+  users              users                   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cm_user")
 
   @@unique([class_id, user_id], map: "uk_class_user")
   @@index([class_id, role_level], map: "idx_class_role_level")
@@ -402,14 +405,14 @@ model homework_delay_applications {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model homework_offline_check_details {
-  id                                                     String                  @id @db.Char(36)
-  check_id                                               String                  @db.Char(36)
+  id                                                  String                  @id @db.Char(36)
+  check_id                                            String                  @db.Char(36)
   /// 学生输入的学号（非用户主键，不做外键约束）
-  student_id                                             String                  @db.VarChar(64)
-  user_id                                                String?                 @db.Char(36)
-  status                                                 String                  @default("submitted") @db.VarChar(20)
-  homework_offline_checks                                homework_offline_checks @relation(fields: [check_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_hod_check")
-  users_homework_offline_check_details_user_idTousers    users?                  @relation("homework_offline_check_details_user_idTousers", fields: [user_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_hod_user")
+  student_id                                          String                  @db.VarChar(64)
+  user_id                                             String?                 @db.Char(36)
+  status                                              String                  @default("submitted") @db.VarChar(20)
+  homework_offline_checks                             homework_offline_checks @relation(fields: [check_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_hod_check")
+  users_homework_offline_check_details_user_idTousers users?                  @relation("homework_offline_check_details_user_idTousers", fields: [user_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_hod_user")
 
   @@unique([check_id, student_id], map: "uk_check_student")
   @@index([student_id], map: "idx_student")
@@ -435,16 +438,20 @@ model homework_offline_checks {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model homework_submissions {
-  id           String    @id @db.Char(36)
-  homework_id  String    @db.Char(36)
-  student_id   String    @db.Char(36)
-  content      String?   @db.Text
-  attachments  Json?
-  status       String    @default("submitted") @db.VarChar(20)
-  submitted_at DateTime  @default(now())
-  updated_at   DateTime  @default(now())
-  homeworks    homeworks @relation(fields: [homework_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_hs_homework")
-  users        users     @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_hs_student")
+  id             String    @id @db.Char(36)
+  homework_id    String    @db.Char(36)
+  student_id     String    @db.Char(36)
+  content        String?   @db.Text
+  attachments    Json?
+  status         String    @default("submitted") @db.VarChar(20)
+  score          String?   @db.VarChar(20)
+  review_comment String?   @db.Text
+  reviewed_by    String?   @db.Char(36)
+  reviewed_at    DateTime?
+  submitted_at   DateTime  @default(now())
+  updated_at     DateTime  @default(now())
+  homeworks      homeworks @relation(fields: [homework_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_hs_homework")
+  users          users     @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_hs_student")
 
   @@unique([homework_id, student_id], map: "uk_homework_student")
   @@index([student_id], map: "idx_student")
@@ -610,6 +617,8 @@ model messages {
   reminder_interval   Int?
   ack_deadline        DateTime?             @db.DateTime(0)
   status              String                @default("published") @db.VarChar(20)
+  source_type         String?               @db.VarChar(20)
+  source_id           String?               @db.Char(36)
   created_at          DateTime              @default(now())
   updated_at          DateTime              @default(now())
   message_acks        message_acks[]
@@ -622,6 +631,7 @@ model messages {
   @@index([class_id, created_at], map: "idx_class_created")
   @@index([class_id, type], map: "idx_class_type")
   @@index([publisher_id], map: "idx_publisher")
+  @@index([source_type, source_id], map: "idx_msg_source")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -646,6 +656,8 @@ model random_draw_records {
   main_count          Int                   @default(0)
   backup_count        Int                   @default(0)
   status              String                @default("confirmed") @db.VarChar(20)
+  creator_role_level  String                @default("member") @db.VarChar(20)
+  publicized_at       DateTime?             @db.DateTime(3)
   created_by          String                @db.Char(36)
   created_at          DateTime              @default(now())
   random_draw_members random_draw_members[]
@@ -673,23 +685,27 @@ model refresh_tokens {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model tasks {
-  id         String    @id @db.Char(36)
-  class_id   String    @db.Char(36)
-  title      String    @db.VarChar(200)
-  owner_id   String    @db.Char(36)
-  deadline   DateTime?
-  location   String?   @db.VarChar(200)
-  content    String?   @db.Text
-  progress   Int       @default(0)
-  priority   Int       @default(0)
-  status     String    @default("todo") @db.VarChar(20)
-  created_at DateTime  @default(now())
-  updated_at DateTime  @default(now())
-  classes    classes   @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_task_class")
-  users      users     @relation(fields: [owner_id], references: [id], onUpdate: NoAction, map: "fk_task_owner")
+  id          String    @id @db.Char(36)
+  class_id    String    @db.Char(36)
+  title       String    @db.VarChar(200)
+  owner_id    String    @db.Char(36)
+  deadline    DateTime?
+  location    String?   @db.VarChar(200)
+  content     String?   @db.Text
+  progress    Int       @default(0)
+  priority    Int       @default(0)
+  status      String    @default("todo") @db.VarChar(20)
+  created_by  String    @db.Char(36)
+  assign_type String    @default("self") @db.VarChar(20)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @default(now())
+  classes     classes   @relation(fields: [class_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_task_class")
+  users       users     @relation(fields: [owner_id], references: [id], onUpdate: NoAction, map: "fk_task_owner")
+  creator     users     @relation("tasks_creator", fields: [created_by], references: [id], onUpdate: NoAction, map: "fk_task_creator")
 
   @@index([class_id, status], map: "idx_class_status")
   @@index([owner_id], map: "idx_owner")
+  @@index([created_by], map: "idx_task_creator")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -741,57 +757,61 @@ model user_settings {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model users {
-  id                                                                              String                           @id @db.Char(36)
-  name                                                                            String                           @db.VarChar(50)
-  nickname                                                                        String?                          @db.VarChar(50)
-  phone                                                                           String                           @unique(map: "phone") @db.VarChar(20)
-  student_id                                                                      String?                          @db.VarChar(30)
+  id                                                                           String                           @id @db.Char(36)
+  name                                                                         String                           @db.VarChar(50)
+  nickname                                                                     String?                          @db.VarChar(50)
+  phone                                                                        String                           @unique(map: "phone") @db.VarChar(20)
+  // 注册验证码邮箱（v1.0 免费替代短信验证）
+  email                                                                        String?                          @unique(map: "uk_users_email") @db.VarChar(254)
+  student_id                                                                   String?                          @db.VarChar(30)
   // 微信登录（v1.1 启用）：同一用户可绑定微信，NULL 表示未绑定
-  wechat_openid                                                                   String?                          @unique(map: "uk_wechat_openid") @db.VarChar(64)
-  wechat_unionid                                                                  String?                          @unique(map: "uk_wechat_unionid") @db.VarChar(64)
-  avatar                                                                          String?                          @db.LongText
-  background_image                                                                String?                          @db.LongText
-  bio                                                                             String?                          @db.VarChar(200)
-  password_hash                                                                   String                           @db.VarChar(255)
-  status                                                                          Boolean                          @default(true)
-  created_at                                                                      DateTime                         @default(now())
-  updated_at                                                                      DateTime                         @default(now())
-  activities                                                                      activities[]
-  activity_registrations                                                          activity_registrations[]
-  archive_files_uploader                                                          archive_files[]                  @relation("archive_files_uploader")
-  archives                                                                        archives[]
-  attendance_records                                                              attendance_records[]
-  attendances                                                                     attendances[]
-  class_members                                                                   class_members[]
-  classes                                                                         classes[]
-  committee_handovers_committee_handovers_from_user_idTousers                     committee_handovers[]            @relation("committee_handovers_from_user_idTousers")
-  committee_handovers_committee_handovers_to_user_idTousers                       committee_handovers[]            @relation("committee_handovers_to_user_idTousers")
-  feedback                                                                        feedback[]
-  finance_payments_finance_payments_registered_byTousers                          finance_payments[]               @relation("finance_payments_registered_byTousers")
-  finance_payments_finance_payments_student_idTousers                             finance_payments[]               @relation("finance_payments_student_idTousers")
-  finance_records                                                                 finance_records[]
-  homework_delay_applications_homework_delay_applications_reviewed_byTousers      homework_delay_applications[]    @relation("homework_delay_applications_reviewed_byTousers")
-  homework_delay_applications_homework_delay_applications_student_idTousers       homework_delay_applications[]    @relation("homework_delay_applications_student_idTousers")
-  homework_offline_check_details_homework_offline_check_details_user_idTousers    homework_offline_check_details[] @relation("homework_offline_check_details_user_idTousers")
-  homework_offline_checks                                                         homework_offline_checks[]
-  homework_submissions                                                            homework_submissions[]
-  homeworks                                                                       homeworks[]
-  leave_applications_leave_applications_reviewed_byTousers                        leave_applications[]             @relation("leave_applications_reviewed_byTousers")
-  leave_applications_leave_applications_student_idTousers                         leave_applications[]             @relation("leave_applications_student_idTousers")
-  material_downloads                                                              material_downloads[]
-  materials                                                                       materials[]
-  message_acks                                                                    message_acks[]
-  message_reads                                                                   message_reads[]
-  messages                                                                        messages[]
-  pomodoro_sessions                                                               pomodoro_sessions[]
-  random_draw_members                                                             random_draw_members[]
-  random_draw_records                                                             random_draw_records[]
-  refresh_tokens                                                                  refresh_tokens[]
-  tasks                                                                           tasks[]
-  user_auths                                                                      user_auths[]
-  user_settings                                                                   user_settings?
-  vote_records                                                                    vote_records[]
-  votes                                                                           votes[]
+  wechat_openid                                                                String?                          @unique(map: "uk_wechat_openid") @db.VarChar(64)
+  wechat_unionid                                                               String?                          @unique(map: "uk_wechat_unionid") @db.VarChar(64)
+  avatar                                                                       String?                          @db.LongText
+  background_image                                                             String?                          @db.LongText
+  bio                                                                          String?                          @db.VarChar(200)
+  password_hash                                                                String                           @db.VarChar(255)
+  status                                                                       Boolean                          @default(true)
+  created_at                                                                   DateTime                         @default(now())
+  updated_at                                                                   DateTime                         @default(now())
+  activities                                                                   activities[]
+  activity_registrations                                                       activity_registrations[]
+  archive_files_uploader                                                       archive_files[]                  @relation("archive_files_uploader")
+  archives                                                                     archives[]
+  attendance_records                                                           attendance_records[]
+  attendances                                                                  attendances[]
+  class_members                                                                class_members[]
+  classes                                                                      classes[]
+  committee_handovers_committee_handovers_from_user_idTousers                  committee_handovers[]            @relation("committee_handovers_from_user_idTousers")
+  committee_handovers_committee_handovers_to_user_idTousers                    committee_handovers[]            @relation("committee_handovers_to_user_idTousers")
+  device_tokens                                                                device_tokens[]
+  feedback                                                                     feedback[]
+  finance_payments_finance_payments_registered_byTousers                       finance_payments[]               @relation("finance_payments_registered_byTousers")
+  finance_payments_finance_payments_student_idTousers                          finance_payments[]               @relation("finance_payments_student_idTousers")
+  finance_records                                                              finance_records[]
+  homework_delay_applications_homework_delay_applications_reviewed_byTousers   homework_delay_applications[]    @relation("homework_delay_applications_reviewed_byTousers")
+  homework_delay_applications_homework_delay_applications_student_idTousers    homework_delay_applications[]    @relation("homework_delay_applications_student_idTousers")
+  homework_offline_check_details_homework_offline_check_details_user_idTousers homework_offline_check_details[] @relation("homework_offline_check_details_user_idTousers")
+  homework_offline_checks                                                      homework_offline_checks[]
+  homework_submissions                                                         homework_submissions[]
+  homeworks                                                                    homeworks[]
+  leave_applications_leave_applications_reviewed_byTousers                     leave_applications[]             @relation("leave_applications_reviewed_byTousers")
+  leave_applications_leave_applications_student_idTousers                      leave_applications[]             @relation("leave_applications_student_idTousers")
+  material_downloads                                                           material_downloads[]
+  materials                                                                    materials[]
+  message_acks                                                                 message_acks[]
+  message_reads                                                                message_reads[]
+  messages                                                                     messages[]
+  pomodoro_sessions                                                            pomodoro_sessions[]
+  random_draw_members                                                          random_draw_members[]
+  random_draw_records                                                          random_draw_records[]
+  refresh_tokens                                                               refresh_tokens[]
+  tasks                                                                        tasks[]
+  tasks_creator                                                                tasks[]                          @relation("tasks_creator")
+  user_auths                                                                   user_auths[]
+  user_settings                                                                user_settings?
+  vote_records                                                                 vote_records[]
+  votes                                                                        votes[]
 
   @@index([phone], map: "idx_phone")
   @@index([student_id], map: "idx_student_id")
@@ -971,4 +991,55 @@ model ai_assistant_records {
 
   @@index([user_id, created_at], map: "idx_ai_record_user_time")
   @@index([class_id], map: "idx_ai_record_class")
+}
+
+/// 移动端推送设备标识（极光 JPush Registration ID），仅新增表，不改动既有消息表
+model device_tokens {
+  id              String   @id @db.Char(36)
+  user_id         String   @db.Char(36)
+  registration_id String   @unique(map: "uk_device_registration_id") @db.VarChar(64)
+  platform        String   @default("android") @db.VarChar(20)
+  app_version     String?  @db.VarChar(30)
+  device_model    String?  @db.VarChar(100)
+  enabled         Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now())
+  users           users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_device_user")
+
+  @@index([user_id], map: "idx_device_user")
+}
+
+/// 班费/团费账单：按期次生成应缴名单，支持逾期补登记
+model fee_bills {
+  id         String    @id @db.Char(36)
+  class_id   String    @db.Char(36)
+  fee_type   String    @db.VarChar(20)
+  title      String    @db.VarChar(100)
+  period     String?   @db.VarChar(50)
+  amount     Decimal   @db.Decimal(10, 2)
+  deadline   DateTime?
+  status     String    @default("active") @db.VarChar(20)
+  created_by String    @db.Char(36)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+
+  @@index([class_id, fee_type, created_at], map: "idx_bill_class_type")
+}
+
+/// 账单应缴明细：每个成员一条，缴费后置为 paid，可逾期补登记
+model fee_bill_members {
+  id          String    @id @db.Char(36)
+  bill_id     String    @db.Char(36)
+  user_id     String    @db.Char(36)
+  amount      Decimal   @db.Decimal(10, 2)
+  status      String    @default("unpaid") @db.VarChar(20)
+  paid_at     DateTime?
+  recorded_by String?   @db.Char(36)
+  remark      String?   @db.VarChar(255)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @default(now())
+
+  @@unique([bill_id, user_id], map: "uk_bill_user")
+  @@index([user_id], map: "idx_bill_member_user")
+  @@index([bill_id, status], map: "idx_bill_member_status")
 }

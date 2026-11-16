@@ -1,109 +1,608 @@
+// ============================================================
+// 作业列表（1:1 对齐 front/src/pages/homeworks/HomeworkList.tsx）
+// 设计稿 375px：2rpx = 1px
+// ============================================================
+
 .hwlist {
   min-height: 100vh;
-  background: $bg;
-  box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom);
+  background-color: #ffffff;
 
-  &__publish {
+  // ---------- 顶栏右侧按钮 ----------
+  &__head-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16rpx;
+    margin-right: 16rpx;
+  }
+
+  &__head-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+    height: 72rpx;
+    padding: 0 24rpx;
+    border-radius: $radius-full;
+    background-color: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-sizing: border-box;
+
+    &:active {
+      opacity: 0.8;
+    }
+  }
+
+  &__head-btn-text {
+    font-family: $font-body;
+    font-size: 28rpx;
+    font-weight: 500;
+    color: #ffffff;
+    white-space: nowrap;
+  }
+
+  // ---------- 内容区（同 PageLayout main）----------
+  &__body {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+    width: 100%;
+    padding: 32rpx 40rpx calc(40rpx + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+  }
+
+  // ---------- 概览 ----------
+  &__overview {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 16rpx;
+  }
+
+  &__overview-item {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 20rpx 24rpx;
+    border-radius: $radius-xl;
+    box-sizing: border-box;
+  }
+
+  &__overview-value {
+    font-family: $font-data;
+    font-size: 44rpx;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  &__overview-label {
+    margin-top: 12rpx;
+    font-size: 22rpx;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  // ---------- 筛选 Tabs ----------
+  &__tabs {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 16rpx;
+    width: 100%;
+    overflow-x: auto;
+    box-sizing: border-box;
+  }
+
+  &__tab {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+    height: 64rpx;
+    padding: 0 28rpx;
+    border-radius: $radius-full;
+    background-color: #f1f5f9;
+    box-sizing: border-box;
+    transition: background-color 200ms ease;
+
+    &--active {
+      background-color: #0062ff;
+    }
+  }
+
+  &__tab-text {
+    font-size: 24rpx;
+    font-weight: $font-semibold;
+    color: #64748b;
+    white-space: nowrap;
+
+    &--active {
+      color: #ffffff;
+    }
+  }
+
+  &__tab-count {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 32rpx;
+    min-width: 32rpx;
+    padding: 0 8rpx;
+    border-radius: $radius-full;
+    background-color: #ffffff;
+    box-sizing: border-box;
+
+    &--active {
+      background-color: rgba(255, 255, 255, 0.25);
+    }
+  }
+
+  &__tab-count-text {
+    font-size: 20rpx;
+    font-weight: $font-semibold;
+    line-height: 1;
+    color: #94a3b8;
+
+    &--active {
+      color: #ffffff;
+    }
+  }
+
+  // ---------- 骨架屏 ----------
+  &__skeletons {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+  }
+
+  &__skeleton {
+    width: 100%;
+    height: 236rpx;
+    border-radius: $radius-xl;
+    background-color: #f1f5f9;
+    animation: hwlist-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  // ---------- 错误 ----------
+  &__error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24rpx;
+    padding: 96rpx 0;
+    border-radius: $radius-xl;
+    background-color: #fef2f2;
+    color: #b91c1c;
+  }
+
+  &__error-icon {
+    opacity: 0.6;
+  }
+
+  &__error-text {
+    font-size: 26rpx;
+    color: #b91c1c;
+  }
+
+  &__retry {
     display: flex;
     align-items: center;
     gap: 8rpx;
+    padding: 12rpx 32rpx;
+    border-radius: $radius-full;
+    background-color: #ffffff;
+    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+
+    &:active {
+      opacity: 0.8;
+    }
   }
 
-  &__publish-text {
-    font-size: $text-sm;
+  &__retry-text {
+    font-size: 24rpx;
     font-weight: 500;
-    color: $primary;
+    color: #b91c1c;
   }
 
-  &__tabs {
-    padding: 12rpx $page-padding-x 0;
-  }
-
-  &__body {
-    padding: 24rpx $page-padding-x $page-padding-bottom;
+  // ---------- 空态 ----------
+  &__empty {
     display: flex;
     flex-direction: column;
-    gap: 24rpx;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    padding: 128rpx 0;
+    color: #9ca3af;
+  }
+
+  &__empty-icon {
+    margin-bottom: 16rpx;
+    opacity: 0.3;
+  }
+
+  &__empty-title {
+    font-size: 28rpx;
+    color: #9ca3af;
+  }
+
+  &__empty-desc {
+    font-size: 24rpx;
+    color: #9ca3af;
+  }
+
+  &__empty-btn {
+    margin-top: 16rpx;
+    padding: 16rpx 40rpx;
+    border-radius: $radius-full;
+    background-color: #0062ff;
+
+    &:active {
+      opacity: 0.8;
+    }
+  }
+
+  &__empty-btn-text {
+    font-size: 26rpx;
+    font-weight: 500;
+    color: #ffffff;
+  }
+
+  // ---------- 分组 ----------
+  &__groups {
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+    width: 100%;
+  }
+
+  &__archive-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12rpx;
+    padding: 20rpx 0;
+    border: 1rpx dashed #e2e8f0;
+    border-radius: 24rpx;
+    box-sizing: border-box;
+
+    &:active {
+      opacity: 0.8;
+    }
+  }
+
+  &__archive-toggle-text {
+    font-size: 22rpx;
+    font-weight: 500;
+    color: #94a3b8;
   }
 
   &__group {
     display: flex;
     flex-direction: column;
     gap: 16rpx;
+    width: 100%;
   }
 
-  &__card {
+  &__group-head {
     display: flex;
+    flex-direction: row;
     align-items: center;
-    gap: 24rpx;
-    padding: $card-padding;
-    background: $surface;
-    border-radius: $radius-lg;
-    box-shadow: $shadow-sm;
-  }
-
-  &__icon {
-    width: 96rpx;
-    height: 96rpx;
-    flex-shrink: 0;
-    border-radius: $radius-md;
-    background: #dbeafe;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  &__info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
     gap: 12rpx;
+    padding: 0 4rpx;
   }
 
-  &__title {
-    font-size: $text-base;
-    font-weight: 600;
-    color: $text-primary;
+  &__group-dot {
+    width: 6rpx;
+    height: 24rpx;
+    border-radius: $radius-full;
+    flex-shrink: 0;
   }
 
-  &__meta {
-    font-size: $text-11;
-    font-weight: 500;
-    color: $text-weak;
+  &__group-title {
+    font-size: 24rpx;
+    font-weight: $font-semibold;
+    color: #1e293b;
   }
 
-  &__row {
+  &__group-count {
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  &__group-collapse {
     display: flex;
+    align-items: center;
+    gap: 4rpx;
+    margin-left: auto;
+
+    &:active {
+      opacity: 0.8;
+    }
+  }
+
+  &__group-collapse-text {
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  &__chevron-up {
+    transform: rotate(180deg);
+  }
+
+  &__filtered-count {
+    padding: 0 4rpx;
+    font-size: 22rpx;
+    font-weight: 500;
+    color: #94a3b8;
+  }
+
+  // ---------- 作业卡片 ----------
+  &__card {
+    width: 100%;
+    padding: 32rpx;
+    border-radius: $radius-xl;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 1rpx #f1f5f9, 0 2rpx 8rpx 0 rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
+    transition: transform 150ms ease;
+
+    &:active {
+      transform: scale(0.99);
+    }
+  }
+
+  &__card-top {
+    display: flex;
+    flex-direction: row;
     align-items: center;
     justify-content: space-between;
     gap: 16rpx;
   }
 
-  &__deadline {
-    font-size: $text-11;
-    font-weight: 500;
-    color: $text-tertiary;
+  &__subject {
+    padding: 4rpx 12rpx;
+    border-radius: 12rpx;
+    font-size: 20rpx;
+    font-weight: $font-semibold;
+    line-height: 1.5;
+  }
+
+  &__status {
+    padding: 4rpx 16rpx;
+    border-radius: $radius-full;
+    font-size: 20rpx;
+    font-weight: $font-semibold;
+    line-height: 1.5;
+  }
+
+  &__title-row {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 12rpx;
+    margin-top: 16rpx;
+  }
+
+  &__title {
+    flex: 1;
+    font-size: 30rpx;
+    font-weight: $font-semibold;
+    line-height: 1.375;
+    color: #0f172a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    word-break: break-all;
+  }
+
+  &__title-chevron {
+    margin-top: 8rpx;
+    flex-shrink: 0;
+  }
+
+  &__meta {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 12rpx;
+    row-gap: 8rpx;
+    margin-top: 16rpx;
+    font-size: 22rpx;
+    color: #64748b;
+  }
+
+  &__meta-text {
+    font-size: 22rpx;
+    color: #64748b;
+  }
+
+  &__meta-dot {
+    font-size: 22rpx;
+    color: #cbd5e1;
+  }
+
+  &__meta-remaining {
+    font-size: 22rpx;
+    font-weight: $font-semibold;
+  }
+
+  &__delay-tag {
+    padding: 0 8rpx;
+    border-radius: 8rpx;
+    background-color: #f0fdf4;
+    font-size: 20rpx;
+    font-weight: $font-semibold;
+    color: #16a34a;
+  }
+
+  &__footer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+    margin-top: 24rpx;
+    padding-top: 20rpx;
+    border-top: 1rpx solid #f1f5f9;
+  }
+
+  &__publisher {
     flex: 1;
     min-width: 0;
+    font-size: 22rpx;
+    color: #94a3b8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  &__tag {
+  &__action {
+    display: flex;
     flex-shrink: 0;
-    padding: 6rpx 20rpx;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+    height: 56rpx;
+    padding: 0 24rpx;
     border-radius: $radius-full;
+    box-sizing: border-box;
+
+    &:active {
+      opacity: 0.8;
+    }
+
+    &--warn {
+      background-color: #fffbeb;
+    }
+
+    &--muted {
+      background-color: #f1f5f9;
+    }
+
+    &--danger {
+      background-color: #fef2f2;
+    }
+
+    &--primary {
+      background-color: #0062ff;
+    }
   }
 
-  &__tag-text {
-    font-size: $text-11;
-    font-weight: 600;
+  &__action-text {
+    font-size: 22rpx;
+    white-space: nowrap;
+
+    &--warn {
+      font-weight: $font-semibold;
+      color: #d97706;
+    }
+
+    &--muted {
+      font-weight: 500;
+      color: #94a3b8;
+    }
+
+    &--danger {
+      font-weight: $font-semibold;
+      color: #dc2626;
+    }
+
+    &--primary {
+      font-weight: $font-semibold;
+      color: #ffffff;
+    }
   }
 
-  &__end {
-    text-align: center;
-    font-size: $text-sm;
-    color: $text-tertiary;
-    padding: 16rpx 0;
+  &__done {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 8rpx;
+  }
+
+  &__done-text {
+    font-size: 22rpx;
+    font-weight: 500;
+    color: #16a34a;
+  }
+
+  &__muted-action {
+    flex-shrink: 0;
+    font-size: 22rpx;
+    color: #cbd5e1;
+  }
+
+  // ---------- 提交进度 ----------
+  &__progress {
+    margin-top: 16rpx;
+  }
+
+  &__progress-info {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 22rpx;
+  }
+
+  &__progress-label {
+    font-size: 22rpx;
+    color: #64748b;
+  }
+
+  &__progress-count {
+    font-size: 22rpx;
+    font-weight: $font-semibold;
+    color: #0f172a;
+  }
+
+  &__progress-total {
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  &__progress-percent {
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  &__progress-bar {
+    width: 100%;
+    height: 12rpx;
+    margin-top: 12rpx;
+    border-radius: $radius-full;
+    background-color: #f1f5f9;
+    overflow: hidden;
+  }
+
+  &__progress-fill {
+    height: 100%;
+    border-radius: $radius-full;
+    background-color: #0062ff;
+
+    &--done {
+      background-color: #16a34a;
+    }
+  }
+}
+
+@keyframes hwlist-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
   }
 }

@@ -1,47 +1,201 @@
+// ============================================================
+// 重置密码样式
+// 1:1 对齐 front/src/pages/auth/ResetPassword.tsx
+// 白底 + 顶部浅蓝波浪渐变，表单位置与 App 绝对定位一致
+// ============================================================
 .reset {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
+  position: relative;
   min-height: 100vh;
+  background-color: #ffffff;
   box-sizing: border-box;
-  background-color: $bg;
+  overflow: hidden;
 
-  // 手机内居中卡片
-  &__card {
-    width: calc(100% - #{2 * $spacing-6});
-    margin-top: $spacing-8;
-    padding: $spacing-6;
-    box-sizing: border-box;
-    background-color: $surface;
-    border-radius: $radius-xl;
-    box-shadow: $shadow-md;
+  // 渐变波浪背景（用径向渐变近似 App GradientWave）
+  &__wave {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 620rpx;
+    z-index: 0;
+    pointer-events: none;
+    background-image: radial-gradient(
+        58% 20% at 18% 10%,
+        rgba(125, 211, 252, 0.55) 0%,
+        rgba(125, 211, 252, 0) 72%
+      ),
+      radial-gradient(
+        66% 16% at 88% 3%,
+        rgba(147, 197, 253, 0.45) 0%,
+        rgba(147, 197, 253, 0) 72%
+      ),
+      radial-gradient(
+        86% 18% at 8% 33%,
+        rgba(191, 219, 254, 0.42) 0%,
+        rgba(191, 219, 254, 0) 76%
+      );
   }
 
+  &__content {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 1564rpx;
+  }
+
+  // 返回按钮
+  &__back {
+    position: absolute;
+    left: 32rpx;
+    top: 24rpx;
+    z-index: 10;
+    width: 80rpx;
+    height: 80rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:active {
+      opacity: 0.7;
+    }
+  }
+
+  // 标题 / 副标题
   &__title {
-    display: block;
-    font-size: $text-2xl;
-    font-weight: $font-bold;
-    color: $text-primary;
+    position: absolute;
+    left: 32rpx;
+    top: 332rpx;
+    font-family: $font-heading;
+    font-size: 72rpx;
+    font-weight: 700;
+    color: #1a1a1a;
     white-space: nowrap;
   }
 
   &__subtitle {
-    display: block;
-    margin-top: $spacing-sm;
-    font-size: $text-base;
-    color: $text-secondary;
+    position: absolute;
+    left: 32rpx;
+    top: 439rpx;
+    font-family: $font-body;
+    font-size: 28rpx;
+    color: #4b5563;
     white-space: nowrap;
   }
 
-  &__form {
-    margin-top: $spacing-6;
+  // 输入框
+  &__field {
+    position: absolute;
+    left: 32rpx;
+    right: 32rpx;
+    height: 112rpx;
+    padding: 0 32rpx;
     display: flex;
-    flex-direction: column;
-    gap: $spacing-md;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    border: 1rpx solid #e5e7eb;
+    border-radius: 16rpx;
+    background: #ffffff;
+    box-shadow: 0 4rpx 16rpx 0 rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
+
+    &--email {
+      top: 560rpx;
+      z-index: 2;
+    }
+
+    &--code {
+      top: 696rpx;
+      z-index: 3;
+    }
+
+    &--old {
+      top: 832rpx;
+      z-index: 4;
+    }
+
+    &--new {
+      top: 968rpx;
+      z-index: 5;
+    }
+
+    &--confirm {
+      top: 1104rpx;
+      z-index: 6;
+    }
   }
 
-  &__button {
-    margin-top: $spacing-8;
+  // 获取验证码按钮
+  &__code-btn {
+    flex-shrink: 0;
+    margin-left: 16rpx;
+    padding: 8rpx 0;
+
+    &--disabled {
+      opacity: 0.6;
+    }
+  }
+
+  &__code-btn-text {
+    font-family: $font-body;
+    font-size: 26rpx;
+    font-weight: 500;
+    color: #0062ff;
+    white-space: nowrap;
+  }
+
+  &__input {
+    flex: 1;
+    height: 100%;
+    font-family: $font-body;
+    font-size: 28rpx;
+    color: #1a1a1a;
+  }
+
+  &__placeholder {
+    color: #9ca3af;
+    font-size: 28rpx;
+  }
+
+  &__eye {
+    width: 88rpx;
+    height: 88rpx;
+    flex-shrink: 0;
+    margin-left: 16rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: $radius-full;
+  }
+
+  // 确认重置按钮
+  &__btn {
+    position: absolute;
+    left: 32rpx;
+    right: 32rpx;
+    top: 1268rpx;
+    z-index: 7;
+    height: 104rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16rpx;
+    background: #0062ff;
+    box-shadow: 0 8rpx 32rpx 0 rgba(0, 0, 0, 0.05);
+
+    &--loading {
+      background: #93c5fd;
+    }
+
+    &:active {
+      opacity: 0.9;
+    }
+  }
+
+  &__btn-text {
+    font-family: $font-body;
+    font-size: 32rpx;
+    font-weight: 600;
+    color: #ffffff;
   }
 }

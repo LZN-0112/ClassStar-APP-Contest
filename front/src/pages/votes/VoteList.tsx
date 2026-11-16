@@ -133,8 +133,8 @@ export default function VoteList() {
 
   const openVote = (vote: Vote) => {
     const ended = isEnded(vote);
-    navigate('/vote-options', {
-      state: { voteId: vote.id, readOnly: ended || vote.hasVoted },
+    navigate(`/vote-options/${vote.id}`, {
+      state: { readOnly: ended || vote.hasVoted },
     });
   };
 

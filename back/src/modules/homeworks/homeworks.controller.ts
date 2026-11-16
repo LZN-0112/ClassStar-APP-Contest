@@ -19,6 +19,7 @@ import {
   SubmitHomeworkDto,
   DelayApplicationDto,
   OfflineCheckDto,
+  ReviewSubmissionDto,
 } from './dto/homeworks.dto';
 
 @ApiTags('作业')
@@ -70,8 +71,8 @@ export class HomeworksController {
   }
 
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file'))
-  @ApiOperation({ summary: '上传作业附件' })
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 100 * 1024 * 1024 } }))
+  @ApiOperation({ summary: '上传作业附件（图片/视频/录音/文件）' })
   @ApiConsumes('multipart/form-data')
   uploadAttachment(
     @Param('classId') classId: string,
@@ -90,6 +91,40 @@ export class HomeworksController {
     @CurrentUser('userId') userId: string,
   ) {
     return this.homeworksService.submit(classId, id, dto, userId);
+  }
+
+  @Get(':id/submissions')
+  @ApiOperation({ summary: '全班提交列表（班委）' })
+  findSubmissions(
+    @Param('classId') classId: string,
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+    @Query('status') status?: string,
+  ) {
+    return this.homeworksService.findSubmissions(classId, id, userId, { status });
+  }
+
+  @Get(':id/submissions/:submissionId')
+  @ApiOperation({ summary: '提交详情（班委）' })
+  findSubmissionDetail(
+    @Param('classId') classId: string,
+    @Param('id') id: string,
+    @Param('submissionId') submissionId: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.homeworksService.findSubmissionDetail(classId, id, submissionId, userId);
+  }
+
+  @Post(':id/submissions/:submissionId/review')
+  @ApiOperation({ summary: '批改作业（通过/驳回）' })
+  reviewSubmission(
+    @Param('classId') classId: string,
+    @Param('id') id: string,
+    @Param('submissionId') submissionId: string,
+    @Body() dto: ReviewSubmissionDto,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.homeworksService.reviewSubmission(classId, id, submissionId, dto, userId);
   }
 
   @Post(':id/delay')

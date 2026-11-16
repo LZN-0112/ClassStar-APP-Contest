@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '@/components/layout/PageLayout';
+import DateTimePickerSheet, { formatDateTimeLabel } from '@/components/ui/DateTimePickerSheet';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
 export default function PublishMessage() {
   const navigate = useNavigate();
-  const { user } = useCurrentUser();
+  const { user, loading: userLoading } = useCurrentUser();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     title: '',
@@ -19,6 +20,7 @@ export default function PublishMessage() {
   });
   const [requireAck, setRequireAck] = useState(true);
   const [status, setStatus] = useState<'published' | 'ended'>('published');
+  const [picker, setPicker] = useState<'eventTime' | 'ackDeadline' | null>(null);
 
   const classId = user?.classId;
 
@@ -61,7 +63,7 @@ export default function PublishMessage() {
         ackDeadline: requireAck && form.ackDeadline ? new Date(form.ackDeadline).toISOString() : undefined,
       });
       toast.success('发布成功');
-      navigate('/message-list', { replace: true });
+      navigate('/messages', { replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '发布失败，请稍后重试');
     } finally {
@@ -69,7 +71,32 @@ export default function PublishMessage() {
     }
   };
 
+  const canPublish = user?.roleLevel === 'owner' || user?.roleLevel === 'admin';
+
+  // 前端入口兜底：非管理员直接提示，避免填写完表单后提交才被后端拒绝
+  if (!userLoading && user && !canPublish) {
+    return (
+      <PageLayout
+        title="发布通知"
+        variant="a"
+        decor={<Bell className="h-[120px] w-[120px] text-white" strokeWidth={1.5} />}
+      >
+        <div className="flex flex-1 flex-col items-center justify-center gap-4">
+          <div className="font-body text-[14px] text-[#4B5563]">仅班级管理员可发布通知</div>
+          <button
+            type="button"
+            onClick={() => navigate('/messages', { replace: true })}
+            className="h-[40px] rounded-lg bg-[#0062FF] px-4 font-body text-[14px] font-semibold text-white active:opacity-80"
+          >
+            返回消息中心
+          </button>
+        </div>
+      </PageLayout>
+    );
+  }
+
   return (
+    <>
     <PageLayout
       title="发布通知"
       variant="a"
@@ -94,13 +121,20 @@ export default function PublishMessage() {
           data-pencil-name="Time Input"
           className="box-border flex h-[56px] w-full shrink-0 flex-col justify-center rounded-xl border border-[#E2E8F0] bg-white px-4"
         >
-          <input
-            type="datetime-local"
-            value={form.eventTime}
-            onChange={(e) => handleChange('eventTime', e.target.value)}
-            placeholder="请选择发布时间"
-            className="w-full bg-transparent font-body text-[14px] font-medium text-[#1A1A1A] placeholder:text-[#94A3B8] outline-none"
-          />
+          <button
+            type="button"
+            onClick={() => setPicker('eventTime')}
+            className="flex w-full items-center justify-between text-left active:opacity-70"
+          >
+            <span
+              className={`font-body text-[14px] font-medium ${
+                form.eventTime ? 'text-[#1A1A1A]' : 'text-[#94A3B8]'
+              }`}
+            >
+              {form.eventTime ? formatDateTimeLabel(form.eventTime) : '请选择发布时间'}
+            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-[#CBD5E1]" strokeWidth={2} />
+          </button>
         </div>
 
         <div
@@ -161,10 +195,11 @@ export default function PublishMessage() {
                 签收截止时间（可选）
               </div>
               <input
-                type="datetime-local"
-                value={form.ackDeadline}
-                onChange={(e) => handleChange('ackDeadline', e.target.value)}
-                className="box-border h-[32px] rounded-lg border border-[#E5E7EB] bg-white px-2 text-[12px] text-[#1A1A1A] outline-none"
+                type="text"
+                readOnly
+                value={form.ackDeadline ? formatDateTimeLabel(form.ackDeadline) : '选择时间'}
+                onClick={() => setPicker('ackDeadline')}
+                className="box-border h-[32px] w-[150px] rounded-lg border border-[#E5E7EB] bg-white px-2 text-right text-[12px] text-[#1A1A1A] outline-none active:opacity-70"
               />
             </div>
           )}
@@ -217,5 +252,19 @@ export default function PublishMessage() {
         </button>
       </div>
     </PageLayout>
+
+    {/* 发布时间 / 签收截止时间选择 */}
+    <DateTimePickerSheet
+      open={picker !== null}
+      value={picker === 'ackDeadline' ? form.ackDeadline : form.eventTime}
+      title={picker === 'ackDeadline' ? '选择签收截止时间' : '选择发布时间'}
+      allowPast
+      onClose={() => setPicker(null)}
+      onConfirm={(next) => {
+        handleChange(picker === 'ackDeadline' ? 'ackDeadline' : 'eventTime', next);
+        setPicker(null);
+      }}
+    />
+    </>
   );
 }

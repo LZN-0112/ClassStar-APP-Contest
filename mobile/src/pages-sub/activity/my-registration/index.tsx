@@ -1,25 +1,27 @@
 import { useState } from 'react'
-import { View, Text } from '@tarojs/components'
-import { useLoad, useDidShow } from '@tarojs/taro'
+import { Text, View } from '@tarojs/components'
+import Taro, { useDidShow, useLoad } from '@tarojs/taro'
 
-import { NavBar, ListEmpty, ListLoading } from '@/components/business'
+import { PageHeader } from '@/components/business'
 import { Icon } from '@/components/ui'
 import { activityApi } from '@/services'
 import { useUserStore } from '@/stores'
 import { useAuth } from '@/utils'
 import './index.scss'
 
-interface Item {
+interface RegistrationItem {
   registrationId: string
-  activity: { title?: string }
-  registeredAt?: string
-  status: 'pending' | 'registered' | 'rejected'
+  activityId: string
+  activity: string
+  time: string
+  status: string
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  registered: '已通过',
-  pending: '待审核',
-  rejected: '未通过'
+const STATUS_META: Record<string, { label: string; bg: string; color: string }> = {
+  approved: { label: '已通过', bg: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' },
+  registered: { label: '已通过', bg: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' },
+  pending: { label: '待审核', bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' },
+  rejected: { label: '未通过', bg: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }
 }
 
 function formatDate(dateStr?: string): string {
@@ -37,83 +39,104 @@ export default function MyRegistration() {
   const currentClassId = useUserStore((s) => s.currentClassId)
   const { requireLogin } = useAuth()
 
-  const [list, setList] = useState<Item[]>([])
+  const [registrations, setRegistrations] = useState<RegistrationItem[]>([])
   const [loading, setLoading] = useState(true)
 
-  const classIdRef = { id: currentClassId || '' }
-
   useLoad(() => {
-    if (!requireLogin()) return
+    requireLogin()
   })
 
   useDidShow(() => {
-    fetchList()
+    void fetchList()
   })
 
   const fetchList = async () => {
-    if (!classIdRef.id) {
+    if (!currentClassId) {
       setLoading(false)
       return
     }
     setLoading(true)
     try {
-      const res: any = await activityApi.myRegistration(classIdRef.id, { pageSize: 100 })
-      setList(res?.list || [])
+      const res: any = await activityApi.myRegistration(currentClassId, { pageSize: 100 })
+      const list: any[] = res?.list || []
+      setRegistrations(
+        list.map((item) => ({
+          registrationId: item.registrationId,
+          activityId: item.activity?.id,
+          activity: item.activity?.title || '未知活动',
+          time: item.registeredAt ? formatDate(item.registeredAt) : '',
+          status: item.status
+        }))
+      )
     } catch {
-      setList([])
+      setRegistrations([])
     } finally {
       setLoading(false)
     }
   }
 
+  const goDetail = (activityId: string) => {
+    if (!activityId) return
+    Taro.navigateTo({
+      url: `/pages-sub/activity/detail/index?classId=${currentClassId}&activityId=${activityId}`
+    })
+  }
+
   return (
     <View className='actmyreg'>
-      <NavBar title='我的报名' />
+      <PageHeader title='我的报名' variant='b' />
 
       <View className='actmyreg__body'>
-        <Text className='actmyreg__group-title'>报名记录</Text>
+        <View className='actmyreg__group'>
+          <Text className='actmyreg__group-title'>报名记录</Text>
 
-        {loading ? (
-          <ListLoading rows={4} />
-        ) : list.length === 0 ? (
-          <ListEmpty text='暂无报名记录' />
-        ) : (
           <View className='actmyreg__list'>
-            {list.map((item) => {
-              const statusLabel = STATUS_LABEL[item.status] || '待审核'
-              const isApproved = item.status === 'registered'
-              const isRejected = item.status === 'rejected'
-              return (
-                <View className='actmyreg__card' key={item.registrationId}>
-                  <View className='actmyreg__icon'>
-                    <Icon name='users' size={48} color='#0062FF' strokeWidth={2} />
-                  </View>
-                  <View className='actmyreg__info'>
-                    <Text className='actmyreg__title'>{item.activity?.title || '未知活动'}</Text>
-                    <Text className='actmyreg__time'>{formatDate(item.registeredAt)}</Text>
-                    <View
-                      className={`actmyreg__status ${
-                        isRejected ? 'actmyreg__status--reject' : isApproved ? 'actmyreg__status--approve' : ''
-                      }`}
-                    >
-                      <Text
-                        className={`actmyreg__status-text ${
-                          isRejected
-                            ? 'actmyreg__status-text--reject'
-                            : isApproved
-                              ? 'actmyreg__status-text--approve'
-                              : ''
-                        }`}
+            {loading ? (
+              <View className='actmyreg__placeholder'>
+                <Text>加载中...</Text>
+              </View>
+            ) : registrations.length === 0 ? (
+              <View className='actmyreg__placeholder'>
+                <Text>暂无报名记录</Text>
+              </View>
+            ) : (
+              registrations.map((item) => {
+                const meta = STATUS_META[item.status] || STATUS_META.pending
+                return (
+                  <View
+                    key={item.registrationId}
+                    className='actmyreg__card'
+                    onClick={() => goDetail(item.activityId)}
+                  >
+                    <View className='actmyreg__icon'>
+                      <Icon
+                        name='clipboard-list'
+                        size={48}
+                        color='#0062FF'
+                        strokeWidth={2}
+                      />
+                    </View>
+                    <View className='actmyreg__info'>
+                      <Text className='actmyreg__title'>{item.activity}</Text>
+                      <Text className='actmyreg__time'>报名于 {item.time}</Text>
+                      <View
+                        className='actmyreg__status'
+                        style={{ background: meta.bg }}
                       >
-                        {statusLabel}
-                      </Text>
+                        <Text
+                          className='actmyreg__status-text'
+                          style={{ color: meta.color }}
+                        >
+                          {meta.label}
+                        </Text>
+                      </View>
                     </View>
                   </View>
-                </View>
-              )
-            })}
+                )
+              })
+            )}
           </View>
-        )}
+        </View>
       </View>
     </View>
   )

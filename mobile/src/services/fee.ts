@@ -30,7 +30,19 @@ export const feeApi = {
     amount: number
     remark?: string
     billUrl?: string
+    billKey?: string
   }) => request.post('/fee/add', data),
+
+  /**
+   * 批量登记缴费（班委）
+   * POST /fee/batch-add
+   */
+  batchAdd: (data: {
+    classId: string
+    feeType: 'class' | 'group'
+    amount: number
+    payerUserIds: string[]
+  }) => request.post<{ created: number }>('/fee/batch-add', data),
 
   /**
    * 分页查询收支列表（台账）

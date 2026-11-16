@@ -75,6 +75,12 @@ export const materialApi = {
     request.get('/material/list', params),
 
   /**
+   * 资料库概览（总数/占用空间/近7天新增/我上传的/分类统计/最近/热门）
+   * GET /material/summary
+   */
+  getSummary: (params: { classId: string }) => request.get('/material/summary', params),
+
+  /**
    * 获取文件详情
    * GET /material/:fileId
    */

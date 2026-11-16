@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Calendar, ImagePlus, X } from 'lucide-react';
+import { Calendar, ChevronRight, ImagePlus, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '@/components/layout/PageLayout';
+import DateTimePickerSheet, { formatDateTimeLabel } from '@/components/ui/DateTimePickerSheet';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { api, resolveFileUrl } from '@/lib/api';
 import { toast } from 'sonner';
@@ -36,6 +37,8 @@ export default function PublishActivity() {
   });
   const [photos, setPhotos] = useState<ActivityPhoto[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [mandatory, setMandatory] = useState(false);
+  const [picker, setPicker] = useState<'date' | 'deadline' | null>(null);
 
   const classId = user?.classId;
 
@@ -171,6 +174,7 @@ export default function PublishActivity() {
         deadline: form.deadline ? new Date(form.deadline).toISOString() : undefined,
         coverUrl: photos[0]?.url || undefined,
         images: photos.length ? photos.map((photo) => photo.url) : undefined,
+        isMandatory: mandatory,
       });
       toast.success('发布成功');
       navigate('/activity-list', { replace: true });
@@ -252,14 +256,57 @@ export default function PublishActivity() {
               })}
             </div>
           </div>
+          <div className="box-border flex w-full shrink-0 flex-col gap-2 rounded-xl border border-[#E2E8F0] bg-white p-4">
+            <span className={labelClass}>活动性质</span>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: true, label: '强制活动', desc: '计入班级考核' },
+                { value: false, label: '自愿活动', desc: '不计入考核' },
+              ].map((option) => {
+                const active = mandatory === option.value;
+                return (
+                  <button
+                    key={option.label}
+                    type="button"
+                    onClick={() => setMandatory(option.value)}
+                    className={`flex flex-col items-center justify-center gap-0.5 rounded-xl border py-2.5 ${
+                      active
+                        ? 'border-[#0062FF] bg-[#E8F0FF]'
+                        : 'border-[#E2E8F0] bg-white'
+                    }`}
+                  >
+                    <span
+                      className={`font-body text-[13px] font-semibold ${
+                        active ? 'text-[#0062FF]' : 'text-[#475569]'
+                      }`}
+                    >
+                      {option.label}
+                    </span>
+                    <span className="font-body text-[10px] text-[#94A3B8]">{option.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <span className="text-[11px] text-[#94A3B8]">
+              强制活动会纳入成员个人考核，全部参与可加分；自愿活动不计入扣分。
+            </span>
+          </div>
           <div data-pencil-name="Input Field" className={inputShell}>
             <span className={labelClass}>活动时间</span>
-            <input
-              type="datetime-local"
-              value={form.date}
-              onChange={(e) => handleChange('date', e.target.value)}
-              className={inputClass}
-            />
+            <button
+              type="button"
+              onClick={() => setPicker('date')}
+              className="flex w-full items-center justify-between text-left active:opacity-70"
+            >
+              <span
+                className={`font-body text-[14px] font-medium ${
+                  form.date ? 'text-[#1A1A1A]' : 'text-[#94A3B8]'
+                }`}
+              >
+                {form.date ? formatDateTimeLabel(form.date) : '请选择活动时间'}
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-[#CBD5E1]" strokeWidth={2} />
+            </button>
           </div>
           <div data-pencil-name="Input Field" className={inputShell}>
             <span className={labelClass}>活动地点</span>
@@ -344,12 +391,20 @@ export default function PublishActivity() {
           </div>
           <div data-pencil-name="Input Field" className={inputShell}>
             <span className={labelClass}>报名截止时间（选填）</span>
-            <input
-              type="datetime-local"
-              value={form.deadline}
-              onChange={(e) => handleChange('deadline', e.target.value)}
-              className={inputClass}
-            />
+            <button
+              type="button"
+              onClick={() => setPicker('deadline')}
+              className="flex w-full items-center justify-between text-left active:opacity-70"
+            >
+              <span
+                className={`font-body text-[14px] font-medium ${
+                  form.deadline ? 'text-[#1A1A1A]' : 'text-[#94A3B8]'
+                }`}
+              >
+                {form.deadline ? formatDateTimeLabel(form.deadline) : '请选择报名截止时间'}
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-[#CBD5E1]" strokeWidth={2} />
+            </button>
           </div>
           <div data-pencil-name="Input Field" className={inputShell}>
             <span className={labelClass}>人数限制（选填）</span>
@@ -381,6 +436,18 @@ export default function PublishActivity() {
           </button>
         </div>
       </PageLayout>
+
+      {/* 活动时间 / 报名截止时间选择 */}
+      <DateTimePickerSheet
+        open={picker !== null}
+        value={picker === 'deadline' ? form.deadline : form.date}
+        title={picker === 'deadline' ? '选择报名截止时间' : '选择活动时间'}
+        onClose={() => setPicker(null)}
+        onConfirm={(next) => {
+          handleChange(picker === 'deadline' ? 'deadline' : 'date', next);
+          setPicker(null);
+        }}
+      />
     </>
   );
 }

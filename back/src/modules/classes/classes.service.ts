@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as QRCode from 'qrcode';
 import * as fs from 'fs';
 import * as bcrypt from 'bcryptjs';
-import { randomInt } from 'crypto';
+import { createHash, randomInt } from 'crypto';
 import { PrismaService } from '../../common/database/prisma.service';
 import { MinioService } from '@/common/storage/minio.service';
 import { ExcelParserService } from '@/common/utils/excel-parser.service';
@@ -371,7 +371,10 @@ export class ClassesService {
           archives: { class_id: id, archive_type: 'material', status: 'active' },
         },
       }),
-      this.prisma.archives.count({ where: { class_id: id, status: 'active' } }),
+      // 只统计学期档案，避免把“班级资料库”的 material 档案算进班级档案数量
+      this.prisma.archives.count({
+        where: { class_id: id, status: 'active', archive_type: 'semester' },
+      }),
     ]);
 
     return {
@@ -472,7 +475,14 @@ export class ClassesService {
       where: { id: memberId, class_id: id },
       include: {
         users: {
-          select: { id: true, name: true, avatar: true, student_id: true, phone: true },
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+            student_id: true,
+            phone: true,
+            password_hash: true,
+          },
         },
       },
     });
@@ -503,6 +513,8 @@ export class ClassesService {
       verifiedAt: member.verified_at,
       verifiedBy: member.verified_by,
       joinedAt: member.joined_at,
+      /** 名单占位账号（未激活）：班委可代改资料、重置临时密码 */
+      isPlaceholder: member.users.password_hash === '',
     };
   }
 
@@ -805,7 +817,9 @@ export class ClassesService {
   }
 
   /**
-   * 班委修正成员真实姓名与学号，修正后视为已确认
+   * 班委修正成员真实姓名与学号，修正后视为已确认。
+   * 仅限名单占位账号（未激活）；已激活账号的姓名/学号只能本人修改，
+   * 避免班委改写他人全局资料影响其加入的其他组织。
    */
   async updateMemberProfile(
     id: string,
@@ -815,12 +829,16 @@ export class ClassesService {
   ) {
     const target = await this.prisma.class_members.findFirst({
       where: { class_id: id, user_id: targetUserId },
+      include: { users: { select: { name: true, password_hash: true } } },
     });
     if (!target) {
       throw new NotFoundException('成员不存在');
     }
     if (target.role_level === 'owner') {
       throw new BadRequestException('群主资料不支持在此修改');
+    }
+    if (target.users.password_hash !== '') {
+      throw new ForbiddenException('该成员已激活账号，真实姓名与学号只能由本人修改');
     }
 
     const realName = dto.realName?.trim();
@@ -848,6 +866,26 @@ export class ClassesService {
       });
     });
 
+    try {
+      await this.prisma.audit_logs.create({
+        data: {
+          id: uuidv4(),
+          user_id: operatorUserId,
+          class_id: id,
+          action: 'update_member_profile',
+          resource_type: 'user',
+          resource_id: targetUserId,
+          detail: {
+            beforeName: target.users.name,
+            name: realName || null,
+            studentId: studentId || null,
+          },
+        },
+      });
+    } catch (error) {
+      this.logger.error(`审计日志写入失败: ${(error as Error).message}`);
+    }
+
     return {
       userId: targetUserId,
       name: realName || null,
@@ -857,9 +895,9 @@ export class ClassesService {
   }
 
   /**
-   * 班长为忘记密码的成员重置密码。
-   * 不返回可长期使用的固定密码：生成一次性临时密码，仅本次响应返回，
-   * 同时吊销该成员全部刷新令牌，强制其重新登录后自行改密。
+   * 班委为名单占位账号（未激活成员）设置一次性临时密码。
+   * 仅限未激活账号；已激活账号的密码只能本人通过登录页修改/找回，
+   * 防止班委借此接管他人全局账号。
    */
   async resetMemberPassword(
     id: string,
@@ -876,7 +914,7 @@ export class ClassesService {
       }),
       this.prisma.class_members.findFirst({
         where: { class_id: id, user_id: targetUserId },
-        include: { users: { select: { name: true, phone: true } } },
+        include: { users: { select: { name: true, phone: true, password_hash: true } } },
       }),
     ]);
 
@@ -888,6 +926,9 @@ export class ClassesService {
     }
     if (target.role_level === 'owner') {
       throw new ForbiddenException('不能重置群主的密码');
+    }
+    if (target.users.password_hash !== '') {
+      throw new ForbiddenException('该成员已激活账号，班委无法重置其密码，请让本人登录后自行修改');
     }
 
     const tempPassword = this.generateTempPassword();
@@ -1559,6 +1600,74 @@ export class ClassesService {
       major: updated.major,
       updatedAt: updated.updated_at,
     };
+  }
+
+  /** 上传/更换班级头像：仅群主或管理员可操作，直接写入 classes.logo_url */
+  async uploadClassLogo(classId: string, file: Express.Multer.File, operatorUserId: string) {
+    if (!file || !file.buffer) {
+      throw new BadRequestException('请选择要上传的班级头像');
+    }
+
+    const [classEntity, operator] = await Promise.all([
+      this.prisma.classes.findUnique({
+        where: { id: classId },
+        select: { id: true, status: true },
+      }),
+      this.prisma.class_members.findFirst({
+        where: { class_id: classId, user_id: operatorUserId },
+        select: { role_level: true },
+      }),
+    ]);
+
+    if (!classEntity || !classEntity.status) {
+      throw new NotFoundException('班级不存在或已解散');
+    }
+    if (!operator || operator.role_level === 'member') {
+      throw new ForbiddenException('只有群主或管理员可以更换班级头像');
+    }
+
+    const { ext, mime } = this.validateLogoImageBuffer(file.buffer);
+    const hash = createHash('sha256').update(file.buffer).digest('hex').slice(0, 16);
+    const objectName = `class-logos/${classId}-${Date.now()}-${hash}${ext}`;
+    const logoUrl = await this.minioService.uploadBuffer(objectName, file.buffer, {
+      'Content-Type': mime,
+    });
+
+    await this.prisma.classes.update({
+      where: { id: classId },
+      data: { logo_url: logoUrl, updated_at: new Date() },
+    });
+
+    await this.prisma.audit_logs.create({
+      data: {
+        id: uuidv4(),
+        user_id: operatorUserId,
+        class_id: classId,
+        action: 'update_class_logo',
+        resource_type: 'class',
+        resource_id: classId,
+        detail: { logoUrl },
+      },
+    });
+
+    return { logoUrl };
+  }
+
+  /** 校验头像图片格式与大小（jpg/png，最大 5MB） */
+  private validateLogoImageBuffer(buffer: Buffer): { ext: string; mime: string } {
+    if (!buffer || buffer.length < 8) {
+      throw new BadRequestException('文件内容不完整');
+    }
+    if (buffer.length > 5 * 1024 * 1024) {
+      throw new BadRequestException('图片大小不能超过 5MB');
+    }
+
+    const isJpeg = buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    const isPng = buffer.slice(0, 8).toString('hex') === '89504e470d0a1a0a';
+
+    if (isJpeg) return { ext: '.jpg', mime: 'image/jpeg' };
+    if (isPng) return { ext: '.png', mime: 'image/png' };
+    throw new BadRequestException('仅支持 jpg/png 格式的图片');
   }
 
   async removeMember(id: string, memberId: string, operatorUserId: string) {

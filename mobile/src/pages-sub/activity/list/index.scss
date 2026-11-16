@@ -1,28 +1,69 @@
 .actlist {
   min-height: 100vh;
-  background: $bg;
-  box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom);
+  background: $surface;
 
   &__publish {
+    margin-right: 16rpx;
+    height: 72rpx;
+    padding: 0 24rpx;
+    border-radius: $radius-full;
+    background: rgba(255, 255, 255, 0.2);
     display: flex;
     align-items: center;
-    gap: 4rpx;
+    gap: 8rpx;
+    box-sizing: border-box;
   }
 
   &__publish-text {
-    font-size: $text-sm;
-    font-weight: 500;
-    color: $primary;
+    font-size: $text-base;
+    font-weight: $font-medium;
+    color: $text-inverse;
   }
 
   &__body {
-    padding: 24rpx $page-padding-x $page-padding-bottom;
+    padding: $page-padding-top $page-padding-x calc(40rpx + env(safe-area-inset-bottom));
     display: flex;
     flex-direction: column;
-    gap: 24rpx;
+    gap: 40rpx;
+    box-sizing: border-box;
   }
 
+  // ---------- 筛选 Tabs ----------
+  &__tabs {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 16rpx;
+  }
+
+  &__tab {
+    flex-shrink: 0;
+    height: 64rpx;
+    padding: 0 32rpx;
+    border-radius: $radius-full;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+
+    &--active {
+      background: $primary;
+    }
+  }
+
+  &__tab-text {
+    font-size: $text-11;
+    font-weight: $font-semibold;
+    color: #64748b;
+    white-space: nowrap;
+
+    &--active {
+      color: $text-inverse;
+    }
+  }
+
+  // ---------- 列表 ----------
   &__group {
     display: flex;
     flex-direction: column;
@@ -31,27 +72,79 @@
 
   &__group-title {
     font-size: $text-11;
-    font-weight: 600;
+    font-weight: $font-semibold;
+    color: $text-weak;
+    white-space: nowrap;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__placeholder {
+    padding: 80rpx 0;
+    text-align: center;
+  }
+
+  &__placeholder-text {
+    font-size: $text-base;
     color: $text-weak;
   }
 
-  &__card {
-    background: $surface;
-    border-radius: 40rpx;
-    box-shadow: $shadow-sm;
+  &__error {
+    padding: 80rpx 0;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    gap: 24rpx;
+  }
+
+  &__error-text {
+    font-size: $text-base;
+    color: $text-weak;
+    text-align: center;
+  }
+
+  &__retry {
+    height: 72rpx;
+    padding: 0 32rpx;
+    border-radius: $radius-md;
+    border: 2rpx solid $primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: $text-13;
+    font-weight: $font-semibold;
+    color: $primary;
+    box-sizing: border-box;
+  }
+
+  // ---------- 活动卡 ----------
+  &__card {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    border-radius: 40rpx;
+    background: $surface;
+    box-shadow: $shadow-md;
     overflow: hidden;
+    gap: 24rpx;
+    box-sizing: border-box;
   }
 
   &__cover {
+    position: relative;
     height: 280rpx;
     width: 100%;
-    background: #dbeafe;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    border-radius: 40rpx 40rpx 0 0;
+    background: #dbeafe;
   }
 
   &__cover-img {
@@ -59,54 +152,147 @@
     height: 100%;
   }
 
+  &__badge {
+    position: absolute;
+    left: 24rpx;
+    top: 24rpx;
+    padding: 8rpx 20rpx;
+    border-radius: $radius-full;
+    font-size: $text-11;
+    font-weight: $font-semibold;
+  }
+
+  &__countdown {
+    position: absolute;
+    right: 24rpx;
+    top: 24rpx;
+    padding: 8rpx 20rpx;
+    border-radius: $radius-full;
+    background: rgba(255, 255, 255, 0.95);
+    font-size: $text-11;
+    font-weight: $font-semibold;
+  }
+
   &__info {
-    padding: 16rpx 32rpx 32rpx;
+    width: 100%;
+    padding: 0 32rpx 32rpx;
     display: flex;
     flex-direction: column;
     gap: 12rpx;
+    box-sizing: border-box;
+  }
+
+  &__title-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  &__category {
+    flex-shrink: 0;
+    padding: 6rpx 16rpx;
+    border-radius: $radius-full;
+    background: #eff6ff;
+    font-size: 20rpx;
+    font-weight: $font-semibold;
+    color: #1d4ed8;
   }
 
   &__title {
+    min-width: 0;
+    flex: 1;
     font-size: $text-lg;
-    font-weight: 700;
-    color: $text-primary;
+    font-weight: $font-bold;
+    color: #1e293b;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   &__meta {
     font-size: $text-11;
-    font-weight: 500;
-    color: $text-weak;
+    font-weight: $font-medium;
+    color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  &__footer {
+  &__capacity {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 8rpx;
+    padding-top: 8rpx;
+  }
+
+  &__progress {
+    height: 12rpx;
+    width: 100%;
+    border-radius: $radius-full;
+    background: #e2e8f0;
+    overflow: hidden;
+  }
+
+  &__progress-fill {
+    height: 100%;
+    border-radius: $radius-full;
+    background: $primary;
   }
 
   &__count {
     font-size: $text-11;
-    font-weight: 500;
-    color: $text-weak;
+    font-weight: $font-medium;
+    color: #64748b;
   }
 
-  &__status {
-    padding: 6rpx 24rpx;
-    border-radius: $radius-lg;
-    background: $primary;
+  &__footer {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+    padding-top: 8rpx;
+    box-sizing: border-box;
+  }
 
-    &--ended {
-      background: #e2e8f0;
+  &__detail-btn {
+    height: 72rpx;
+    padding: 0 24rpx;
+    border-radius: $radius-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: $text-xs;
+    font-weight: $font-medium;
+    color: #64748b;
+    box-sizing: border-box;
+  }
+
+  &__register-btn {
+    height: 72rpx;
+    min-width: 184rpx;
+    padding: 0 32rpx;
+    border-radius: $radius-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: $text-xs;
+    font-weight: $font-semibold;
+    box-sizing: border-box;
+
+    &--primary {
+      background: $primary;
+      color: $text-inverse;
     }
-  }
 
-  &__status-text {
-    font-size: $text-11;
-    font-weight: 600;
-    color: $text-inverse;
+    &--disabled {
+      background: #e2e8f0;
+      color: #64748b;
+    }
 
-    &--ended {
-      color: $text-weak;
+    &--loading {
+      opacity: 0.7;
     }
   }
 }

@@ -18,18 +18,21 @@ import {
   FileText,
   History,
   Loader2,
+  MapPin,
+  Megaphone,
   Mic,
   RotateCcw,
   Send,
   Sparkles,
   Volume2,
+  Vote,
   X,
 } from 'lucide-react';
 
 /** AI 封面高度：比通用头部更紧凑 */
 const AI_COVER_H = 144;
 
-type Intent = 'homework' | 'activity' | 'unknown';
+type Intent = 'homework' | 'activity' | 'notice' | 'vote' | 'attendance' | 'unknown';
 type Stage = 'idle' | 'parsing' | 'awaiting' | 'draft' | 'duplicate' | 'publishing' | 'done';
 
 interface AssistantDraft {
@@ -43,6 +46,7 @@ interface AssistantDraft {
   category?: string;
   description?: string;
   capacity?: number;
+  options?: string[];
 }
 
 interface DuplicateHomework {
@@ -164,10 +168,22 @@ const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '�
 
 /** 看起来像数据查询的输入，先走只读问答，未识别再退回发布解析 */
 const QUERY_HINT =
-  /(提交率|提交情况|谁|哪些|名单|多少|几个|情况|统计|进度|未交|没交|未提交|没提交|催交|催一下|催一催|提醒|报名人数|报名了|查一下|查看)/;
+  /(提交率|提交情况|谁|哪些|名单|多少|几个|情况|统计|进度|未交|没交|未提交|没提交|催交|催一下|催一催|提醒|报名人数|报名了|查一下|查看|看看|看下|说说|聊聊|请问|想问|签到|考勤|出勤|缺勤|请假|审批|班费|缴费|收支|余额|投票|待办|任务|周报|日报|总结|汇总|参与率|支出|收入|开销|怎么样|如何|咋样|作业清单|排行|动态|近况|新鲜事|最近|今天|本周|这周|吗|呢|什么|啥|有没有)/;
 
 /** 明确的发布/修改指令不当作查询 */
-const COMMAND_HINT = /(发布|创建|发起|组织|新增|修改|改成)/;
+const COMMAND_HINT = /(发布|创建|发起|组织|新增|修改|改成|群发|推送|(发|发送).{0,4}(通知|公告|消息))/;
+
+const INTENT_META = {
+  homework: { label: '作业', route: '/homework-list', color: '#0062FF', bg: '#EAF2FF', icon: FileText },
+  activity: { label: '活动', route: '/activity-list', color: '#7C3AED', bg: '#F2EBFF', icon: CalendarDays },
+  notice: { label: '通知', route: '/messages', color: '#EA580C', bg: '#FFF4E8', icon: Megaphone },
+  vote: { label: '投票', route: '/vote-list', color: '#0E9F6E', bg: '#E9F9F1', icon: Vote },
+  attendance: { label: '签到', route: '/attendance-list', color: '#DB2777', bg: '#FDEEF2', icon: MapPin },
+} as const;
+
+function intentLabel(intent: Intent): string {
+  return intent === 'unknown' ? '草稿' : INTENT_META[intent].label;
+}
 
 function formatDeadline(iso?: string) {
   if (!iso) return '';
@@ -206,6 +222,33 @@ const QUICK_ACTIONS = [
     sample: '周五下午三点在报告厅开主题班会，30人',
   },
   {
+    key: 'notice',
+    label: '发布通知',
+    hint: '一句话通知到全班',
+    icon: Megaphone,
+    color: '#EA580C',
+    bg: '#FFF4E8',
+    sample: '发个通知说明天带身份证',
+  },
+  {
+    key: 'vote',
+    label: '发起投票',
+    hint: '选项截止一起生成',
+    icon: Vote,
+    color: '#0E9F6E',
+    bg: '#E9F9F1',
+    sample: '发起投票：春游去哪，选项公园、博物馆、周五截止',
+  },
+  {
+    key: 'attendance',
+    label: '发起签到',
+    hint: '时间地点一键开签',
+    icon: MapPin,
+    color: '#DB2777',
+    bg: '#FDEEF2',
+    sample: '今天下午三点教室签到',
+  },
+  {
     key: 'task',
     label: '查看待办',
     hint: '班级任务不漏项',
@@ -222,6 +265,15 @@ const QUICK_ACTIONS = [
     color: '#F97316',
     bg: '#FFF3E8',
     route: '/homework-list',
+  },
+  {
+    key: 'weekly-report',
+    label: '班级周报',
+    hint: '一周动态自动汇总',
+    icon: Sparkles,
+    color: '#4F46E5',
+    bg: '#EEF0FF',
+    sample: '班级周报',
   },
 ] as const;
 
@@ -384,7 +436,13 @@ export default function AIAssistant() {
       const compact = text.replace(/\s+/g, '');
       // 「催交刚刚发布的数学作业」也带“发布”二字，催交意图要优先走问答
       const urgeIntent = /(催交|催一下|催一催|催作业|催办)/.test(compact);
-      const tryAsk = Boolean(classId) && QUERY_HINT.test(compact) && (!COMMAND_HINT.test(compact) || urgeIntent);
+      // 带时间地点的“签到”（如“今天下午三点教室签到”）是发起签到，不是查询
+      const publishLike =
+        /(签到|打卡)/.test(compact) &&
+        !/(谁|哪些|名单|情况|统计|没|未|多少|几个|缺勤|出勤|记录|参与)/.test(compact) &&
+        /(今天|明天|后天|周|星期|上午|下午|晚上|\d{1,2}\s*[点:：])/.test(compact);
+      const tryAsk =
+        Boolean(classId) && !publishLike && QUERY_HINT.test(compact) && (!COMMAND_HINT.test(compact) || urgeIntent);
 
       try {
         if (tryAsk && classId) {
@@ -403,7 +461,18 @@ export default function AIAssistant() {
             });
             setAwaitingField(null);
             // 已发布的草稿不再作为“待发布”弹出来，避免和催交/查询组件同时出现
-            setStage(draft.title && !published ? 'draft' : 'awaiting');
+            setStage(draft.title?.trim() && !published ? 'draft' : 'awaiting');
+            return;
+          }
+          // 查询类输入但白名单没命中：给出能力提示，避免误落到“发布作业还是活动”
+          if (!COMMAND_HINT.test(compact) && !urgeIntent) {
+            pushMessage({
+              role: 'assistant',
+              text: '这个问题我暂时还答不上来。你可以问我：签到出勤、班费收支、投票参与、待办任务、作业提交情况，也可以直接说「班级周报」。',
+              options: ['班级周报', '签到情况', '班费余额', '我的待办'],
+            });
+            setAwaitingField(null);
+            setStage(draft.title?.trim() && !published ? 'draft' : 'awaiting');
             return;
           }
         }
@@ -412,6 +481,7 @@ export default function AIAssistant() {
           text,
           draft,
           awaiting: awaitingField || undefined,
+          intent: intent !== 'unknown' ? intent : undefined,
           classId,
         });
         const data = res.data?.data;
@@ -450,10 +520,11 @@ export default function AIAssistant() {
         const message = error instanceof Error ? error.message : '解析失败，请重试';
         toast.error(message);
         pushMessage({ role: 'assistant', text: '刚刚网络有点问题，再说一次试试？' });
-        setStage(draft.title ? 'draft' : 'idle');
+        // 已发布成功的结果不能被后续失败清掉
+        setStage(published ? 'done' : draft.title?.trim() ? 'draft' : 'idle');
       }
     },
-    [awaitingField, classId, draft, published, pushMessage, stage],
+    [awaitingField, classId, draft, intent, published, pushMessage, stage],
   );
 
   const startRecording = useCallback(async () => {
@@ -524,12 +595,12 @@ export default function AIAssistant() {
 
   const saveHistory = useCallback(
     async (recordIntent: Exclude<Intent, 'unknown'>, summary?: string) => {
-      if (!classId || !draft.title) return;
+      if (!classId || !draft.title?.trim()) return;
       try {
         await api.post('/ai/assistant/records', {
           classId,
           intent: recordIntent,
-          title: draft.title,
+          title: draft.title.trim(),
           summary,
           draft,
         });
@@ -557,7 +628,6 @@ export default function AIAssistant() {
 
   const applyRecord = useCallback(
     (record: AssistantRecord) => {
-      if (record.intent !== 'homework' && record.intent !== 'activity') return;
       closeRecording();
       setIntent(record.intent);
       setDraft(record.draft || {});
@@ -576,7 +646,11 @@ export default function AIAssistant() {
   );
 
   const publish = async () => {
-    if (stage !== 'draft' || !draft.title) return;
+    if (stage !== 'draft') return;
+    if (!draft.title?.trim()) {
+      toast.error('标题还不能为空，补充一下');
+      return;
+    }
     if (!classId) {
       toast.error('未找到班级信息');
       return;
@@ -594,7 +668,12 @@ export default function AIAssistant() {
         toast.error('还缺截止时间，补充一下');
         return;
       }
-      if (new Date(draft.deadline).getTime() <= Date.now()) {
+      const deadlineTs = new Date(draft.deadline).getTime();
+      if (!Number.isFinite(deadlineTs)) {
+        toast.error('截止时间格式不正确，请重新说一次');
+        return;
+      }
+      if (deadlineTs <= Date.now()) {
         toast.error('截止时间需要晚于当前时间');
         return;
       }
@@ -650,6 +729,127 @@ export default function AIAssistant() {
         toast.error(error instanceof Error ? error.message : '发布失败，请重试');
         setStage('draft');
       }
+      return;
+    }
+
+    if (intent === 'notice') {
+      if (user?.roleLevel !== 'owner' && user?.roleLevel !== 'admin') {
+        toast.error('仅班委可发布通知');
+        return;
+      }
+      if (!draft.content) {
+        toast.error('还缺通知内容，补充一下');
+        return;
+      }
+
+      setStage('publishing');
+      try {
+        await api.post(`/classes/${classId}/messages`, {
+          type: 'notice',
+          title: draft.title.trim(),
+          content: draft.content.trim(),
+        });
+        setPublished({ intent: 'notice', title: draft.title });
+        setStage('done');
+        toast.success('通知发布成功');
+        void saveHistory('notice', draft.content.trim().slice(0, 40));
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : '发布失败，请重试');
+        setStage('draft');
+      }
+      return;
+    }
+
+    if (intent === 'vote') {
+      if (user?.roleLevel !== 'owner' && user?.roleLevel !== 'admin') {
+        toast.error('仅班委可发起投票');
+        return;
+      }
+      if (!draft.options || draft.options.length < 2) {
+        toast.error('投票至少需要两个选项');
+        return;
+      }
+      const optionLabels = draft.options.map((option) => option.trim());
+      if (optionLabels.some((label) => !label)) {
+        toast.error('投票选项不能为空');
+        return;
+      }
+      if (new Set(optionLabels).size !== optionLabels.length) {
+        toast.error('投票选项不能重复');
+        return;
+      }
+      if (!draft.deadline) {
+        toast.error('还缺截止时间，补充一下');
+        return;
+      }
+      const voteDeadline = new Date(draft.deadline).getTime();
+      if (!Number.isFinite(voteDeadline)) {
+        toast.error('截止时间格式不正确，请重新说一次');
+        return;
+      }
+      if (voteDeadline <= Date.now()) {
+        toast.error('投票截止时间需要晚于当前时间');
+        return;
+      }
+
+      setStage('publishing');
+      try {
+        await api.post(`/classes/${classId}/votes`, {
+          title: draft.title.trim(),
+          voteType: 'single',
+          deadline: draft.deadline,
+          options: optionLabels,
+        });
+        setPublished({ intent: 'vote', title: draft.title });
+        setStage('done');
+        toast.success('投票发布成功');
+        void saveHistory('vote', `${draft.options.length} 个选项 · 截止 ${formatDeadline(draft.deadline)}`);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : '发布失败，请重试');
+        setStage('draft');
+      }
+      return;
+    }
+
+    if (intent === 'attendance') {
+      if (user?.roleLevel !== 'owner' && user?.roleLevel !== 'admin') {
+        toast.error('仅班委可发起签到');
+        return;
+      }
+      if (!draft.eventDate || !draft.eventTime) {
+        toast.error('签到开始时间还不能为空');
+        return;
+      }
+      const start = new Date(`${draft.eventDate}T${draft.eventTime}+08:00`);
+      if (Number.isNaN(start.getTime())) {
+        toast.error('签到时间格式不正确');
+        return;
+      }
+      if (start.getTime() + 2 * 60 * 60 * 1000 <= Date.now()) {
+        toast.error('签到时间已过，请换一个时间');
+        return;
+      }
+
+      setStage('publishing');
+      try {
+        await api.post(`/classes/${classId}/attendances`, {
+          title: draft.title.trim(),
+          startTime: start.toISOString(),
+          endTime: new Date(start.getTime() + 2 * 60 * 60 * 1000).toISOString(),
+          method: 'normal',
+          location: draft.location?.trim() || undefined,
+        });
+        setPublished({ intent: 'attendance', title: draft.title });
+        setStage('done');
+        toast.success('签到发布成功');
+        void saveHistory(
+          'attendance',
+          [formatEventDate(draft.eventDate, draft.eventTime), draft.location].filter(Boolean).join(' · '),
+        );
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : '发布失败，请重试');
+        setStage('draft');
+      }
     }
   };
 
@@ -687,7 +887,8 @@ export default function AIAssistant() {
 
   const empty = messages.length === 0 && stage === 'idle';
   // 已发布的草稿不再重复展示成“待发布”组件，避免和催交/查询结果同屏
-  const showDraft = (stage === 'draft' || stage === 'publishing') && !published;
+  const showDraft =
+    (stage === 'draft' || stage === 'publishing') && !published && Boolean(draft.title?.trim());
   const showSuccess = stage === 'done' && published;
   const showDuplicate = stage === 'duplicate' && Boolean(duplicate);
   const lastAssistantId = useMemo(() => {
@@ -774,64 +975,70 @@ export default function AIAssistant() {
           />
 
           {empty ? (
-            <div className="relative z-10 flex min-h-[calc(100%_-_144px)] flex-col items-center justify-center px-4 pb-4">
-              <div className="ai-orb-float relative flex h-[112px] w-[112px] items-center justify-center">
-                <span className="ai-orb-breathe absolute -inset-8 rounded-full bg-[radial-gradient(circle,rgba(90,166,255,0.32)_0%,rgba(90,166,255,0)_68%)]" />
-                <span className="ai-orb-ring absolute inset-0 rounded-full bg-[conic-gradient(from_0deg,rgba(90,166,255,0)_0deg,rgba(90,166,255,.9)_60deg,rgba(11,102,255,0)_150deg,rgba(90,166,255,.55)_250deg,rgba(11,102,255,0)_330deg)] [mask:radial-gradient(farthest-side,transparent_calc(100%-2px),#000_calc(100%-1.5px))]" />
-                <span className="ai-orb-ring-slow absolute inset-[9px] rounded-full opacity-60 bg-[conic-gradient(from_180deg,rgba(0,212,255,0)_0deg,rgba(0,212,255,.8)_90deg,rgba(0,212,255,0)_190deg,rgba(0,212,255,.45)_280deg,rgba(0,212,255,0)_360deg)] [mask:radial-gradient(farthest-side,transparent_calc(100%-1.5px),#000_calc(100%-1px))]" />
-                <div className="relative z-10 flex h-[92px] w-[92px] items-center justify-center rounded-full bg-gradient-to-br from-[#6FB6FF] via-[#0B66FF] to-[#0041B8] shadow-[0_22px_44px_-18px_rgba(0,84,220,0.85),inset_0_2px_6px_rgba(255,255,255,0.45)]">
-                  <Mic className="h-9 w-9 text-white" strokeWidth={1.7} />
+            <div className="relative z-10 flex min-h-[calc(100%_-_144px)] flex-col px-4 pb-4 pt-3">
+              <div className="my-auto flex w-full flex-col items-center">
+                <div className="ai-orb-float relative flex h-[88px] w-[88px] items-center justify-center">
+                  <span className="ai-orb-breathe absolute -inset-6 rounded-full bg-[radial-gradient(circle,rgba(90,166,255,0.32)_0%,rgba(90,166,255,0)_68%)]" />
+                  <span className="ai-orb-ring absolute inset-0 rounded-full bg-[conic-gradient(from_0deg,rgba(90,166,255,0)_0deg,rgba(90,166,255,.9)_60deg,rgba(11,102,255,0)_150deg,rgba(90,166,255,.55)_250deg,rgba(11,102,255,0)_330deg)] [mask:radial-gradient(farthest-side,transparent_calc(100%-2px),#000_calc(100%-1.5px))]" />
+                  <span className="ai-orb-ring-slow absolute inset-[8px] rounded-full opacity-60 bg-[conic-gradient(from_180deg,rgba(0,212,255,0)_0deg,rgba(0,212,255,.8)_90deg,rgba(0,212,255,0)_190deg,rgba(0,212,255,.45)_280deg,rgba(0,212,255,0)_360deg)] [mask:radial-gradient(farthest-side,transparent_calc(100%-1.5px),#000_calc(100%-1px))]" />
+                  <div className="relative z-10 flex h-[72px] w-[72px] items-center justify-center rounded-full bg-gradient-to-br from-[#6FB6FF] via-[#0B66FF] to-[#0041B8] shadow-[0_18px_36px_-16px_rgba(0,84,220,0.85),inset_0_2px_6px_rgba(255,255,255,0.45)]">
+                    <Mic className="h-7 w-7 text-white" strokeWidth={1.7} />
+                  </div>
                 </div>
-              </div>
 
-              <h2 className="mt-6 text-center text-[21px] font-semibold leading-snug tracking-tight text-[#0F1F3A]">
-                说一句，就发布
-              </h2>
-              <p className="mt-2 max-w-[252px] text-center text-[13px] leading-relaxed text-[#71839E]">
-                发布作业、组织活动，或直接问提交率、谁还没交、帮我催交作业。
-              </p>
+                <h2 className="mt-4 text-center text-[19px] font-semibold leading-snug tracking-tight text-[#0F1F3A]">
+                  说一句，就发布
+                </h2>
+                <p className="mt-1.5 max-w-[248px] text-center text-[12px] leading-relaxed text-[#71839E]">
+                  发布作业、组织活动，或直接问提交率、谁还没交、帮我催交作业。
+                </p>
 
-              <div className="mt-5 grid w-full grid-cols-2 gap-2.5">
-                {QUICK_ACTIONS.map((action) => {
-                  const Icon = action.icon;
-                  const content = (
-                    <>
-                      <span
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px]"
-                        style={{ backgroundColor: action.bg }}
-                      >
-                        <Icon className="h-[18px] w-[18px]" style={{ color: action.color }} strokeWidth={1.9} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-[13.5px] font-medium text-[#16243D]">{action.label}</span>
-                        <span className="mt-0.5 block truncate text-[11px] text-[#8A9AB3]">{action.hint}</span>
-                      </span>
-                      <ChevronRight className="h-4 w-4 shrink-0 text-[#B6C2D4]" />
-                    </>
-                  );
-                  const className =
-                    'flex w-full items-center gap-2.5 rounded-[16px] border border-white/80 bg-white/80 px-3 py-3 text-left shadow-[0_10px_24px_-20px_rgba(10,40,90,0.65)] backdrop-blur-md transition active:scale-[0.97]';
-                  if ('route' in action) {
-                    return (
-                      <button key={action.key} type="button" className={className} onClick={() => navigate(action.route)}>
-                        {content}
-                      </button>
-                    );
-                  }
-                  return (
-                    <button
-                      key={action.key}
-                      type="button"
-                      className={className}
-                      onClick={() => {
-                        setInput(action.sample);
-                        window.setTimeout(() => inputRef.current?.focus(), 80);
-                      }}
-                    >
-                      {content}
-                    </button>
-                  );
-                })}
+                <div className="mt-4 w-full rounded-[22px] border border-white bg-white/70 p-3 shadow-[0_20px_44px_-34px_rgba(10,40,90,0.55)] backdrop-blur-md">
+                  <div className="mb-2 flex items-center justify-between px-1">
+                    <span className="text-[12px] font-medium text-[#5A7093]">快捷入口</span>
+                    <span className="text-[10.5px] text-[#A3B2C7]">点一下填入指令</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-x-1 gap-y-2">
+                    {QUICK_ACTIONS.map((action) => {
+                      const Icon = action.icon;
+                      const content = (
+                        <>
+                          <span
+                            className="flex h-11 w-11 items-center justify-center rounded-[15px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.65)]"
+                            style={{ backgroundColor: action.bg }}
+                          >
+                            <Icon className="h-[19px] w-[19px]" style={{ color: action.color }} strokeWidth={1.9} />
+                          </span>
+                          <span className="mt-1.5 text-[11.5px] font-medium leading-none text-[#33475F]">
+                            {action.label}
+                          </span>
+                        </>
+                      );
+                      const className =
+                        'flex w-full flex-col items-center rounded-[16px] py-2 transition active:scale-[0.94] active:bg-[#F2F7FF]';
+                      if ('route' in action) {
+                        return (
+                          <button key={action.key} type="button" className={className} onClick={() => navigate(action.route)}>
+                            {content}
+                          </button>
+                        );
+                      }
+                      return (
+                        <button
+                          key={action.key}
+                          type="button"
+                          className={className}
+                          onClick={() => {
+                            setInput(action.sample);
+                            window.setTimeout(() => inputRef.current?.focus(), 80);
+                          }}
+                        >
+                          {content}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
           ) : (
@@ -855,7 +1062,7 @@ export default function AIAssistant() {
                           type="button"
                           aria-label="朗读"
                           onClick={() => speak(message.text)}
-                          className="absolute -right-1 -top-3 hidden h-7 w-7 items-center justify-center rounded-full border border-[#E4EDFF] bg-white text-[#7C93B5] shadow-sm group-hover:flex"
+                          className="absolute -right-1 -top-3 flex h-7 w-7 items-center justify-center rounded-full border border-[#E4EDFF] bg-white text-[#7C93B5] opacity-70 shadow-sm transition hover:opacity-100 active:scale-95"
                         >
                           <Volume2 className="h-3.5 w-3.5" />
                         </button>
@@ -951,37 +1158,21 @@ export default function AIAssistant() {
                     <div className="min-w-0 flex-1">
                       <p className="text-[15px] font-semibold text-[#10203A]">发布成功</p>
                       <p className="mt-0.5 truncate text-[12.5px] text-[#71839E]">
-                        {published.intent === 'homework' ? '作业' : '活动'}「{published.title}」已发出
+                        {INTENT_META[published.intent].label}「{published.title}」已发出
                       </p>
                     </div>
                   </div>
                   {/* 发布后仍保留草稿信息，方便核对到底发了什么 */}
                   <div className="mt-3 space-y-2 rounded-[14px] bg-[#F7FAFF] px-3 py-2.5">
-                    {published.intent === 'homework' ? (
-                      <>
-                        <DraftRow label="科目" value={draft.subject || '作业'} />
-                        <DraftRow label="截止" value={formatDeadline(draft.deadline) || '未设置'} emphasize />
-                        {draft.content ? <DraftRow label="内容" value={draft.content} multiline /> : null}
-                      </>
-                    ) : (
-                      <>
-                        <DraftRow
-                          label="时间"
-                          value={formatEventDate(draft.eventDate, draft.eventTime) || '未设置'}
-                          emphasize
-                        />
-                        <DraftRow label="地点" value={draft.location || '未设置'} />
-                        {draft.capacity ? <DraftRow label="人数" value={`${draft.capacity} 人`} /> : null}
-                      </>
-                    )}
+                    <DraftSummary intent={published.intent} draft={draft} emptyText="未设置" />
                   </div>
                   <div className="mt-4 flex gap-2">
                     <button
                       type="button"
-                      onClick={() => navigate(published.intent === 'homework' ? '/homework-list' : '/activity-list')}
+                      onClick={() => navigate(INTENT_META[published.intent].route)}
                       className="flex h-10 flex-1 items-center justify-center gap-1 rounded-[12px] bg-[#0062FF] text-[13px] font-medium text-white shadow-[0_10px_20px_-12px_rgba(0,98,255,0.9)] active:scale-[0.98]"
                     >
-                      查看{published.intent === 'homework' ? '作业' : '活动'}
+                      查看{INTENT_META[published.intent].label}
                       <ChevronRight className="h-4 w-4" />
                     </button>
                     <button
@@ -1001,13 +1192,13 @@ export default function AIAssistant() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2">
                       <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${
-                          intent === 'homework'
-                            ? 'bg-[#EAF2FF] text-[#0062FF]'
-                            : 'bg-[#F2EBFF] text-[#7C3AED]'
-                        }`}
+                        className="shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold"
+                        style={{
+                          backgroundColor: intent === 'unknown' ? '#F1F5FB' : INTENT_META[intent].bg,
+                          color: intent === 'unknown' ? '#5B7BA6' : INTENT_META[intent].color,
+                        }}
                       >
-                        {intent === 'homework' ? '作业' : '活动'}
+                        {intentLabel(intent)}
                       </span>
                       <h3 className="truncate text-[15px] font-semibold text-[#10203A]">{draft.title}</h3>
                     </div>
@@ -1017,42 +1208,7 @@ export default function AIAssistant() {
                   </div>
 
                   <div className="mt-3 space-y-2.5">
-                    {intent === 'homework' ? (
-                      <>
-                        <DraftRow label="科目" value={draft.subject || '作业'} ai={aiFields.includes('subject')} />
-                        <DraftRow
-                          label="截止"
-                          value={formatDeadline(draft.deadline)}
-                          ai={aiFields.includes('deadline')}
-                          emphasize
-                        />
-                        {draft.content ? (
-                          <DraftRow label="内容" value={draft.content} ai={aiFields.includes('content')} multiline />
-                        ) : null}
-                      </>
-                    ) : (
-                      <>
-                        <DraftRow
-                          label="时间"
-                          value={formatEventDate(draft.eventDate, draft.eventTime) || '待补充'}
-                          ai={aiFields.includes('eventDate') || aiFields.includes('eventTime')}
-                          emphasize
-                        />
-                        <DraftRow label="地点" value={draft.location || '待补充'} ai={aiFields.includes('location')} />
-                        {draft.category ? (
-                          <DraftRow label="分类" value={draft.category} ai={aiFields.includes('category')} />
-                        ) : null}
-                        {draft.capacity ? <DraftRow label="人数" value={`${draft.capacity} 人`} ai={aiFields.includes('capacity')} /> : null}
-                        {draft.description ? (
-                          <DraftRow
-                            label="详情"
-                            value={draft.description}
-                            ai={aiFields.includes('description')}
-                            multiline
-                          />
-                        ) : null}
-                      </>
-                    )}
+                    <DraftSummary intent={intent} draft={draft} aiFields={aiFields} emptyText="待补充" />
                   </div>
 
                   {!canPublish ? (
@@ -1124,9 +1280,10 @@ export default function AIAssistant() {
                 ref={inputRef}
                 rows={1}
                 value={input}
+                maxLength={500}
                 onChange={(event) => setInput(event.target.value)}
                 onKeyDown={(event) => {
-                  if (event.key === 'Enter' && !event.shiftKey) {
+                  if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
                     event.preventDefault();
                     sendText();
                   }
@@ -1239,42 +1396,39 @@ export default function AIAssistant() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {historyList.map((record) => (
-                      <button
-                        key={record.id}
-                        type="button"
-                        onClick={() => applyRecord(record)}
-                        className="flex w-full items-start gap-3 rounded-[16px] border border-[#E8EFF9] bg-[#F8FBFF] px-3.5 py-3 text-left active:scale-[0.99]"
-                      >
-                        <span
-                          className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                            record.intent === 'homework'
-                              ? 'bg-[#EAF2FF] text-[#0062FF]'
-                              : 'bg-[#F2EBFF] text-[#7C3AED]'
-                          }`}
+                    {historyList.map((record) => {
+                      const meta = INTENT_META[record.intent];
+                      const Icon = meta.icon;
+                      return (
+                        <button
+                          key={record.id}
+                          type="button"
+                          onClick={() => applyRecord(record)}
+                          className="flex w-full items-start gap-3 rounded-[16px] border border-[#E8EFF9] bg-[#F8FBFF] px-3.5 py-3 text-left active:scale-[0.99]"
                         >
-                          {record.intent === 'homework' ? (
-                            <FileText className="h-4 w-4" />
-                          ) : (
-                            <CalendarDays className="h-4 w-4" />
-                          )}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-center justify-between gap-2">
-                            <span className="truncate text-[13px] font-medium text-[#16243D]">{record.title}</span>
-                            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#B3C0D2]" />
+                          <span
+                            className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                            style={{ backgroundColor: meta.bg, color: meta.color }}
+                          >
+                            <Icon className="h-4 w-4" />
                           </span>
-                          <span className="mt-0.5 flex items-center gap-1.5 text-[11px] text-[#8A9AB3]">
-                            <span>{record.intent === 'homework' ? '作业' : '活动'}</span>
-                            <span className="h-1 w-1 rounded-full bg-[#C9D6E8]" />
-                            <span>{formatDeadline(record.createdAt)}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-center justify-between gap-2">
+                              <span className="truncate text-[13px] font-medium text-[#16243D]">{record.title}</span>
+                              <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#B3C0D2]" />
+                            </span>
+                            <span className="mt-0.5 flex items-center gap-1.5 text-[11px] text-[#8A9AB3]">
+                              <span>{meta.label}</span>
+                              <span className="h-1 w-1 rounded-full bg-[#C9D6E8]" />
+                              <span>{formatDeadline(record.createdAt)}</span>
+                            </span>
+                            {record.summary ? (
+                              <span className="mt-1 block truncate text-[11.5px] text-[#71839E]">{record.summary}</span>
+                            ) : null}
                           </span>
-                          {record.summary ? (
-                            <span className="mt-1 block truncate text-[11.5px] text-[#71839E]">{record.summary}</span>
-                          ) : null}
-                        </span>
-                      </button>
-                    ))}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1534,5 +1688,89 @@ function DraftRow({
         </span>
       ) : null}
     </div>
+  );
+}
+
+/** 五类发布对象的草稿字段，成功卡与草稿卡共用 */
+function DraftSummary({
+  intent,
+  draft,
+  aiFields,
+  emptyText,
+}: {
+  intent: Intent;
+  draft: AssistantDraft;
+  aiFields?: string[];
+  emptyText: string;
+}) {
+  const ai = (field: string) => Boolean(aiFields?.includes(field));
+
+  if (intent === 'homework') {
+    return (
+      <>
+        <DraftRow label="科目" value={draft.subject || '作业'} ai={ai('subject')} />
+        <DraftRow
+          label="截止"
+          value={formatDeadline(draft.deadline) || emptyText}
+          ai={ai('deadline')}
+          emphasize
+        />
+        {draft.content ? <DraftRow label="内容" value={draft.content} ai={ai('content')} multiline /> : null}
+      </>
+    );
+  }
+
+  if (intent === 'notice') {
+    return <DraftRow label="内容" value={draft.content || emptyText} ai={ai('content')} multiline />;
+  }
+
+  if (intent === 'vote') {
+    return (
+      <>
+        <DraftRow
+          label="截止"
+          value={formatDeadline(draft.deadline) || emptyText}
+          ai={ai('deadline')}
+          emphasize
+        />
+        <DraftRow
+          label="选项"
+          value={draft.options?.length ? draft.options.join('、') : emptyText}
+          ai={ai('options')}
+          multiline
+        />
+      </>
+    );
+  }
+
+  if (intent === 'attendance') {
+    return (
+      <>
+        <DraftRow
+          label="时间"
+          value={formatEventDate(draft.eventDate, draft.eventTime) || emptyText}
+          ai={ai('eventDate') || ai('eventTime')}
+          emphasize
+        />
+        <DraftRow label="地点" value={draft.location || '未设置'} ai={ai('location')} />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <DraftRow
+        label="时间"
+        value={formatEventDate(draft.eventDate, draft.eventTime) || emptyText}
+        ai={ai('eventDate') || ai('eventTime')}
+        emphasize
+      />
+      <DraftRow label="地点" value={draft.location || emptyText} ai={ai('location')} />
+      {draft.category ? <DraftRow label="分类" value={draft.category} ai={ai('category')} /> : null}
+      {draft.capacity ? <DraftRow label="人数" value={`${draft.capacity} 人`} ai={ai('capacity')} /> : null}
+      {draft.description ? (
+        <DraftRow label="详情" value={draft.description} ai={ai('description')} multiline />
+      ) : null}
+    </>
   );
 }

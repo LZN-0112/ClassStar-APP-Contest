@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Check, Bell, Paperclip } from 'lucide-react';
 import PageLayout from '@/components/layout/PageLayout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -13,6 +13,9 @@ interface MessageDetailData {
   content: string;
   location?: string;
   eventTime?: string;
+  classId?: string;
+  sourceType?: string | null;
+  sourceId?: string | null;
   requireAck: boolean;
   ackDeadline?: string;
   isAcked: boolean;
@@ -48,6 +51,7 @@ function formatDateTime(iso?: string) {
 export default function MessageDetail() {
   const navigate = useNavigate();
   const { messageId } = useParams<{ messageId: string }>();
+  const [searchParams] = useSearchParams();
   const { user } = useCurrentUser();
 
   const [message, setMessage] = useState<MessageDetailData | null>(null);
@@ -56,13 +60,24 @@ export default function MessageDetail() {
   const [reloadKey, setReloadKey] = useState(0);
   const [acking, setAcking] = useState(false);
 
-  const classId = user?.classId;
+  // 从推送点击进入时，消息可能属于用户当前未选中的组织，优先使用链接携带的 classId
+  const classId = searchParams.get('classId') || user?.classId;
   const isAdmin = user?.roleLevel === 'owner' || user?.roleLevel === 'admin';
+
+  const markRead = useCallback(async () => {
+    if (!classId || !messageId) return;
+    try {
+      await api.post(`/classes/${classId}/messages/${messageId}/read`);
+      window.dispatchEvent(new Event('unread-refresh'));
+    } catch {
+      // 已读标记失败不影响详情展示
+    }
+  }, [classId, messageId]);
 
   useEffect(() => {
     if (!messageId) {
       toast.error('通知ID缺失');
-      navigate('/message-list', { replace: true });
+      navigate('/messages', { replace: true });
       return;
     }
 
@@ -77,6 +92,10 @@ export default function MessageDetail() {
         const res = await api.get(`/classes/${classId}/messages/${messageId}`);
         const data = res.data.data || res.data;
         setMessage(data);
+        // 普通通知打开即已读；签收类要等签收完成才算处理完，红点保留
+        if (!data.requireAck || data.isAcked) {
+          void markRead();
+        }
       } catch (err) {
         setLoadError(true);
         toast.error(err instanceof Error ? err.message : '获取通知详情失败');
@@ -85,19 +104,8 @@ export default function MessageDetail() {
       }
     };
 
-    const markAsRead = async () => {
-      if (!classId || !messageId) return;
-      try {
-        await api.post(`/classes/${classId}/messages/${messageId}/read`);
-        window.dispatchEvent(new Event('unread-refresh'));
-      } catch {
-        // 已读标记失败不影响详情展示
-      }
-    };
-
-    fetchMessage();
-    markAsRead();
-  }, [messageId, classId, navigate, reloadKey]);
+    void fetchMessage();
+  }, [messageId, classId, navigate, reloadKey, markRead]);
 
   const handleAck = async () => {
     if (!message || message.isAcked || !classId || !messageId || acking) return;
@@ -106,11 +114,14 @@ export default function MessageDetail() {
       await api.post(`/classes/${classId}/messages/${messageId}/ack`);
       setMessage((prev) => (prev ? { ...prev, isAcked: true } : prev));
       toast.success('签收成功');
+      // 签收即完成事项，此时再清除未读红点
+      void markRead();
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
       if (msg.includes('不能重复签收') || msg.includes('已签收')) {
         setMessage((prev) => (prev ? { ...prev, isAcked: true } : prev));
         toast.error('已签收，不能重复签收');
+        void markRead();
       } else {
         toast.error(err instanceof Error ? err.message : '签收失败，请稍后重试');
       }
@@ -188,22 +199,24 @@ export default function MessageDetail() {
           </span>
         </div>
 
-        <div
-          data-pencil-name="Info Card"
-          className="box-border flex w-full flex-col gap-2 rounded-lg border border-[#E5E7EB] bg-white p-4 shadow-soft"
-        >
-          <div className="text-[14px]/[normal] font-body font-medium text-[#1A1A1A]">
-            📅 时间：{formatDateTime(message.eventTime)}
-          </div>
-          <div className="text-[14px]/[normal] font-body font-medium text-[#1A1A1A]">
-            📍 地点：{message.location || '-'}
-          </div>
-          {message.requireAck && (
+        {!message.type?.startsWith('homework') && (
+          <div
+            data-pencil-name="Info Card"
+            className="box-border flex w-full flex-col gap-2 rounded-lg border border-[#E5E7EB] bg-white p-4 shadow-soft"
+          >
             <div className="text-[14px]/[normal] font-body font-medium text-[#1A1A1A]">
-              ⏰ 签收截止：{message.ackDeadline ? formatDateTime(message.ackDeadline) : '不限制'}
+              📅 时间：{formatDateTime(message.eventTime)}
             </div>
-          )}
-        </div>
+            <div className="text-[14px]/[normal] font-body font-medium text-[#1A1A1A]">
+              📍 地点：{message.location || '-'}
+            </div>
+            {message.requireAck && (
+              <div className="text-[14px]/[normal] font-body font-medium text-[#1A1A1A]">
+                ⏰ 签收截止：{message.ackDeadline ? formatDateTime(message.ackDeadline) : '不限制'}
+              </div>
+            )}
+          </div>
+        )}
 
         <div
           data-pencil-name="Body"
@@ -247,6 +260,49 @@ export default function MessageDetail() {
           </div>
         )}
 
+        {message.sourceType === 'homework' && message.sourceId && (
+          <button
+            type="button"
+            onClick={() => navigate(`/homework-detail/${message.sourceId}`)}
+            data-pencil-name="Homework Button"
+            className="box-border flex h-[52px] w-full shrink-0 flex-col items-center justify-center gap-2 rounded-lg bg-[#0062FF] px-4 shadow-soft active:opacity-90"
+          >
+            <div className="text-[16px]/[normal] font-body font-semibold text-white [white-space:nowrap]">
+              查看作业并重新提交
+            </div>
+          </button>
+        )}
+
+        {message.sourceType === 'attendance' && message.sourceId && (
+          <button
+            type="button"
+            onClick={() =>
+              navigate(
+                `/check-in-detail/${message.classId || classId}/${message.sourceId}`,
+              )
+            }
+            data-pencil-name="CheckIn Button"
+            className="box-border flex h-[52px] w-full shrink-0 flex-col items-center justify-center gap-2 rounded-lg bg-[#0062FF] px-4 shadow-soft active:opacity-90"
+          >
+            <div className="text-[16px]/[normal] font-body font-semibold text-white [white-space:nowrap]">
+              去签到
+            </div>
+          </button>
+        )}
+
+        {message.sourceType === 'random_draw' && message.sourceId && (
+          <button
+            type="button"
+            onClick={() => navigate(`/draw-record/${message.sourceId}`)}
+            data-pencil-name="Draw Button"
+            className="box-border flex h-[52px] w-full shrink-0 flex-col items-center justify-center gap-2 rounded-lg bg-[#0062FF] px-4 shadow-soft active:opacity-90"
+          >
+            <div className="text-[16px]/[normal] font-body font-semibold text-white [whitespace-nowrap]">
+              查看抽签结果
+            </div>
+          </button>
+        )}
+
         {message.requireAck && (
           <button
             type="button"
@@ -267,7 +323,7 @@ export default function MessageDetail() {
         {isAdmin && (
           <button
             type="button"
-            onClick={() => navigate(`/message-stats/${message.id}`)}
+            onClick={() => navigate(`/message-stats/${message.id}?classId=${classId}`)}
             data-pencil-name="Stats Link"
             className="box-border flex h-[52px] w-full shrink-0 flex-col items-center justify-center gap-2 rounded-lg border border-[#0062FF] bg-[#0062FF0D] px-4 active:opacity-90"
           >

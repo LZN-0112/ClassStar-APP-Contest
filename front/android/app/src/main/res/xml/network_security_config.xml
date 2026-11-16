@@ -1,16 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- 上线标准：默认禁止明文 HTTP，仅允许 HTTPS -->
+    <!-- 上线标准：默认禁止全部明文 HTTP，仅允许 HTTPS -->
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
     </base-config>
 
-    <!--
-      调试例外：仅放通局域网联调地址，避免生产包误连 HTTP。
-      正式发布前必须删除以下 domain-config，并将 API 切换到 HTTPS 域名。
-    -->
+    <!-- 本地真机联调例外：仅放行局域网后端与本机地址。
+         部署服务器 / 发布正式包前删除本节，恢复全量禁止明文。 -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="false">10.14.179.218</domain>
         <domain includeSubdomains="false">localhost</domain>

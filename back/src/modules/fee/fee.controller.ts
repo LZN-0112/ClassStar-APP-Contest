@@ -28,6 +28,10 @@ import {
   CreateFeeBudgetDto,
   QueryFeeBudgetDto,
   BatchPaymentDto,
+  CreateFeeBillDto,
+  QueryFeeBillsDto,
+  QueryFeeBillMembersDto,
+  RegisterFeeBillPaymentsDto,
 } from './dto/fee.dto';
 
 @ApiTags('班费/团费账本')
@@ -78,6 +82,54 @@ export class FeeController {
     @CurrentUser('userId') userId: string,
   ) {
     return this.feeService.listRecords(dto, userId);
+  }
+
+  @Post('bills')
+  @ApiOperation({ summary: '创建缴费账单（班委权限，按期生成应缴名单）' })
+  async createBill(
+    @Body() dto: CreateFeeBillDto,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.feeService.createBill(dto, userId);
+  }
+
+  @Get('bills')
+  @ApiOperation({ summary: '查询缴费账单列表' })
+  async listBills(
+    @Query() dto: QueryFeeBillsDto,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.feeService.listBills(dto, userId);
+  }
+
+  @Get('bills/:billId/members')
+  @ApiOperation({ summary: '查询账单成员缴费明细' })
+  async listBillMembers(
+    @Param('billId') billId: string,
+    @Query() dto: QueryFeeBillMembersDto,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.feeService.listBillMembers(billId, dto, userId);
+  }
+
+  @Post('bills/:billId/register')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @ApiOperation({ summary: '登记账单缴费（支持逾期补缴，班委权限）' })
+  async registerBillPayments(
+    @Param('billId') billId: string,
+    @Body() dto: RegisterFeeBillPaymentsDto,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.feeService.registerBillPayments(billId, dto, userId);
+  }
+
+  @Delete('bills/:billId')
+  @ApiOperation({ summary: '删除缴费账单（无缴费记录时才可删除）' })
+  async deleteBill(
+    @Param('billId') billId: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.feeService.deleteBill(billId, userId);
   }
 
   @Put('update/:recordId')

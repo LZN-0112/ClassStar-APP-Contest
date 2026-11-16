@@ -1,80 +1,166 @@
-import { useState, useRef } from 'react'
-import { View, Text, ScrollView } from '@tarojs/components'
-import Taro, { useLoad } from '@tarojs/taro'
+// ============================================================
+// 随机抽签
+// 1:1 对齐 front/src/pages/tools/RandomDraw.tsx
+// 差异：彩球公转用 CSS 动画实现（禁止内联 SVG / 无 rAF）
+// ============================================================
+import { useEffect, useMemo, useRef, useState } from 'react'
+import Taro from '@tarojs/taro'
+import { ScrollView, Text, View } from '@tarojs/components'
 
-import { NavBar, Modal, ListLoading } from '@/components/business'
-import { classesApi, drawApi } from '@/services'
+import { BottomSheet, StatusBar } from '@/components/business'
+import { Icon } from '@/components/ui'
+import { classesApi } from '@/services'
+import { drawApi } from '@/services/task'
 import { useUserStore } from '@/stores'
-import { useAuth, vibrate } from '@/utils'
 import './index.scss'
 
 interface Member {
   id: string
   studentId: string
   name: string
+  isSystemAccount?: boolean
 }
 
+// 后端返回字段为 userId/student_id，统一映射为前端 Member 结构
 const mapMember = (m: any): Member => ({
   id: m.userId || m.id || '',
   studentId: m.studentId || m.student_id || '',
-  name: m.name || m.userName || ''
+  name: m.name || m.userName || '',
+  isSystemAccount: m.isSystemAccount === true
 })
 
-export default function RandomDraw() {
-  const currentClassId = useUserStore((s) => s.currentClassId)
-  const className = useUserStore((s) => s.userInfo?.className)
-  const { requireLogin } = useAuth()
+type Phase = 'idle' | 'drawing' | 'result'
 
-  const classIdRef = { id: currentClassId || '' }
+/** 揭晓后 5 颗球停靠的角度（球体上方弧线，避开底部结果抽屉） */
+const SLOT_ANGLES = [-170, -130, -90, -50, -10]
+/** 5 颗球的初始角度，彼此错开避免重叠 */
+const START_ANGLES = [200, 300, 340, 148, 52]
+/** 常态公转速度（度/秒），正负号决定转动方向 */
+const BASE_SPEEDS = [92, -84, 98, -90, 86]
+/** 抽取时公转加速倍数 */
+const DRAW_BOOST = 6
+
+const ORB_SKINS = [
+  {
+    body: 'radial-gradient(circle at 32% 26%, #FFFFFF 0%, #FFC2D3 20%, #FF7FA6 62%, #E24E7C 100%)',
+    glow: 'rgba(226,78,124,0.32)'
+  },
+  {
+    body: 'radial-gradient(circle at 32% 26%, #FFFFFF 0%, #FFE1B0 20%, #FFB347 62%, #E2841C 100%)',
+    glow: 'rgba(226,132,28,0.32)'
+  },
+  {
+    body: 'radial-gradient(circle at 32% 26%, #FFFFFF 0%, #CDEEFF 20%, #6FC8FA 62%, #2A8FD0 100%)',
+    glow: 'rgba(42,143,208,0.32)'
+  },
+  {
+    body: 'radial-gradient(circle at 32% 26%, #FFFFFF 0%, #D6F5DC 20%, #93DC9F 62%, #48B264 100%)',
+    glow: 'rgba(72,178,100,0.32)'
+  },
+  {
+    body: 'radial-gradient(circle at 32% 26%, #FFFFFF 0%, #E4DCFF 20%, #B4A2FF 62%, #7C5FE0 100%)',
+    glow: 'rgba(124,95,224,0.32)'
+  }
+]
+
+const WINDOW_HEIGHT = Taro.getSystemInfoSync().windowHeight || 667
+const RESULT_SHEET_H = Math.round(WINDOW_HEIGHT * 0.76)
+const EXCLUDE_SHEET_H = Math.round(WINDOW_HEIGHT * 0.78)
+
+interface CountCardProps {
+  label: string
+  value: number
+  min: number
+  max: number
+  onChange: (next: number) => void
+}
+
+function CountCard({ label, value, min, max, onChange }: CountCardProps) {
+  return (
+    <View className='draw__count-card'>
+      <Text className='draw__count-label'>{label}</Text>
+      <View className='draw__stepper'>
+        <View className='draw__step-btn' onClick={() => onChange(Math.max(min, value - 1))}>
+          <Icon name='minus' size={24} color='#2B628F' strokeWidth={2.5} />
+        </View>
+        <Text className='draw__step-value'>{value}</Text>
+        <View className='draw__step-btn' onClick={() => onChange(Math.min(max, value + 1))}>
+          <Icon name='plus' size={24} color='#2B628F' strokeWidth={2.5} />
+        </View>
+      </View>
+    </View>
+  )
+}
+
+export default function RandomDraw() {
+  const classId = useUserStore((s) => s.currentClassId)
 
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
 
   const [mainCount, setMainCount] = useState(5)
   const [backupCount, setBackupCount] = useState(3)
-  const [mainSelected, setMainSelected] = useState<Member[]>([])
-  const [backupSelected, setBackupSelected] = useState<Member[]>([])
+  const drawTitle = '随机抽签'
 
+  // 排除人员相关状态
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set())
   const [showExcludeModal, setShowExcludeModal] = useState(false)
 
-  const [previewResult, setPreviewResult] = useState<{ main: Member[]; backup: Member[] } | null>(null)
-  const [confirming, setConfirming] = useState(false)
-
-  // 滚动动画相关
-  const [rolling, setRolling] = useState(false)
+  // 抽签流程状态机：idle（待抽取）/ drawing（抽取中）/ result（已揭晓）
+  const [phase, setPhase] = useState<Phase>('idle')
+  const [previewResult, setPreviewResult] = useState<{ main: Member[]; backup: Member[] } | null>(
+    null
+  )
   const [rollingName, setRollingName] = useState('')
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const [saved, setSaved] = useState(false)
 
-  useLoad((o) => {
-    if (!requireLogin()) return
-    const cid = (o?.classId as string) || currentClassId
-    classIdRef.id = cid || ''
-    fetchMembers()
-  })
+  const drawingRef = useRef(false)
+  const timersRef = useRef<Array<ReturnType<typeof setTimeout>>>([])
 
-  const fetchMembers = async () => {
-    if (!classIdRef.id) {
+  useEffect(() => {
+    const timers = timersRef.current
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer))
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!classId) {
       setLoading(false)
       return
     }
-    setLoading(true)
-    try {
-      const res: any = await classesApi.getMembers(classIdRef.id, { page: 1, pageSize: 200 })
-      const list = res?.list || []
-      setMembers(list.map((m: any) => ({
-        id: m.userId || m.id || '',
-        studentId: m.studentId || m.student_id || '',
-        name: m.userName || m.name || ''
-      })))
-    } catch {
-      setMembers([])
-    } finally {
-      setLoading(false)
-    }
-  }
+    classesApi
+      .getMembers(classId, { page: 1, pageSize: 200 })
+      .then((res) => {
+        const list = Array.isArray(res?.list) ? res.list : []
+        // 平台内置账号（系统管理员）不参与抽签
+        setMembers(
+          list.map(mapMember).filter((m: Member) => m.id && !m.isSystemAccount)
+        )
+      })
+      .catch(() => {
+        Taro.showToast({ title: '加载班级成员失败', icon: 'none' })
+      })
+      .finally(() => setLoading(false))
+  }, [classId])
 
-  const candidates = members.filter((m) => !excludedIds.has(m.id))
+  // 候选人池
+  const candidates = useMemo(
+    () => members.filter((m) => !excludedIds.has(m.id)),
+    [members, excludedIds]
+  )
+
+  // 抽取中：球面文字快速滚动候选人姓名
+  useEffect(() => {
+    if (phase !== 'drawing' || candidates.length === 0) return
+    const timer = setInterval(() => {
+      const pick = candidates[Math.floor(Math.random() * candidates.length)]
+      setRollingName(pick?.name || '')
+    }, 55)
+    return () => clearInterval(timer)
+  }, [phase, candidates])
 
   const toggleExclude = (id: string) => {
     setExcludedIds((prev) => {
@@ -85,312 +171,382 @@ export default function RandomDraw() {
     })
   }
 
-  const clearTimer = () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current)
-      timerRef.current = null
-    }
+  // 揭晓：写入结果，稍后拉起结果抽屉
+  const finishDraw = (result: { main: Member[]; backup: Member[] }) => {
+    setPreviewResult(result)
+    setPhase('result')
+    timersRef.current.push(setTimeout(() => setSheetOpen(true), 780))
   }
 
-  // 滚动动画：在候选名单中轮流显示名字，结束后振动并弹出结果
-  const runRolling = (result: { main: Member[]; backup: Member[] }) => {
-    setRolling(true)
-    clearTimer()
-    let ticks = 0
-    const maxTicks = 30 // ~2.4 秒
-    const names = candidates.length
-      ? candidates.map((m) => m.name)
-      : result.main.map((m) => m.name)
-    timerRef.current = setInterval(() => {
-      ticks += 1
-      if (names.length > 0) {
-        setRollingName(names[Math.floor(Math.random() * names.length)])
-      }
-      if (ticks >= maxTicks) {
-        clearTimer()
-        setRolling(false)
-        vibrate() // 抽中结果振动反馈
-        setPreviewResult(result)
-      }
-    }, 80)
-  }
-
-  const handleDraw = async () => {
-    if (!classIdRef.id) {
+  const runDraw = async () => {
+    if (loading || drawingRef.current) return
+    if (!classId) {
       Taro.showToast({ title: '请先加入班级', icon: 'none' })
       return
     }
     if (candidates.length < mainCount + backupCount) {
-      Taro.showToast({ title: `候选人不足，至少需要 ${mainCount + backupCount} 人`, icon: 'none' })
+      Taro.showToast({
+        title: `候选人不足，至少需要 ${mainCount + backupCount} 人（当前 ${candidates.length} 人）`,
+        icon: 'none'
+      })
       return
     }
+    if (drawingRef.current) return
+
+    drawingRef.current = true
+    setSheetOpen(false)
+    setSaved(false)
+    setPreviewResult(null)
+    setPhase('drawing')
+
+    const startedAt = Date.now()
     try {
-      const res: any = await drawApi.preview(classIdRef.id, {
-        title: '随机抽签',
+      const res: any = await drawApi.preview(classId, {
+        title: drawTitle,
         mainCount,
         backupCount,
         excludedUserIds: Array.from(excludedIds)
       })
-      const data = res?.data || res
-      runRolling({
+      const data = res?.data || res || {}
+      const result = {
         main: (data.main || []).map(mapMember),
         backup: (data.backup || []).map(mapMember)
-      })
-    } catch (err) {
-      Taro.showToast({ title: err instanceof Error ? err.message : '预览抽签失败', icon: 'none' })
+      }
+      // 动效至少跑满 900ms，避免接口太快导致一闪而过
+      const wait = Math.max(0, 900 - (Date.now() - startedAt))
+      timersRef.current.push(
+        setTimeout(() => {
+          drawingRef.current = false
+          finishDraw(result)
+        }, wait)
+      )
+    } catch {
+      drawingRef.current = false
+      setPhase('idle')
     }
   }
 
-  const handleRedraw = async () => {
-    if (!classIdRef.id) return
-    try {
-      const res: any = await drawApi.preview(classIdRef.id, {
-        title: '随机抽签',
-        mainCount,
-        backupCount,
-        excludedUserIds: Array.from(excludedIds)
-      })
-      const data = res?.data || res
-      setPreviewResult({
-        main: (data.main || []).map(mapMember),
-        backup: (data.backup || []).map(mapMember)
-      })
-      vibrate()
-      Taro.showToast({ title: '已重新抽签', icon: 'success' })
-    } catch (err) {
-      Taro.showToast({ title: err instanceof Error ? err.message : '重新抽签失败', icon: 'none' })
-    }
-  }
-
+  // 确认保存抽签结果（保存后保留结果态并标记「已保存」）
   const handleConfirmSave = async () => {
-    if (!classIdRef.id || !previewResult) return
+    if (!classId || !previewResult) return
     setConfirming(true)
     try {
-      const res: any = await drawApi.randomDraw(classIdRef.id, {
-        title: '随机抽签',
+      await drawApi.randomDraw(classId, {
+        title: drawTitle,
         mainCount,
         backupCount,
         excludedUserIds: Array.from(excludedIds)
       })
-      const data = res?.data || res
-      setMainSelected((data.main || []).map(mapMember))
-      setBackupSelected((data.backup || []).map(mapMember))
-      setPreviewResult(null)
-      Taro.showToast({ title: '抽签已保存', icon: 'success' })
-    } catch (err) {
-      Taro.showToast({ title: err instanceof Error ? err.message : '保存抽签失败', icon: 'none' })
+      setSaved(true)
+      Taro.showToast({ title: '抽签结果已保存', icon: 'success' })
     } finally {
       setConfirming(false)
     }
   }
 
-  const goRecords = () => {
-    Taro.navigateTo({ url: '/pages-sub/vote/draw-records/index' })
+  // 收起结果抽屉 → 回到待抽取状态，彩球继续公转
+  const dismissResult = () => {
+    setSheetOpen(false)
+    setPhase('idle')
+    setSaved(false)
+    setPreviewResult(null)
   }
 
-  const goRules = () => {
-    Taro.navigateTo({ url: '/pages-sub/vote/draw-rules/index' })
-  }
+  const isDrawing = phase === 'drawing'
+  const ballValue =
+    phase === 'result' && previewResult ? previewResult.main.length : candidates.length
+  const ballLabel = isDrawing ? '正在抽取…' : phase === 'result' ? '正选代表' : '当前候选'
 
-  const goNotify = () => {
-    Taro.showToast({ title: '请到抽签记录同步通知', icon: 'none' })
-  }
-
-  const renderRow = (item: Member, index: number) => (
-    <View className='draw__row' key={item.id || index}>
-      <View className='draw__row-rank'>
-        <Text className='draw__row-rank-text'>{index + 1}</Text>
+  const renderResultRow = (item: Member, index: number) => (
+    <View key={`${item.id}-${index}`} className='draw__result-row'>
+      <View className='draw__result-rank'>{index + 1}</View>
+      <View className='draw__result-avatar'>{(item.name || '?').slice(0, 1)}</View>
+      <View className='draw__result-info'>
+        <Text className='draw__result-name'>{item.name}</Text>
+        {item.studentId ? (
+          <Text className='draw__result-sid'>{item.studentId}</Text>
+        ) : null}
       </View>
-      <View className='draw__row-avatar'>
-        <Text className='draw__row-avatar-text'>{(item.name || '?')[0]}</Text>
-      </View>
-      <Text className='draw__row-name'>{item.name || '未知'}</Text>
+      <Text className='draw__result-tag'>正选</Text>
     </View>
   )
 
-  if (loading) {
-    return (
-      <View className='draw'>
-        <NavBar title='随机抽签' />
-        <ListLoading rows={5} />
-      </View>
-    )
-  }
-
   return (
     <View className='draw'>
-      <NavBar
-        title='随机抽签'
-        right={
-          <View className='draw__rules' onClick={goRules}>
-            <Text className='draw__rules-text'>规则</Text>
+      <StatusBar />
+      <ScrollView scrollY className='draw__scroll'>
+        {/* Header */}
+        <View className='draw__head'>
+          <View className='draw__back' onClick={() => Taro.navigateBack()}>
+            <Icon name='chevron-left' size={48} color='#12395C' strokeWidth={2} />
+          </View>
+          <Text className='draw__title'>随机抽签</Text>
+          <View
+            className='draw__rules-btn'
+            onClick={() => Taro.navigateTo({ url: '/pages-sub/vote/draw-rules/index' })}
+          >
+            <Text className='draw__rules-btn-text'>规则</Text>
+          </View>
+        </View>
+
+        {/* 舞台：一颗玻璃球 + 围着它转的彩球 */}
+        <View className='draw__stage'>
+          <View
+            className='draw__stage-inner'
+            style={{ transform: `translateY(${sheetOpen ? -172 : 0}rpx)` }}
+          >
+            <View className='draw__orbit-box'>
+              {/* 球体背后的光晕 */}
+              <View className='draw__halo' />
+
+              {/* 双虚线轨道，反向旋转 */}
+              <View className='draw__rings'>
+                <View className='draw__ring draw__ring--outer' />
+                <View className='draw__ring draw__ring--inner' />
+              </View>
+
+              {/* 中央玻璃球 */}
+              <View className='draw__ball'>
+                <View className='draw__ball-shine' />
+                <View className='draw__ball-body'>
+                  {isDrawing ? (
+                    <Text className='draw__ball-rolling'>{rollingName || '…'}</Text>
+                  ) : (
+                    <View className='draw__ball-value-row'>
+                      <Text
+                        className={`draw__ball-value ${
+                          String(ballValue).length > 2 ? 'draw__ball-value--lg' : ''
+                        }`}
+                      >
+                        {ballValue}
+                      </Text>
+                      <Text className='draw__ball-unit'>人</Text>
+                    </View>
+                  )}
+                  <Text className='draw__ball-label'>{ballLabel}</Text>
+                </View>
+              </View>
+
+              {/* 5 颗绕球公转的彩球 */}
+              {phase !== 'result' ? (
+                <View className='draw__orbs'>
+                  {ORB_SKINS.map((skin, i) => {
+                    const duration = (360 / Math.abs(BASE_SPEEDS[i]) / (isDrawing ? DRAW_BOOST : 1)).toFixed(2)
+                    return (
+                      <View
+                        key={`orb-${i}`}
+                        className={`draw__orb ${
+                          BASE_SPEEDS[i] < 0 ? 'draw__orb--reverse' : ''
+                        }`}
+                        style={{ animationDuration: `${duration}s` }}
+                      >
+                        <View
+                          className='draw__orb-arm'
+                          style={{ transform: `rotate(${START_ANGLES[i]}deg)` }}
+                        >
+                          <View
+                            className='draw__orb-ball'
+                            style={{ background: skin.body, boxShadow: `0 12rpx 28rpx ${skin.glow}, inset 0 -6rpx 12rpx rgba(0,0,0,0.12), inset 0 6rpx 12rpx rgba(255,255,255,0.8)` }}
+                          />
+                        </View>
+                      </View>
+                    )
+                  })}
+                </View>
+              ) : (
+                <View className='draw__orbs'>
+                  {ORB_SKINS.map((skin, i) => (
+                    <View
+                      key={`slot-${i}`}
+                      className='draw__slot'
+                      style={{ transform: `rotate(${SLOT_ANGLES[i % SLOT_ANGLES.length]}deg)` }}
+                    >
+                      <View
+                        className='draw__orb-ball'
+                        style={{ background: skin.body, boxShadow: `0 12rpx 28rpx ${skin.glow}, inset 0 -6rpx 12rpx rgba(0,0,0,0.12), inset 0 6rpx 12rpx rgba(255,255,255,0.8)` }}
+                      />
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* 规则标签 */}
+            <View
+              className='draw__tags'
+              style={{ opacity: phase === 'idle' ? 1 : 0 }}
+            >
+              <Text className='draw__tag'>概率均等</Text>
+              <Text className='draw__tag'>已排除 {excludedIds.size} 人</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* 底部操作区 */}
+        <View className='draw__footer'>
+          {/* 统计条 */}
+          <View className='draw__summary'>
+            {[
+              { label: '候选人数', value: `${candidates.length}` },
+              { label: '正选人数', value: `${mainCount}` },
+              { label: '候补人数', value: `${backupCount}` }
+            ].map((item, i) => (
+              <View
+                key={item.label}
+                className={`draw__summary-item ${i > 0 ? 'draw__summary-item--border' : ''}`}
+              >
+                <Text className='draw__summary-label'>{item.label}</Text>
+                <Text className='draw__summary-value'>{item.value}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* 三格卡片 */}
+          <View className='draw__cards'>
+            <CountCard
+              label='正选人数'
+              value={mainCount}
+              min={1}
+              max={10}
+              onChange={setMainCount}
+            />
+            <CountCard
+              label='候补人数'
+              value={backupCount}
+              min={0}
+              max={10}
+              onChange={setBackupCount}
+            />
+            <View className='draw__count-card' onClick={() => setShowExcludeModal(true)}>
+              <View className='draw__exclude-label'>
+                <Icon name='user-minus' size={24} color='#6B8FAD' strokeWidth={2} />
+                <Text className='draw__count-label'>排除人员</Text>
+              </View>
+              <Text className='draw__exclude-value'>{excludedIds.size} 人</Text>
+            </View>
+          </View>
+
+          {/* 主按钮 */}
+          <View className='draw__actions'>
+            <View
+              className={`draw__btn ${loading || isDrawing ? 'is-disabled' : ''}`}
+              onClick={runDraw}
+            >
+              <Icon name='shuffle' size={36} color='#FFFFFF' strokeWidth={2.5} />
+              <Text className='draw__btn-text'>
+                {loading ? '加载中…' : isDrawing ? '抽取中…' : '开始抽签'}
+              </Text>
+            </View>
+            <View
+              className='draw__btn-history'
+              onClick={() => Taro.navigateTo({ url: '/pages-sub/vote/draw-records/index' })}
+            >
+              <Icon name='history' size={40} color='#2B628F' strokeWidth={2} />
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* 结果抽屉 */}
+      <BottomSheet
+        open={sheetOpen && !!previewResult}
+        onClose={dismissResult}
+        title='本次抽签结果'
+        subtitle={`正选 ${previewResult?.main.length ?? 0} 人 · 候补 ${previewResult?.backup.length ?? 0} 人`}
+        maxHeight={RESULT_SHEET_H}
+        footer={
+          <View className='draw__sheet-actions'>
+            <View className='draw__sheet-retry' onClick={runDraw}>
+              <Icon name='rotate-ccw' size={32} color='#0B6FE0' strokeWidth={2.2} />
+              <Text className='draw__sheet-retry-text'>再抽一次</Text>
+            </View>
+            <View
+              className='draw__sheet-save'
+              style={{
+                backgroundImage: saved
+                  ? 'linear-gradient(135deg, #8FD6A8 0%, #47B36B 100%)'
+                  : 'linear-gradient(135deg, #2F9BF0 0%, #0B6FE0 100%)'
+              }}
+              onClick={handleConfirmSave}
+            >
+              {saved ? (
+                <>
+                  <Icon name='check' size={32} color='#FFFFFF' strokeWidth={2.6} />
+                  <Text className='draw__sheet-save-text'>已保存</Text>
+                </>
+              ) : (
+                <Text className='draw__sheet-save-text'>
+                  {confirming ? '保存中…' : '确认保存'}
+                </Text>
+              )}
+            </View>
           </View>
         }
-      />
-
-      <View className='draw__bg'>
-        {/* 信息栏 */}
-        <View className='draw__info-bar'>
-          <View className='draw__info-item'>
-            <Text className='draw__info-label'>活动名称</Text>
-            <Text className='draw__info-value'>随机抽签</Text>
-          </View>
-          <View className='draw__info-item'>
-            <Text className='draw__info-label'>班级</Text>
-            <Text className='draw__info-value'>{className || '未加入班级'}</Text>
-          </View>
-          <View className='draw__info-item'>
-            <Text className='draw__info-label'>候选人数</Text>
-            <Text className='draw__info-value'>候选 {candidates.length} 人（排除 {excludedIds.size} 人）</Text>
-          </View>
-        </View>
-
-        {/* 中签公告 */}
-        {mainSelected.length > 0 ? (
-          <View className='draw__announce'>
-            <Text className='draw__announce-text'>恭喜 {mainSelected[0]?.name} 同学被抽中</Text>
-          </View>
-        ) : null}
-
-        {/* 设置区 */}
-        <View className='draw__settings'>
-          <View className='draw__setting'>
-            <Text className='draw__setting-label'>正选人数</Text>
-            <View className='draw__stepper'>
-              <Text className='draw__step-btn' onClick={() => setMainCount((v) => Math.max(1, v - 1))}>−</Text>
-              <Text className='draw__step-num'>{mainCount}</Text>
-              <Text className='draw__step-btn' onClick={() => setMainCount((v) => Math.min(10, v + 1))}>+</Text>
-            </View>
-          </View>
-          <View className='draw__setting'>
-            <Text className='draw__setting-label'>候补人数</Text>
-            <View className='draw__stepper'>
-              <Text className='draw__step-btn' onClick={() => setBackupCount((v) => Math.max(0, v - 1))}>−</Text>
-              <Text className='draw__step-num'>{backupCount}</Text>
-              <Text className='draw__step-btn' onClick={() => setBackupCount((v) => Math.min(10, v + 1))}>+</Text>
-            </View>
-          </View>
-          <View className='draw__setting' onClick={() => setShowExcludeModal(true)}>
-            <Text className='draw__setting-label'>排除人员</Text>
-            <Text className='draw__setting-value'>{excludedIds.size} 人</Text>
-          </View>
-        </View>
-
-        {/* 抽签按钮 / 滚动动画 */}
-        <View className='draw__center'>
-          <View className={`draw__start ${rolling ? 'draw__start--rolling' : ''}`} onClick={handleDraw}>
-            <Text className='draw__start-title'>{rolling ? '抽取中...' : '开始抽签'}</Text>
-            <Text className='draw__start-sub'>从全班{members.length}人中抽取</Text>
-          </View>
-        </View>
-
-        <View className='draw__record-link' onClick={goRecords}>
-          <Text className='draw__record-link-text'>中签记录 &gt;</Text>
-        </View>
-
-        {/* 结果卡片 */}
-        <View className='draw__result'>
-          <View className='draw__result-head'>
-            <Text className='draw__result-title'>中签结果榜单</Text>
-          </View>
-
-          {rolling ? (
-            <View className='draw__rolling'>
-              <Text className='draw__rolling-name'>{rollingName || '…'}</Text>
-              <Text className='draw__rolling-tip'>正在抽取中...</Text>
-            </View>
-          ) : (
-            <>
-              <View className='draw__result-group'>
-                <Text className='draw__result-group-title'>正选代表 · 共{mainSelected.length}人</Text>
-                {mainSelected.length > 0 ? (
-                  mainSelected.map((item, index) => renderRow(item, index))
-                ) : (
-                  <Text className='draw__result-empty'>点击“开始抽签”抽取</Text>
-                )}
-              </View>
-              <View className='draw__result-group'>
-                <Text className='draw__result-group-title'>候补代表 · 共{backupSelected.length}人</Text>
-                {backupSelected.length > 0 ? (
-                  backupSelected.map((item, index) => renderRow(item, index))
-                ) : (
-                  <Text className='draw__result-empty'>候补名单将在抽签后显示</Text>
-                )}
-              </View>
-            </>
-          )}
-        </View>
-
-        {/* 底部操作 */}
-        <View className='draw__actions'>
-          <View className='draw__action draw__action--primary' onClick={goRecords}>
-            <Text className='draw__action-text--primary'>查看抽签记录</Text>
-          </View>
-          <View className='draw__action draw__action--ghost' onClick={goNotify}>
-            <Text className='draw__action-text--ghost'>结果同步至班级通知</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* 排除人员弹层 */}
-      <Modal visible={showExcludeModal} title='选择排除人员' position='bottom' onClose={() => setShowExcludeModal(false)}>
-        <Text className='draw__modal-sub'>已选择 {excludedIds.size} 人排除</Text>
-        <ScrollView scrollY className='draw__modal-list'>
-          {members.length === 0 ? (
-            <Text className='draw__modal-empty'>暂无班级成员</Text>
-          ) : (
-            members.map((m) => {
-              const isExcluded = excludedIds.has(m.id)
-              return (
-                <View
-                  key={m.id}
-                  className={`draw__modal-item ${isExcluded ? 'draw__modal-item--on' : ''}`}
-                  onClick={() => toggleExclude(m.id)}
-                >
-                  <View className='draw__modal-item-avatar'>
-                    <Text className='draw__modal-item-avatar-text'>{(m.name || '?')[0]}</Text>
-                  </View>
-                  <View className='draw__modal-item-info'>
-                    <Text className='draw__modal-item-name'>{m.name || '未知'}</Text>
-                    {m.studentId ? <Text className='draw__modal-item-id'>{m.studentId}</Text> : null}
-                  </View>
-                  {isExcluded ? <Text className='draw__modal-item-check'>✓</Text> : null}
-                </View>
-              )
-            })
-          )}
-        </ScrollView>
-        <View className='draw__modal-confirm' onClick={() => setShowExcludeModal(false)}>
-          <Text className='draw__modal-confirm-text'>确定</Text>
-        </View>
-      </Modal>
-
-      {/* 预览确认弹层 */}
-      <Modal visible={!!previewResult} title='抽签结果预览' position='bottom' closable={false} onClose={() => setPreviewResult(null)}>
-        <ScrollView scrollY className='draw__preview-list'>
-          <View className='draw__preview-group'>
-            <Text className='draw__preview-title'>正选代表 · 共{previewResult?.main.length || 0}人</Text>
-            {(previewResult?.main || []).map((item, index) => renderRow(item, index))}
-          </View>
-          {(previewResult?.backup.length || 0) > 0 ? (
-            <View className='draw__preview-group'>
-              <Text className='draw__preview-title'>候补代表 · 共{previewResult?.backup.length || 0}人</Text>
-              {(previewResult?.backup || []).map((item, index) => renderRow(item, index))}
+      >
+        <View className='draw__result-list'>
+          {previewResult?.main.map((item, index) => renderResultRow(item, index))}
+          {previewResult?.backup.length ? (
+            <View className='draw__backup'>
+              <Text className='draw__backup-label'>候补</Text>
+              <Text className='draw__backup-names'>
+                {previewResult.backup.map((m) => m.name).join('、')}
+              </Text>
             </View>
           ) : null}
-        </ScrollView>
-        <View className='draw__preview-actions'>
-          <View className='draw__preview-btn draw__preview-btn--ghost' onClick={handleRedraw}>
-            <Text className='draw__preview-text--ghost'>重新抽签</Text>
-          </View>
-          <View className='draw__preview-btn draw__preview-btn--primary' onClick={handleConfirmSave}>
-            <Text className='draw__preview-text--primary'>{confirming ? '保存中...' : '确认保存'}</Text>
-          </View>
         </View>
-        <View className='draw__preview-cancel' onClick={() => setPreviewResult(null)}>
-          <Text className='draw__preview-cancel-text'>取消</Text>
-        </View>
-      </Modal>
+      </BottomSheet>
+
+      {/* 排除人员弹层 */}
+      <BottomSheet
+        open={showExcludeModal}
+        onClose={() => setShowExcludeModal(false)}
+        title='选择排除人员'
+        subtitle={`已排除 ${excludedIds.size} 人 · 候选 ${members.length - excludedIds.size} 人`}
+        maxHeight={EXCLUDE_SHEET_H}
+        extra={
+          <Text
+            className={`draw__clear ${excludedIds.size === 0 ? 'is-disabled' : ''}`}
+            onClick={() => setExcludedIds(new Set())}
+          >
+            清空
+          </Text>
+        }
+        footer={
+          <View className='draw__sheet-done' onClick={() => setShowExcludeModal(false)}>
+            <Text className='draw__sheet-done-text'>
+              完成 · {members.length - excludedIds.size} 人参与抽签
+            </Text>
+          </View>
+        }
+      >
+        {members.length === 0 ? (
+          <Text className='draw__empty'>暂无班级成员</Text>
+        ) : (
+          <View className='draw__member-list'>
+            {members.map((m) => {
+              const isExcluded = excludedIds.has(m.id)
+              return (
+                <View key={m.id} className='draw__member' onClick={() => toggleExclude(m.id)}>
+                  <View className='draw__member-avatar'>{(m.name || '?').slice(0, 1)}</View>
+                  <View className='draw__member-info'>
+                    <Text className='draw__member-name'>{m.name}</Text>
+                    {m.studentId ? (
+                      <Text className='draw__member-sid'>{m.studentId}</Text>
+                    ) : null}
+                  </View>
+                  <View
+                    className={`draw__check ${isExcluded ? 'draw__check--on' : ''}`}
+                  >
+                    {isExcluded ? (
+                      <Icon name='check' size={24} color='#FFFFFF' strokeWidth={3} />
+                    ) : null}
+                  </View>
+                </View>
+              )
+            })}
+          </View>
+        )}
+      </BottomSheet>
     </View>
   )
 }

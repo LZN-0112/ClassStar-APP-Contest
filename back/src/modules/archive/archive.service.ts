@@ -1,11 +1,21 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
+import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '@/common/database/prisma.service';
+import { MinioService } from '@/common/storage/minio.service';
 
 const SEMESTER_TYPES = ['semester'];
 
 @Injectable()
 export class ArchiveService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly minioService: MinioService,
+  ) {}
 
   /**
    * 按学期档案列表（仅 semester 类型），按学年聚合返回
@@ -34,6 +44,163 @@ export class ArchiveService {
       creatorName: a.users?.name ?? null,
       fileCount: a._count.archive_files,
     }));
+  }
+
+  /**
+   * 生成本学期档案：把当前成员名单快照成 Excel 附件归档
+   */
+  async createSemesterArchive(classId: string, operatorUserId: string) {
+    const [classEntity, operator] = await Promise.all([
+      this.prisma.classes.findUnique({
+        where: { id: classId },
+        select: { id: true, name: true, status: true },
+      }),
+      this.prisma.class_members.findFirst({
+        where: { class_id: classId, user_id: operatorUserId },
+        select: { role_level: true },
+      }),
+    ]);
+    if (!classEntity || !classEntity.status) {
+      throw new NotFoundException('班级不存在或已解散');
+    }
+    if (!operator || operator.role_level === 'member') {
+      throw new ForbiddenException('只有群主或管理员可以生成班级档案');
+    }
+
+    const { year, title } = this.getCurrentSemester();
+    const existing = await this.prisma.archives.findFirst({
+      where: {
+        class_id: classId,
+        status: 'active',
+        archive_type: 'semester',
+        archive_year: year,
+      },
+      select: { id: true },
+    });
+    if (existing) {
+      throw new BadRequestException('本学期档案已生成，可直接查看');
+    }
+
+    const [members, operatorUser] = await Promise.all([
+      this.prisma.class_members.findMany({
+        where: { class_id: classId },
+        include: { users: { select: { name: true, student_id: true } } },
+        orderBy: [{ role_level: 'asc' }, { joined_at: 'asc' }],
+      }),
+      this.prisma.users.findUnique({
+        where: { id: operatorUserId },
+        select: { name: true },
+      }),
+    ]);
+
+    const committeeCount = members.filter((m) => m.role_level !== 'member').length;
+
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const overview = workbook.addWorksheet('班级概况');
+    overview.columns = [
+      { key: 'label', width: 18 },
+      { key: 'value', width: 40 },
+    ];
+    const overviewRows: Array<[string, string]> = [
+      ['班级名称', classEntity.name],
+      ['归档学期', title],
+      ['成员总数', String(members.length)],
+      ['班委人数', String(committeeCount)],
+      ['生成人', operatorUser?.name || '-'],
+      ['生成时间', new Date().toISOString().slice(0, 10)],
+    ];
+    overviewRows.forEach(([label, value]) => {
+      const row = overview.addRow([label, value]);
+      row.getCell(1).font = { bold: true };
+    });
+
+    const roster = workbook.addWorksheet('成员名单');
+    roster.columns = [
+      { header: '序号', key: 'no', width: 8 },
+      { header: '姓名', key: 'name', width: 16 },
+      { header: '学号', key: 'studentId', width: 20 },
+      { header: '班级身份', key: 'role', width: 16 },
+      { header: '角色级别', key: 'roleLevel', width: 12 },
+      { header: '入班时间', key: 'joinedAt', width: 16 },
+    ];
+    roster.getRow(1).font = { bold: true };
+    members.forEach((member, index) => {
+      roster.addRow([
+        index + 1,
+        member.users?.name || '-',
+        member.users?.student_id || '-',
+        member.role,
+        this.getRoleLevelLabel(member.role_level),
+        member.joined_at.toISOString().slice(0, 10),
+      ]);
+    });
+
+    const buffer = Buffer.from(await workbook.xlsx.writeBuffer());
+    const objectName = `class-archives/${classId}/${uuidv4()}.xlsx`;
+    const fileUrl = await this.minioService.uploadBuffer(objectName, buffer, {
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+
+    const archiveId = uuidv4();
+    const createdAt = new Date();
+    await this.prisma.$transaction([
+      this.prisma.archives.create({
+        data: {
+          id: archiveId,
+          class_id: classId,
+          title,
+          archive_year: year,
+          archive_type: 'semester',
+          status: 'active',
+          created_by: operatorUserId,
+        },
+      }),
+      this.prisma.archive_files.create({
+        data: {
+          id: uuidv4(),
+          archive_id: archiveId,
+          file_name: `${title}-成员名单.xlsx`,
+          file_url: fileUrl,
+          file_size: buffer.length,
+          folder_name: '成员名单',
+          uploader_id: operatorUserId,
+        },
+      }),
+    ]);
+
+    return {
+      id: archiveId,
+      title,
+      archiveYear: year,
+      archiveType: 'semester',
+      status: 'active',
+      createdAt,
+      creatorName: operatorUser?.name ?? null,
+      fileCount: 1,
+    };
+  }
+
+  /** 当前学年学期：9 月开启新学年，2-8 月为第二学期 */
+  private getCurrentSemester(now = new Date()) {
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    if (month >= 9) {
+      const range = `${year}-${year + 1}`;
+      return { year: range, title: `${range}学年第一学期档案` };
+    }
+    const range = `${year - 1}-${year}`;
+    return {
+      year: range,
+      title: month === 1 ? `${range}学年第一学期档案` : `${range}学年第二学期档案`,
+    };
+  }
+
+  private getRoleLevelLabel(level: string) {
+    if (level === 'owner') return '群主';
+    if (level === 'admin') return '管理员';
+    return '成员';
   }
 
   /**

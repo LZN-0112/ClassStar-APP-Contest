@@ -1,132 +1,596 @@
-.materials {
+// ============================================================
+// 班级资料库样式（1:1 对齐 front/src/pages/tools/MaterialLibrary.tsx）
+// ============================================================
+.matlib {
   min-height: 100vh;
-  background: $bg;
-  box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom);
+  background: #f5f5f5;
+  display: flex;
+  flex-direction: column;
 
-  &__nav-act {
-    font-size: $text-base;
-    font-weight: 500;
-    color: $primary;
+  // ---------- 头部 ----------
+  &__header {
+    flex-shrink: 0;
+    padding: 0 40rpx 40rpx;
+    border-radius: 0 0 52rpx 52rpx;
+    background: linear-gradient(-133deg, #004ecc 0%, #0062ff 52%, #3b82f6 100%);
   }
 
-  &__body {
-    padding: 24rpx $page-padding-x $page-padding-bottom;
+  &__head-row {
+    margin-top: 8rpx;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
     gap: 24rpx;
   }
 
-  &__folders {
+  &__head-left {
+    min-width: 0;
     display: flex;
-    gap: 16rpx;
+    align-items: center;
   }
 
-  &__folder {
-    flex: 1;
-    background: $surface;
-    border: 1rpx solid $border;
-    border-radius: $radius-lg;
-    padding: 20rpx 16rpx;
+  &__back {
+    width: 72rpx;
+    height: 72rpx;
+    margin-left: -16rpx;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__head-title {
+    font-size: 44rpx;
+    font-weight: 700;
+    color: #ffffff;
+    font-family: $font-heading;
+    white-space: nowrap;
+  }
+
+  &__upload {
+    flex-shrink: 0;
+    height: 72rpx;
+    padding: 0 28rpx;
+    border-radius: 999rpx;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
     align-items: center;
     gap: 8rpx;
 
-    &--active {
-      border-color: $primary;
-      background: $accent-50;
+    &--hover {
+      opacity: 0.8;
+      transform: scale(0.97);
     }
   }
 
-  &__folder-icon {
-    width: 96rpx;
-    height: 96rpx;
+  &__upload-text {
+    font-size: 26rpx;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  &__head-sub {
+    margin-top: 8rpx;
+    font-size: 22rpx;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  // ---------- 概览 ----------
+  &__stats {
+    margin-top: 32rpx;
     display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  &__folder-label {
-    font-size: $text-11;
-    font-weight: 500;
-    color: $text-primary;
-
-    &--active {
-      color: $primary;
-      font-weight: 600;
-    }
-  }
-
-  &__folder-count {
-    font-size: $text-11;
-    color: $text-secondary;
-  }
-
-  &__section {
-    display: flex;
-    flex-direction: column;
     gap: 16rpx;
   }
 
-  &__section-title {
-    font-size: $text-base;
-    font-weight: 600;
-    color: $text-primary;
-  }
-
-  &__item {
-    background: $surface;
-    border: 1rpx solid $border;
-    border-radius: $radius-lg;
-    padding: 24rpx;
-    display: flex;
-    align-items: center;
-    gap: 20rpx;
-    box-shadow: $shadow-sm;
-  }
-
-  &__file-icon {
-    width: 80rpx;
-    height: 80rpx;
-    border-radius: $radius-lg;
-    background: rgba(96, 165, 250, 0.05);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-  }
-
-  &__file-glow {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 80rpx;
-    height: 36rpx;
-    border-radius: $radius-lg;
-    background: rgba(255, 255, 255, 0.15);
-    opacity: 0.15;
-  }
-
-  &__item-info {
+  &__stat {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 8rpx;
+    padding: 20rpx 24rpx;
+    border-radius: 24rpx;
+    background: rgba(255, 255, 255, 0.12);
   }
 
-  &__item-title {
-    font-size: $text-base;
-    font-weight: 600;
-    color: $text-primary;
+  &__stat-label {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+  }
+
+  &__stat-label-text {
+    font-size: 20rpx;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  &__stat-value {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: #ffffff;
+    font-family: $font-heading;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  &__item-sub {
-    font-size: $text-11;
-    color: $text-secondary;
+  // ---------- 搜索 ----------
+  &__search {
+    margin-top: 32rpx;
+    height: 88rpx;
+    padding: 0 32rpx;
+    border-radius: 999rpx;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+    box-shadow: 0 12rpx 36rpx -20rpx rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
+  }
+
+  &__search-input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    font-size: 28rpx;
+    color: #1a1a1a;
+  }
+
+  &__search-placeholder {
+    color: #94a3b8;
+  }
+
+  &__search-clear {
+    width: 48rpx;
+    height: 48rpx;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  // ---------- 内容区 ----------
+  &__body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+    padding: 32rpx 40rpx calc(64rpx + env(safe-area-inset-bottom));
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+  }
+
+  &__sec-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4rpx;
+  }
+
+  &__sec-title {
+    font-size: 32rpx;
+    font-weight: 600;
+    color: #1a1a1a;
+    font-family: $font-heading;
+  }
+
+  &__sec-sub {
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  &__sec-desc {
+    margin-top: -16rpx;
+    padding: 0 4rpx;
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  &__sec-link {
+    display: flex;
+    align-items: center;
+    gap: 4rpx;
+    font-size: 24rpx;
+    font-weight: 500;
+    color: #0062ff;
+  }
+
+  &__card {
+    display: flex;
+    flex-direction: column;
+    border-radius: 24rpx;
+    background: #ffffff;
+    box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+
+  &__row {
+    &--border {
+      border-bottom: 2rpx solid #f1f5f9;
+    }
+  }
+
+  // ---------- 文件行 ----------
+  &__file {
+    display: flex;
+    align-items: center;
+    gap: 24rpx;
+    padding: 24rpx;
+
+    &--hover {
+      background: #f8fafc;
+    }
+  }
+
+  &__file-icon {
+    width: 80rpx;
+    height: 80rpx;
+    flex-shrink: 0;
+    border-radius: 24rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__file-main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__file-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+  }
+
+  &__file-name {
+    min-width: 0;
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #1a1a1a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__file-new {
+    flex-shrink: 0;
+    padding: 4rpx 12rpx;
+    border-radius: 999rpx;
+    background: #fef2f2;
+    font-size: 20rpx;
+    font-weight: 600;
+    line-height: 1.2;
+    color: #dc2626;
+  }
+
+  &__file-meta {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 22rpx;
+    color: #64748b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // ---------- 快捷入口 ----------
+  &__quick {
+    display: flex;
+    gap: 8rpx;
+    padding: 24rpx;
+    border-radius: 24rpx;
+    background: #ffffff;
+    box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
+  }
+
+  &__quick-item {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12rpx;
+    padding: 16rpx 8rpx;
+    border-radius: 16rpx;
+
+    &--hover {
+      background: #f8fafc;
+    }
+  }
+
+  &__quick-icon {
+    width: 88rpx;
+    height: 88rpx;
+    border-radius: 24rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__quick-label {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  &__quick-value {
+    margin-top: -8rpx;
+    font-size: 20rpx;
+    color: #94a3b8;
+  }
+
+  // ---------- 提示 ----------
+  &__tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 16rpx;
+    padding: 20rpx 24rpx;
+    border-radius: 24rpx;
+    background: #eff6ff;
+  }
+
+  &__tip-text {
+    flex: 1;
+    font-size: 22rpx;
+    line-height: 32rpx;
+    color: #475569;
+  }
+
+  // ---------- 分类 ----------
+  &__folder-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24rpx;
+  }
+
+  &__folder {
+    width: calc(50% - 12rpx);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+    padding: 28rpx;
+    border-radius: 24rpx;
+    background: #ffffff;
+    box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.05);
+
+    &--hover {
+      transform: scale(0.98);
+    }
+  }
+
+  &__folder-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  &__folder-icon {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: 24rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__folder-count {
+    padding: 4rpx 16rpx;
+    border-radius: 999rpx;
+    background: #f8fafc;
+    font-size: 20rpx;
+    color: #64748b;
+  }
+
+  &__folder-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__folder-name {
+    font-size: 28rpx;
+    font-weight: 700;
+    color: #1a1a1a;
+    font-family: $font-heading;
+  }
+
+  &__folder-desc {
+    margin-top: 4rpx;
+    font-size: 22rpx;
+    line-height: 32rpx;
+    color: #64748b;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  &__folder-latest {
+    font-size: 20rpx;
+    color: #94a3b8;
+  }
+
+  // ---------- 搜索空态 ----------
+  &__empty-search {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16rpx;
+    padding: 80rpx 0;
+  }
+
+  &__empty-search-icon {
+    width: 96rpx;
+    height: 96rpx;
+    border-radius: 50%;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__empty-search-text {
+    font-size: 26rpx;
+    font-weight: 500;
+    color: #64748b;
+    text-align: center;
+  }
+
+  &__empty-search-btn {
+    margin-top: 8rpx;
+    padding: 12rpx 32rpx;
+    border-radius: 999rpx;
+    background: #eff6ff;
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #0062ff;
+  }
+
+  &__hint-block {
+    padding: 64rpx 0;
+    text-align: center;
+    font-size: 24rpx;
+    color: #94a3b8;
+  }
+
+  // ---------- 骨架 ----------
+  &__skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__skeleton-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24rpx;
+  }
+
+  &__skeleton-item {
+    background: #e9eef5;
+    border-radius: 24rpx;
+    animation: matlib-pulse 1.4s ease-in-out infinite;
+
+    &--sm {
+      height: 160rpx;
+    }
+
+    &--md {
+      width: calc(50% - 12rpx);
+      height: 224rpx;
+    }
+
+    &--lg {
+      height: 288rpx;
+    }
+  }
+
+  // ---------- 失败 / 空状态 ----------
+  &__error,
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24rpx;
+    padding: 80rpx 48rpx;
+    border-radius: 24rpx;
+    background: #ffffff;
+  }
+
+  &__error-icon {
+    width: 112rpx;
+    height: 112rpx;
+    border-radius: 50%;
+    background: #fef2f2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__error-title {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  &__error-btn {
+    padding: 16rpx 40rpx;
+    border-radius: 999rpx;
+    background: #0062ff;
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  &__empty {
+    gap: 32rpx;
+    padding: 96rpx 48rpx;
+  }
+
+  &__empty-icon {
+    width: 160rpx;
+    height: 160rpx;
+    border-radius: 50%;
+    background: #ebf3ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__empty-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12rpx;
+  }
+
+  &__empty-title {
+    font-size: 32rpx;
+    font-weight: 700;
+    color: #1a1a1a;
+    font-family: $font-heading;
+  }
+
+  &__empty-desc {
+    font-size: 24rpx;
+    line-height: 40rpx;
+    color: #64748b;
+    text-align: center;
+    white-space: pre-line;
+  }
+
+  &__empty-btn {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    padding: 20rpx 48rpx;
+    border-radius: 999rpx;
+    background: #0062ff;
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #ffffff;
+    box-shadow: 0 16rpx 40rpx -16rpx rgba(0, 98, 255, 0.6);
+
+    &--hover {
+      opacity: 0.9;
+      transform: scale(0.97);
+    }
+  }
+}
+
+@keyframes matlib-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
   }
 }

@@ -1,41 +1,90 @@
+// ============================================================
+// 注册账号样式
+// 1:1 对齐 front/src/pages/auth/Register.tsx
+// 白底 + 顶部浅蓝波浪渐变，表单位置与 App 一致
+// ============================================================
 .register {
-  display: flex;
-  flex-direction: column;
+  position: relative;
   min-height: 100vh;
-  background-color: $bg;
+  background-color: #ffffff;
   box-sizing: border-box;
   overflow: hidden;
 
-  // ---------- Content ----------
+  // 渐变波浪背景（用径向渐变近似 App GradientWave）
+  &__wave {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 620rpx;
+    z-index: 0;
+    pointer-events: none;
+    background-image: radial-gradient(
+        58% 20% at 18% 10%,
+        rgba(125, 211, 252, 0.55) 0%,
+        rgba(125, 211, 252, 0) 72%
+      ),
+      radial-gradient(
+        66% 16% at 88% 3%,
+        rgba(147, 197, 253, 0.45) 0%,
+        rgba(147, 197, 253, 0) 72%
+      ),
+      radial-gradient(
+        86% 18% at 8% 33%,
+        rgba(191, 219, 254, 0.42) 0%,
+        rgba(191, 219, 254, 0) 76%
+      );
+  }
+
   &__content {
-    flex: 1;
-    padding: $spacing-6 $page-padding-x $page-padding-bottom;
-    overflow-y: auto;
+    position: relative;
+    z-index: 1;
+    padding: 334rpx 32rpx 48rpx;
+    box-sizing: border-box;
+  }
+
+  // 返回按钮
+  &__back {
+    position: absolute;
+    left: 32rpx;
+    top: 24rpx;
+    width: 80rpx;
+    height: 80rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:active {
+      opacity: 0.7;
+    }
   }
 
   &__title {
     display: block;
-    font-size: $text-2xl;
-    font-weight: $font-bold;
-    color: $text-primary;
-    margin-bottom: $spacing-2;
+    font-family: $font-heading;
+    font-size: 72rpx;
+    line-height: 1.2;
+    font-weight: 700;
+    color: #1a1a1a;
+    white-space: nowrap;
   }
 
   &__subtitle {
     display: block;
-    font-size: $text-base;
-    color: $text-secondary;
-    margin-bottom: $spacing-6;
+    margin-top: 18rpx;
+    font-family: $font-body;
+    font-size: 28rpx;
+    line-height: 1.2;
+    color: #4b5563;
+    white-space: nowrap;
   }
 
-  // ---------- Form Card（上部卡片，与 front 视觉一致） ----------
-  &__card {
-    background: $surface;
-    border-radius: $radius-lg;
-    padding: $card-padding;
-    box-shadow: $shadow-md;
-    margin-bottom: $spacing-6;
-    box-sizing: border-box;
+  // ---------- 表单 ----------
+  &__form {
+    margin-top: 68rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
   }
 
   &__field {
@@ -43,97 +92,122 @@
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    height: 96rpx;
-    border: 1rpx solid $border;
-    border-radius: $radius-md;
-    background: $surface;
-    padding: 0 $spacing-md;
-    margin-bottom: $spacing-md;
+    height: 112rpx;
+    padding: 0 32rpx;
+    border: 1rpx solid #e5e7eb;
+    border-radius: 16rpx;
+    background: #ffffff;
+    box-shadow: 0 4rpx 16rpx 0 rgba(0, 0, 0, 0.05);
     box-sizing: border-box;
-
-    &--last {
-      margin-bottom: 0;
-    }
   }
 
   &__input {
     flex: 1;
     height: 100%;
-    font-size: $text-base;
-    color: $text-primary;
+    font-family: $font-body;
+    font-size: 28rpx;
+    color: #1a1a1a;
   }
 
   &__placeholder {
-    color: $text-tertiary;
-    font-size: $text-base;
+    color: #9ca3af;
+    font-size: 28rpx;
   }
 
-  // 眼睛按钮：44x44 rpx 圆形点击区
   &__eye {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     width: 88rpx;
     height: 88rpx;
     flex-shrink: 0;
+    margin-left: 16rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border-radius: $radius-full;
-    margin-left: $spacing-2;
   }
 
-  // ---------- Login Link ----------
+  // ---------- 注册按钮 ----------
+  &__btn {
+    margin-top: 16rpx;
+    height: 104rpx;
+    border-radius: 16rpx;
+    background: #0062ff;
+    box-shadow: 0 8rpx 32rpx 0 rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--loading {
+      background: #93c5fd;
+    }
+
+    &:active {
+      opacity: 0.9;
+    }
+  }
+
+  &__btn-text {
+    font-family: $font-body;
+    font-size: 32rpx;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  // ---------- 登录链接 ----------
   &__login-link {
+    height: 40rpx;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    margin-top: $spacing-6;
-    height: 40rpx;
   }
 
   &__login-text {
-    font-size: $text-sm;
-    color: $text-secondary;
+    font-size: 26rpx;
+    color: #4b5563;
   }
 
   &__login-primary {
-    font-size: $text-sm;
-    color: $primary;
+    font-size: 26rpx;
+    color: #0062ff;
   }
 
-  // ---------- Agreement ----------
+  // ---------- 协议 ----------
   &__agreement {
+    margin-top: 8rpx;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: $spacing-2;
-    margin-top: $spacing-4;
+    gap: 16rpx;
   }
 
-  // 32x32 rpx，圆角 6rpx
   &__checkbox {
+    width: 32rpx;
+    height: 32rpx;
+    flex-shrink: 0;
+    border-radius: 6rpx;
+    border: 1rpx solid #1a1a1a;
+    background-color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32rpx;
-    height: 32rpx;
-    border-radius: 6rpx;
-    background-color: $surface;
-    border: 1rpx solid $text-primary;
-    flex-shrink: 0;
+    box-sizing: border-box;
 
     &--checked {
-      background-color: $primary;
+      background-color: #0062ff;
+      border-color: #0062ff;
     }
   }
 
   &__agreement-text {
-    font-size: $text-xs;
-    color: $text-secondary;
+    font-family: $font-caption;
+    font-size: 22rpx;
+    line-height: 1.5;
+    color: #4b5563;
   }
 
   &__agreement-link {
-    color: $primary;
+    color: #0062ff;
     text-decoration: underline;
   }
 }

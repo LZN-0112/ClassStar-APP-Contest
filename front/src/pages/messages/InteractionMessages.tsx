@@ -2,9 +2,10 @@ import BackButton from '@/components/navigation/BackButton';
 import { useStatusBarStyle } from '@/hooks/useStatusBarStyle';
 import PhoneFrame from '@/components/layout/PhoneFrame';
 import { CalendarCheck, CircleCheck, FileText, Ticket, Wallet } from 'lucide-react';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useMarkMessagesRead } from '@/hooks/useMarkMessagesRead';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -15,6 +16,7 @@ interface MessageItem {
   content: string;
   isRead: boolean;
   requireAck: boolean;
+  isAcked?: boolean;
   status: string;
   createdAt: string;
   publisher?: { id: string; name: string; avatar?: string };
@@ -47,6 +49,7 @@ function formatTime(iso: string) {
 
 const iconMap: Record<string, ReactNode> = {
   homework: <FileText className="w-[24px] h-[24px]" strokeWidth={2} />,
+  homework_rejected: <FileText className="w-[24px] h-[24px]" strokeWidth={2} />,
   activity: <CalendarCheck className="w-[24px] h-[24px]" strokeWidth={2} />,
   vote: <CircleCheck className="w-[24px] h-[24px]" strokeWidth={2} />,
   random_draw: <Ticket className="w-[24px] h-[24px]" strokeWidth={2} />,
@@ -55,6 +58,7 @@ const iconMap: Record<string, ReactNode> = {
 
 const bgMap: Record<string, string> = {
   homework: 'bg-[#DBEAFE]',
+  homework_rejected: 'bg-[#FEE2E2]',
   activity: 'bg-[#DCFCE7]',
   vote: 'bg-[#FEF3C7]',
   random_draw: 'bg-[#F3E8FF]',
@@ -63,6 +67,7 @@ const bgMap: Record<string, string> = {
 
 const colorMap: Record<string, string> = {
   homework: 'text-[#1986E6]',
+  homework_rejected: 'text-[#DC2626]',
   activity: 'text-[#22C55E]',
   vote: 'text-[#F59E0B]',
   random_draw: 'text-[#A855F7]',
@@ -71,6 +76,7 @@ const colorMap: Record<string, string> = {
 
 const typeLabelMap: Record<string, string> = {
   homework: '作业',
+  homework_rejected: '作业驳回',
   activity: '活动',
   vote: '投票',
   random_draw: '抽签',
@@ -114,6 +120,13 @@ export default function InteractionMessages() {
   const [loading, setLoading] = useState(true);
 
   const classId = user?.classId;
+
+  // 列表停留 1 秒即视为已读：批量清除互动消息红点，未签收的签收类保留
+  const handleMarked = useCallback((ids: string[]) => {
+    const marked = new Set(ids);
+    setMessages((prev) => prev.map((m) => (marked.has(m.id) ? { ...m, isRead: true } : m)));
+  }, []);
+  useMarkMessagesRead(classId, messages, handleMarked);
 
   useEffect(() => {
     // 等待用户数据加载完成
@@ -268,7 +281,11 @@ export default function InteractionMessages() {
                     iconBg={bg}
                     iconColor={color}
                     title={item.title}
-                    desc={`${typeLabel} · ${item.status === 'ended' ? '已结束' : '进行中'}`}
+                    desc={
+                      item.type === 'homework_rejected'
+                        ? item.content
+                        : `${typeLabel} · ${item.status === 'ended' ? '已结束' : '进行中'}`
+                    }
                     time={timeStr}
                     unread={!item.isRead}
                     onClick={() => navigate(`/message-detail/${item.id}`)}

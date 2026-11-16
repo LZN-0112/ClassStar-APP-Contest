@@ -1,115 +1,147 @@
+// ============================================================
+// 扫一扫
+// 1:1 对齐 front/src/pages/tools/ScanPage.tsx
+// 小程序端使用原生 scanCode 取景，页面复刻 App 的取景框视觉
+// ============================================================
 import { useState } from 'react'
-import { View, Text } from '@tarojs/components'
 import Taro, { useLoad } from '@tarojs/taro'
+import { Text, View } from '@tarojs/components'
 
+import { StatusBar } from '@/components/business'
 import { Icon } from '@/components/ui'
-import { useAuth } from '@/utils'
+import { attendanceApi, classesApi } from '@/services'
 import { scanCode } from '@/utils/native'
-import { classesApi, attendanceApi } from '@/services'
+import { useUserStore } from '@/stores'
 import './index.scss'
 
-export default function Scan() {
-  const { requireLogin } = useAuth()
-  const [handling, setHandling] = useState(false)
+const CLASS_JOIN_REG = /^class-assistant:\/\/class\/join\?code=([A-Za-z0-9]+)/
+const ATTENDANCE_REG = /^class-assistant:\/\/attendance\/checkin\?classId=([^&]+)&id=([^&]+)/
 
-  // 解析扫码结果并处理：加入班级 / 考勤签到 / 查看资料
-  const handleResult = async (data: string) => {
-    // 班级邀请码：class-assistant://class/join?code=XXXXXX
-    const classMatch = data.match(/class-assistant:\/\/class\/join\?code=(\d{6})$/)
-    if (classMatch) {
-      setHandling(true)
+export default function ScanPage() {
+  const [scanning, setScanning] = useState(false)
+  const [error, setError] = useState('')
+  const [flashOn, setFlashOn] = useState(false)
+  const setCurrentClass = useUserStore((s) => s.setCurrentClass)
+
+  const handleResult = async (raw: string) => {
+    const content = (raw || '').trim()
+
+    // 班级邀请码
+    const joinMatch = content.match(CLASS_JOIN_REG)
+    if (joinMatch) {
+      const code = joinMatch[1].toUpperCase()
       try {
-        const res: any = await classesApi.joinClass({ code: classMatch[1] })
-        const name = res?.name || res?.data?.name || ''
-        Taro.showToast({ title: name ? `成功加入班级：${name}` : '加入班级成功', icon: 'success' })
+        const info: any = await classesApi.joinClass({ code })
+        const classId = info?.id || info?.classId
+        if (classId) setCurrentClass(classId)
+        Taro.showToast({ title: info?.name ? `已加入 ${info.name}` : '已加入班级', icon: 'success' })
         setTimeout(() => Taro.reLaunch({ url: '/pages/home/index' }), 800)
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : '加入班级失败'
-        if (msg.includes('已是') || msg.includes('已加入') || msg.includes('已存在')) {
-          Taro.showToast({ title: '你已是该班级成员', icon: 'none' })
-          setTimeout(() => Taro.reLaunch({ url: '/pages/class-home/index' }), 800)
-        } else {
-          Taro.showToast({ title: msg, icon: 'none' })
+      } catch (err: any) {
+        const message = String(err?.message || '')
+        if (message.includes('学号') || message.includes('名单') || /student/i.test(message)) {
+          Taro.showToast({ title: '该班级已导入名单，请填写学号后加入', icon: 'none' })
         }
-      } finally {
-        setHandling(false)
       }
       return
     }
 
-    // 考勤签到码：attendance:{classId}:{attendanceId}
-    const attMatch = data.match(/^attendance:([^:]+):([^:]+)$/)
-    if (attMatch) {
-      setHandling(true)
-      const [, classId, attendanceId] = attMatch
+    // 考勤签到
+    const attendanceMatch = content.match(ATTENDANCE_REG)
+    if (attendanceMatch) {
+      const classId = decodeURIComponent(attendanceMatch[1])
+      const attendanceId = decodeURIComponent(attendanceMatch[2])
       try {
-        await attendanceCheckIn(classId, attendanceId)
-        Taro.showToast({ title: '签到成功！', icon: 'success' })
-        setTimeout(() => {
-          Taro.navigateTo({ url: `/pages-sub/attendance/check-in-detail/index?id=${attendanceId}&classId=${classId}` })
-        }, 800)
-      } catch (err) {
-        Taro.showToast({ title: err instanceof Error ? err.message : '签到失败', icon: 'none' })
-      } finally {
-        setHandling(false)
+        await attendanceApi.checkIn(classId, attendanceId, { method: 'qr' })
+        Taro.showToast({ title: '签到成功', icon: 'success' })
+        setTimeout(() => Taro.navigateTo({ url: '/pages-sub/attendance/list/index' }), 800)
+      } catch {
+        // request 层已统一提示错误
       }
-      return
-    }
-
-    // 资料链接：material:{fileId}
-    const matMatch = data.match(/^material:([^:]+)$/)
-    if (matMatch) {
-      Taro.navigateTo({ url: `/pages-sub/material/detail/index?id=${matMatch[1]}` })
       return
     }
 
     Taro.showToast({ title: '无法识别的二维码', icon: 'none' })
   }
 
-  const attendanceCheckIn = async (classId: string, attendanceId: string) => {
-    // 走统一请求层签到
-    const r: any = await attendanceApi.checkIn(classId, attendanceId, { method: 'qr' })
-    return r
-  }
-
-  const handleScan = async () => {
-    if (handling) return
-    if (!requireLogin()) return
+  const handleScan = async (fromAlbum = false) => {
+    if (scanning) return
+    setScanning(true)
+    setError('')
     try {
-      const result = await scanCode()
-      if (result) await handleResult(result)
-    } catch (err) {
-      Taro.showToast({ title: err instanceof Error ? err.message : '扫码失败', icon: 'none' })
+      const raw = await scanCode({ onlyFromCamera: !fromAlbum })
+      await handleResult(raw)
+    } catch (err: any) {
+      const message = String(err?.message || '')
+      if (!message.includes('cancel')) setError('扫码失败，请重试')
+    } finally {
+      setScanning(false)
     }
   }
 
   useLoad(() => {
-    requireLogin()
+    handleScan(false)
   })
+
+  const toggleFlash = () => {
+    setFlashOn(!flashOn)
+    Taro.showToast({ title: '请在小程序扫码界面开启闪光灯', icon: 'none' })
+  }
+
+  const hintText = scanning
+    ? '正在识别二维码…'
+    : error || '将二维码放入框内，即可自动扫描'
 
   return (
     <View className='scan'>
-      <View className='scan__top'>
-        <View className='scan__back' onClick={() => Taro.navigateBack()}>
-          <Icon name='arrow-left' size={44} color='#fff' strokeWidth={2} />
+      <StatusBar light />
+
+      <View className='scan__stage'>
+        {/* 取景区域（小程序使用系统扫码界面，这里保留 App 的暗色取景层） */}
+        <View className='scan__camera' />
+
+        {/* 顶部栏 */}
+        <View className='scan__head'>
+          <View className='scan__icon-btn' onClick={() => Taro.navigateBack()}>
+            <Icon name='chevron-left' size={40} color='#FFFFFF' strokeWidth={2} />
+          </View>
+          <Text className='scan__title'>扫一扫</Text>
+          <View className='scan__icon-btn' onClick={toggleFlash}>
+            <Icon
+              name={flashOn ? 'zap' : 'zap-off'}
+              size={36}
+              color={flashOn ? '#FBBF24' : '#FFFFFF'}
+              strokeWidth={2}
+            />
+          </View>
         </View>
-        <Text className='scan__title'>扫一扫</Text>
-        <View className='scan__top-spacer' />
+
+        {/* 扫描框 */}
+        <View className='scan__frame-wrap'>
+          <View className='scan__frame' onClick={() => handleScan(false)}>
+            <View className='scan__corner scan__corner--tl' />
+            <View className='scan__corner scan__corner--tr' />
+            <View className='scan__corner scan__corner--bl' />
+            <View className='scan__corner scan__corner--br' />
+            <View className='scan__line' />
+          </View>
+        </View>
+
+        {/* 底部提示 */}
+        <View className='scan__hint'>
+          <Text className={`scan__hint-text ${error ? 'scan__hint-text--error' : ''}`}>
+            {hintText}
+          </Text>
+          <Text className='scan__hint-sub'>轻触扫描框可重新扫码</Text>
+        </View>
       </View>
 
-      <View className='scan__frame'>
-        <View className='scan__frame-corner scan__frame-corner--tl' />
-        <View className='scan__frame-corner scan__frame-corner--tr' />
-        <View className='scan__frame-corner scan__frame-corner--bl' />
-        <View className='scan__frame-corner scan__frame-corner--br' />
-        <View className='scan__frame-line' />
-      </View>
-      <Text className='scan__hint'>对准二维码，即可自动扫描</Text>
-
-      <View className='scan__bottom'>
-        <View className={`scan__btn ${handling ? 'scan__btn--loading' : ''}`} onClick={handleScan}>
-          <Icon name='scan-line' size={56} color='#fff' strokeWidth={2} />
-          <Text className='scan__btn-text'>{handling ? '处理中...' : '开始扫码'}</Text>
+      {/* 底部操作栏 */}
+      <View className='scan__toolbar'>
+        <View className='scan__album' onClick={() => handleScan(true)}>
+          <View className='scan__album-icon'>
+            <Icon name='image' size={40} color='#FFFFFF' strokeWidth={2} />
+          </View>
+          <Text className='scan__album-text'>相册</Text>
         </View>
       </View>
     </View>

@@ -1,8 +1,8 @@
 import PhoneFrame from '@/components/layout/PhoneFrame';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { api } from '@/lib/api';
+import { api, resolveFileUrl } from '@/lib/api';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { useStatusBarStyle } from '@/hooks/useStatusBarStyle';
 import { getOrgTypeMeta } from '@/utils/org';
@@ -10,8 +10,10 @@ import BottomSheet from '@/components/ui/BottomSheet';
 import {
   Archive,
   Bell,
+  Camera,
   ChevronRight,
   Copy,
+  Loader2,
   QrCode,
   Settings,
   Share2,
@@ -69,6 +71,8 @@ export default function ClassHome() {
   const [showQr, setShowQr] = useState(false);
   const [generatingQr, setGeneratingQr] = useState(false);
   const [announcementExpanded, setAnnouncementExpanded] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const refreshKey = (location.state as { refreshKey?: number } | null)?.refreshKey;
 
@@ -130,6 +134,39 @@ export default function ClassHome() {
       document.execCommand('copy');
       document.body.removeChild(input);
       toast.success(tip);
+    }
+  };
+
+  const handleLogoChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !classId) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('请选择图片文件');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('图片大小不能超过 5MB');
+      return;
+    }
+    setUploadingLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await api.post(`/classes/${classId}/logo`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const url = res.data?.data?.logoUrl || res.data?.logoUrl;
+      if (!url) {
+        toast.error('头像上传失败，请重试');
+        return;
+      }
+      setClassInfo((prev) => (prev ? { ...prev, logoUrl: url } : prev));
+      toast.success('班级头像已更新');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '头像上传失败');
+    } finally {
+      setUploadingLogo(false);
     }
   };
 
@@ -252,6 +289,13 @@ export default function ClassHome() {
 
   return (
     <PhoneFrame className="bg-[#F5F5F5]">
+      <input
+        ref={logoInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleLogoChange}
+      />
       <div className="flex w-full flex-col items-center">
         {statusBar}
 
@@ -278,15 +322,49 @@ export default function ClassHome() {
               <div className="pointer-events-none absolute -left-8 -bottom-12 h-28 w-28 rounded-full bg-white/5" />
 
               <div className="relative flex flex-row items-center gap-3">
-                <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl bg-white/15 overflow-hidden">
-                  {classInfo.logoUrl ? (
-                    <img src={classInfo.logoUrl} alt={classInfo.name} className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="text-[22px] font-heading font-bold text-white">
-                      {classInfo.name.charAt(0)}
+                {isManager ? (
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={uploadingLogo}
+                    aria-label="更换班级头像"
+                    className="relative flex h-[52px] w-[52px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/15 transition-transform active:scale-95"
+                  >
+                    {classInfo.logoUrl ? (
+                      <img
+                        src={resolveFileUrl(classInfo.logoUrl)}
+                        alt={classInfo.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-[22px] font-heading font-bold text-white">
+                        {classInfo.name.charAt(0)}
+                      </span>
+                    )}
+                    <span className="absolute bottom-0.5 right-0.5 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-black/35">
+                      <Camera className="h-3 w-3 text-white" strokeWidth={2} />
                     </span>
-                  )}
-                </div>
+                    {uploadingLogo && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/40">
+                        <Loader2 className="h-5 w-5 animate-spin text-white" strokeWidth={2} />
+                      </span>
+                    )}
+                  </button>
+                ) : (
+                  <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-xl bg-white/15 overflow-hidden">
+                    {classInfo.logoUrl ? (
+                      <img
+                        src={resolveFileUrl(classInfo.logoUrl)}
+                        alt={classInfo.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-[22px] font-heading font-bold text-white">
+                        {classInfo.name.charAt(0)}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-row items-center gap-2">
                     <span className="truncate text-[21px] font-heading font-bold text-white">

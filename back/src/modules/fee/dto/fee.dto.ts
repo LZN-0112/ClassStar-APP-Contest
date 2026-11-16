@@ -15,6 +15,7 @@ import {
   ArrayNotEmpty,
   ArrayMaxSize,
   Matches,
+  IsIn,
 } from 'class-validator';
 
 export enum FeeCategory {
@@ -174,6 +175,59 @@ export class RecordIdParamDto {
   @IsString({ message: '记录ID必须是字符串' })
   @IsNotEmpty({ message: '记录ID不能为空' })
   recordId: string;
+}
+
+// ========== 缴费账单 DTO ==========
+
+export class CreateFeeBillDto {
+  @IsString({ message: '班级ID必须是字符串' })
+  @IsNotEmpty({ message: '班级ID不能为空' })
+  classId: string;
+
+  @IsEnum(FeeCategory, { message: 'feeType必须是class或group' })
+  feeType: FeeCategory;
+
+  @IsString({ message: '账单名称必须是字符串' })
+  @IsNotEmpty({ message: '账单名称不能为空' })
+  @Length(1, 100, { message: '账单名称长度不能超过100字符' })
+  title: string;
+
+  @IsOptional()
+  @IsString({ message: '缴费周期必须是字符串' })
+  @Length(0, 50, { message: '缴费周期长度不能超过50字符' })
+  period?: string;
+
+  @IsNumber({}, { message: '金额必须是数字' })
+  @Min(0.01, { message: '金额必须大于0' })
+  @Type(() => Number)
+  amount: number;
+
+  @IsOptional()
+  @IsDateString({}, { message: '截止时间格式不正确' })
+  deadline?: string;
+}
+
+export class QueryFeeBillsDto {
+  @IsString({ message: '班级ID必须是字符串' })
+  @IsNotEmpty({ message: '班级ID不能为空' })
+  classId: string;
+
+  @IsEnum(FeeCategory, { message: 'feeType必须是class或group' })
+  feeType: FeeCategory;
+}
+
+export class QueryFeeBillMembersDto {
+  @IsOptional()
+  @IsIn(['all', 'paid', 'unpaid'], { message: '状态只能是all、paid或unpaid' })
+  status?: 'all' | 'paid' | 'unpaid';
+}
+
+export class RegisterFeeBillPaymentsDto {
+  @IsArray({ message: '缴费成员列表必须是数组' })
+  @ArrayNotEmpty({ message: '请选择缴费成员' })
+  @ArrayMaxSize(200, { message: '单次最多登记200人' })
+  @IsString({ each: true, message: '成员ID必须是字符串' })
+  userIds: string[];
 }
 
 // ========== 预算管理 DTO ==========

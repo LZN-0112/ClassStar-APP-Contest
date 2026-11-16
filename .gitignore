@@ -26,6 +26,8 @@ front/android/local.properties
 *.p12
 *.pem
 *.key
+front/android/keystore/
+keystore.properties
 
 .vscode/
 .idea/

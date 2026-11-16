@@ -112,7 +112,7 @@ export default function BudgetModal({
         <div className="space-y-4 px-5 pb-2">
           {/* 学年 */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">
+            <label className="mb-1.5 block font-body text-[13px] font-medium text-[#475569]">
               学年
             </label>
             <input
@@ -120,28 +120,42 @@ export default function BudgetModal({
               value={academicYear}
               onChange={(e) => setAcademicYear(e.target.value)}
               placeholder="如：2024-2025"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3.5 py-2.5 font-body text-[14px] text-[#0F172A] outline-none transition-colors placeholder:text-[#94A3B8] focus:border-[#0062FF] focus:bg-white"
             />
           </div>
 
           {/* 学期 */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">
+            <label className="mb-1.5 block font-body text-[13px] font-medium text-[#475569]">
               学期
             </label>
-            <select
-              value={semester}
-              onChange={(e) => setSemester(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            >
-              <option value="1">第一学期</option>
-              <option value="2">第二学期</option>
-            </select>
+            <div className="flex gap-1 rounded-xl bg-[#F2F5F9] p-1">
+              {[
+                { value: '1', label: '第一学期' },
+                { value: '2', label: '第二学期' },
+              ].map((item) => {
+                const active = semester === item.value;
+                return (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setSemester(item.value)}
+                    className={`h-9 flex-1 rounded-[10px] font-body text-[13px]/[normal] font-semibold transition-colors ${
+                      active
+                        ? 'bg-white text-[#0062FF] shadow-[0_2px_8px_rgba(15,23,42,0.08)]'
+                        : 'text-[#64748B]'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* 预算金额 */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">
+            <label className="mb-1.5 block font-body text-[13px] font-medium text-[#475569]">
               预算金额（元）
             </label>
             <input
@@ -151,13 +165,13 @@ export default function BudgetModal({
               placeholder="请输入预算金额"
               min="0"
               step="0.01"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3.5 py-2.5 font-body text-[14px] text-[#0F172A] outline-none transition-colors placeholder:text-[#94A3B8] focus:border-[#0062FF] focus:bg-white"
             />
           </div>
 
           {/* 备注 */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">
+            <label className="mb-1.5 block font-body text-[13px] font-medium text-[#475569]">
               备注（可选）
             </label>
             <textarea
@@ -165,7 +179,7 @@ export default function BudgetModal({
               onChange={(e) => setRemark(e.target.value)}
               placeholder="预算用途说明"
               rows={2}
-              className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full resize-none rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3 font-body text-[14px] text-[#0F172A] outline-none transition-colors placeholder:text-[#94A3B8] focus:border-[#0062FF] focus:bg-white"
             />
           </div>
         </div>

@@ -1,0 +1,344 @@
+// ============================================================
+// 班费/团费记账样式（1:1 对齐 front/src/pages/finance/FeeRecord.tsx）
+// ============================================================
+.feerecord {
+  min-height: 100vh;
+  background: #ffffff;
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 32rpx;
+    padding: 32rpx 40rpx calc(40rpx + env(safe-area-inset-bottom));
+  }
+
+  // ---------- 权限不足 ----------
+  &__denied {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32rpx;
+    padding: 128rpx 40rpx;
+  }
+
+  &__denied-icon {
+    width: 128rpx;
+    height: 128rpx;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fef2f2;
+  }
+
+  &__denied-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12rpx;
+  }
+
+  &__denied-title {
+    font-family: $font-heading;
+    font-size: 32rpx;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+
+  &__denied-desc {
+    font-size: 24rpx;
+    color: #64748b;
+  }
+
+  &__denied-btn {
+    padding: 20rpx 48rpx;
+    border-radius: 999rpx;
+    background: #0062ff;
+  }
+
+  &__denied-btn-text {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  // ---------- 收支类型 ----------
+  &__types {
+    display: flex;
+    gap: 16rpx;
+  }
+
+  &__type {
+    flex: 1;
+    height: 104rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    border-radius: 24rpx;
+    border: 2rpx solid #e2e8f0;
+    background: #ffffff;
+
+    &--active {
+      border-color: transparent;
+      box-shadow: 0 16rpx 40rpx -20rpx #0062ff;
+    }
+  }
+
+  &__type-label {
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #64748b;
+
+    &--active {
+      color: #ffffff;
+    }
+  }
+
+  // ---------- 卡片 ----------
+  &__card {
+    padding: 40rpx;
+    border-radius: 32rpx;
+    background: #ffffff;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+
+    &--tight {
+      padding: 32rpx;
+    }
+  }
+
+  &__label {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #64748b;
+  }
+
+  &__amount {
+    display: flex;
+    align-items: flex-end;
+    gap: 16rpx;
+    margin-top: 16rpx;
+    padding-bottom: 24rpx;
+    border-bottom: 2rpx solid #eef2f7;
+  }
+
+  &__amount-symbol {
+    padding-bottom: 8rpx;
+    font-family: $font-heading;
+    font-size: 48rpx;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+
+  &__amount-input {
+    flex: 1;
+    min-width: 0;
+    height: 76rpx;
+    font-family: $font-heading;
+    font-size: 68rpx;
+    font-weight: 700;
+    line-height: 1.1;
+    color: #1a1a1a;
+  }
+
+  &__amount-placeholder {
+    color: #cbd5e1;
+  }
+
+  &__amount-clear {
+    width: 48rpx;
+    height: 48rpx;
+    margin-bottom: 8rpx;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    flex-shrink: 0;
+  }
+
+  &__hint {
+    display: block;
+    margin-top: 16rpx;
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  &__card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+    margin-bottom: 24rpx;
+  }
+
+  &__card-title {
+    font-size: 26rpx;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  &__card-extra {
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  // ---------- 分类 ----------
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16rpx;
+  }
+
+  &__chip {
+    height: 64rpx;
+    padding: 0 28rpx;
+    border-radius: 999rpx;
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+    background: #f1f5f9;
+
+    &--active {
+      background: #0062ff;
+    }
+  }
+
+  &__chip-label {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #64748b;
+
+    &--active {
+      color: #ffffff;
+    }
+  }
+
+  // ---------- 备注 ----------
+  &__textarea {
+    width: 100%;
+    height: 160rpx;
+    margin-top: 16rpx;
+    padding: 24rpx;
+    box-sizing: border-box;
+    border-radius: 24rpx;
+    background: #f8fafc;
+    font-size: 26rpx;
+    line-height: 40rpx;
+    color: #1a1a1a;
+  }
+
+  &__textarea-placeholder {
+    color: #94a3b8;
+  }
+
+  &__counter {
+    display: block;
+    margin-top: 8rpx;
+    text-align: right;
+    font-family: $font-data;
+    font-size: 20rpx;
+    color: #94a3b8;
+  }
+
+  // ---------- 凭证 ----------
+  &__bill {
+    position: relative;
+    overflow: hidden;
+    border-radius: 24rpx;
+    border: 2rpx solid #e2e8f0;
+  }
+
+  &__bill-image {
+    width: 100%;
+    height: 256rpx;
+  }
+
+  &__bill-remove {
+    position: absolute;
+    top: 16rpx;
+    right: 16rpx;
+    width: 56rpx;
+    height: 56rpx;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.6);
+  }
+
+  &__upload {
+    height: 168rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    border-radius: 24rpx;
+    border: 2rpx dashed #cbd5e1;
+    background: #f8fafc;
+
+    &--busy {
+      opacity: 0.6;
+    }
+  }
+
+  &__upload-text {
+    font-size: 24rpx;
+    font-weight: 500;
+    color: #64748b;
+  }
+
+  &__spinner {
+    width: 40rpx;
+    height: 40rpx;
+    border-radius: 50%;
+    border: 4rpx solid #bfdbfe;
+    border-top-color: #0062ff;
+    animation: feerecord-spin 0.8s linear infinite;
+
+    &--light {
+      border-color: rgba(255, 255, 255, 0.4);
+      border-top-color: #ffffff;
+    }
+  }
+
+  // ---------- 提交 ----------
+  &__gap {
+    height: 16rpx;
+  }
+
+  &__submit {
+    height: 104rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    border-radius: 24rpx;
+    background: linear-gradient(-98.571deg, #0062ff 14.645%, #3b82f6 85.355%);
+    box-shadow: 0 16rpx 40rpx -16rpx rgba(0, 98, 255, 0.6);
+
+    &--disabled {
+      opacity: 0.6;
+    }
+  }
+
+  &__submit-text {
+    font-size: 32rpx;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  &__footer {
+    display: block;
+    padding-bottom: 8rpx;
+    text-align: center;
+    font-size: 20rpx;
+    color: #94a3b8;
+  }
+}
+
+@keyframes feerecord-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

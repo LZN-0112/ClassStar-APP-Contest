@@ -19,6 +19,14 @@ export class ParseAssistantDto {
   @MaxLength(30)
   awaiting?: string;
 
+  @ApiPropertyOptional({
+    description: '上一轮确认的发布类型，多轮补齐时沿用',
+    enum: ['homework', 'activity', 'notice', 'vote', 'attendance'],
+  })
+  @IsOptional()
+  @IsIn(['homework', 'activity', 'notice', 'vote', 'attendance'])
+  intent?: string;
+
   @ApiPropertyOptional({ description: '当前班级 ID，用于发布前的重复任务检测' })
   @IsOptional()
   @IsString()
@@ -79,9 +87,12 @@ export class CreateAssistantRecordDto {
   @MaxLength(36)
   classId?: string;
 
-  @ApiProperty({ description: '发布类型', enum: ['homework', 'activity'] })
-  @IsIn(['homework', 'activity'])
-  intent: 'homework' | 'activity';
+  @ApiProperty({
+    description: '发布类型',
+    enum: ['homework', 'activity', 'notice', 'vote', 'attendance'],
+  })
+  @IsIn(['homework', 'activity', 'notice', 'vote', 'attendance'])
+  intent: 'homework' | 'activity' | 'notice' | 'vote' | 'attendance';
 
   @ApiProperty({ description: '发布标题' })
   @IsString()

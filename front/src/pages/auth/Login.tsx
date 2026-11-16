@@ -4,22 +4,29 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { requestWechatAuthCode } from '@/lib/wechat';
+import { syncPushRegistration } from '@/lib/push';
 import { GradientWave } from '@/components/ui/gradient-wave';
 
 export default function Login() {
   const navigate = useNavigate();
-  const [phone, setPhone] = useState('');
+  const [account, setAccount] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
 
   const validate = () => {
-    if (!phone.trim()) {
-      toast.error('请输入手机号');
+    const trimmedAccount = account.trim();
+    if (!trimmedAccount) {
+      toast.error('请输入手机号或邮箱');
       return false;
     }
-    if (!/^1[3-9]\d{9}$/.test(phone)) {
+    if (trimmedAccount.includes('@')) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedAccount)) {
+        toast.error('邮箱格式不正确');
+        return false;
+      }
+    } else if (!/^1[3-9]\d{9}$/.test(trimmedAccount)) {
       toast.error('手机号格式不正确');
       return false;
     }
@@ -33,6 +40,8 @@ export default function Login() {
   const finishLogin = async (data: { accessToken: string; refreshToken: string }) => {
     localStorage.setItem('accessToken', data.accessToken);
     localStorage.setItem('refreshToken', data.refreshToken);
+    // 登录成功后上报本机推送标识，后续班级通知可推送到该设备
+    void syncPushRegistration();
     toast.success('登录成功');
     // 已加入班级的用户直接进首页，未加入班级的新用户才引导去加入/创建班级
     let nextPath = '/home';
@@ -55,7 +64,7 @@ export default function Login() {
     setLoading(true);
     try {
       const res = await api.post('/auth/login', {
-        phone,
+        account: account.trim(),
         loginType: 'password',
         password,
       });
@@ -138,16 +147,15 @@ export default function Login() {
         </div>
 
         <div
-          data-pencil-name="Phone Input"
+          data-pencil-name="Account Input"
           className="box-border absolute left-[16px] right-[16px] top-[270px] z-[9] flex h-[56px] flex-col items-start justify-center gap-2 rounded-lg border-[1px_solid_#E5E7EB] bg-[#FFFFFF] p-[0px_16px] [box-shadow:0px_2px_8px_0px_#0000000D]"
         >
           <input
-            type="tel"
-            inputMode="numeric"
-            autoComplete="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="请输入手机号"
+            type="text"
+            autoComplete="username"
+            value={account}
+            onChange={(e) => setAccount(e.target.value)}
+            placeholder="请输入手机号 / 邮箱"
             className="box-border h-full w-full bg-transparent text-left font-body text-[14px]/[normal] font-normal text-[#1A1A1A] placeholder:text-[#9CA3AF] outline-none"
           />
         </div>

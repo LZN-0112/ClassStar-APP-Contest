@@ -13,6 +13,7 @@ import {
   Matches,
   IsArray,
   ArrayMaxSize,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -89,6 +90,11 @@ export class CreateActivityDto {
   @IsString({ each: true, message: '活动图片地址必须是字符串' })
   @Length(0, 500, { each: true, message: '活动图片地址长度不能超过500字符' })
   images?: string[];
+
+  /** 是否强制活动（计入班级考核） */
+  @IsOptional()
+  @IsBoolean({ message: '是否计入考核参数不正确' })
+  isMandatory?: boolean;
 }
 
 export class ActivityIdParamDto {

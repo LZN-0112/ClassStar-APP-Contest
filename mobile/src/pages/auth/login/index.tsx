@@ -3,23 +3,33 @@ import { View, Text, Input as TaroInput } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 
 import { authApi } from '@/services'
+import { getMyClasses } from '@/services/classes'
 import { useUserStore } from '@/stores'
 import { Icon } from '@/components/ui'
 import './index.scss'
 
+/** 微信未绑定手机号时跳转绑定页所需的凭证存储 key */
+const WECHAT_BIND_TICKET_KEY = 'wechatBindTicket'
+
 export default function Login() {
-  const [phone, setPhone] = useState('')
+  const [account, setAccount] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [agreed, setAgreed] = useState(false)
 
   const validate = () => {
-    if (!phone.trim()) {
-      Taro.showToast({ title: '请输入手机号', icon: 'none' })
+    const trimmedAccount = account.trim()
+    if (!trimmedAccount) {
+      Taro.showToast({ title: '请输入手机号或邮箱', icon: 'none' })
       return false
     }
-    if (!/^1[3-9]\d{9}$/.test(phone)) {
+    if (trimmedAccount.includes('@')) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedAccount)) {
+        Taro.showToast({ title: '邮箱格式不正确', icon: 'none' })
+        return false
+      }
+    } else if (!/^1[3-9]\d{9}$/.test(trimmedAccount)) {
       Taro.showToast({ title: '手机号格式不正确', icon: 'none' })
       return false
     }
@@ -40,7 +50,7 @@ export default function Login() {
     setLoading(true)
     try {
       const res = await authApi.login({
-        phone,
+        account: account.trim(),
         password,
         loginType: 'password'
       })
@@ -69,20 +79,74 @@ export default function Login() {
     }
   }
 
-  const handleWechatLogin = () => {
-    Taro.showToast({ title: '微信登录开发中', icon: 'none' })
+  const handleWechatLogin = async () => {
+    if (!agreed) {
+      Taro.showToast({ title: '请先勾选同意《用户协议》和《隐私政策》', icon: 'none' })
+      return
+    }
+    if (loading) return
+    setLoading(true)
+    try {
+      // #ifndef H5
+      const { code } = await Taro.login()
+      if (!code) throw new Error('未获取到微信授权码，请重试')
+
+      const res = await authApi.wechatLogin(code)
+
+      // 未绑定手机号：携带绑定凭证进入绑定页
+      if (res.needBindPhone) {
+        if (!res.bindTicket) throw new Error('微信绑定凭证获取失败，请重试')
+        Taro.setStorageSync(WECHAT_BIND_TICKET_KEY, res.bindTicket)
+        Taro.reLaunch({ url: '/pages/auth/wechat-bind/index' })
+        return
+      }
+
+      if (!res.accessToken || !res.refreshToken) {
+        throw new Error('微信登录失败，请重试')
+      }
+      useUserStore.getState().setToken(res.accessToken, res.refreshToken)
+
+      // 登录后立即拉取用户信息，避免新账号显示“同学/未加入班级”
+      try {
+        const info = await authApi.getUserInfo()
+        useUserStore.getState().setUserInfo(info)
+        if (info?.classId && !useUserStore.getState().currentClassId) {
+          useUserStore.getState().setCurrentClass(info.classId)
+        }
+      } catch {
+        // 用户信息拉取失败不阻塞登录流程
+      }
+
+      let nextPath = '/pages/home/index'
+      try {
+        const orgs = await getMyClasses()
+        if (!Array.isArray(orgs) || orgs.length === 0) nextPath = '/pages/auth/join-class/index'
+      } catch {
+        // 班级列表获取失败时不阻断登录，首页会展示空班级引导
+      }
+
+      Taro.showToast({ title: '登录成功', icon: 'success' })
+      setTimeout(() => {
+        Taro.reLaunch({ url: nextPath })
+      }, 800)
+      // #endif
+      // #ifdef H5
+      Taro.showToast({ title: '请在微信小程序内使用微信登录', icon: 'none' })
+      // #endif
+    } catch (err) {
+      Taro.showToast({
+        title: err instanceof Error ? err.message : '微信登录失败，请重试',
+        icon: 'none'
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <View className='login'>
-      {/* Status Bar */}
-      <View className='login__statusbar'>
-        <Text className='login__statusbar-time'>9:41</Text>
-        <View className='login__statusbar-icons'>
-          <Text className='login__statusbar-signal'>◉◉◉◉</Text>
-          <Text className='login__statusbar-battery'>100%</Text>
-        </View>
-      </View>
+      {/* 状态栏占位（时间 / 电量由系统绘制） */}
+      <View className='login__statusbar' />
 
       {/* Login Content */}
       <View className='login__content'>
@@ -94,12 +158,11 @@ export default function Login() {
         <View className='login__input-wrap login__input-wrap--phone'>
           <TaroInput
             className='login__input'
-            type='number'
-            value={phone}
-            maxlength={11}
-            placeholder='请输入手机号'
+            type='text'
+            value={account}
+            placeholder='请输入手机号 / 邮箱'
             placeholderClass='login__input-placeholder'
-            onInput={(e) => setPhone(e.detail.value)}
+            onInput={(e) => setAccount(e.detail.value)}
           />
         </View>
 

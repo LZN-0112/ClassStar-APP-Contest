@@ -11,7 +11,7 @@ import {
   Length,
   MaxLength,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export enum TaskStatus {
   TODO = 'todo',
@@ -19,11 +19,22 @@ export enum TaskStatus {
   DONE = 'done',
 }
 
+/** 任务对象：仅自己 / 全班成员 / 指定成员 */
+export enum TaskAssignType {
+  SELF = 'self',
+  ALL = 'all',
+  MEMBER = 'member',
+}
+
 export class CreateTaskDto {
   @IsString({ message: '任务标题必须是字符串' })
   @IsNotEmpty({ message: '任务标题不能为空' })
   @Length(1, 200, { message: '任务标题长度不能超过200字符' })
   title: string;
+
+  @IsOptional()
+  @IsEnum(TaskAssignType, { message: '任务对象不正确' })
+  assignType?: TaskAssignType = TaskAssignType.SELF;
 
   @IsOptional()
   @IsUUID('4', { message: '负责人ID格式不正确' })
@@ -69,6 +80,10 @@ export class UpdateTaskDto {
   title?: string;
 
   @IsOptional()
+  @IsEnum(TaskAssignType, { message: '任务对象不正确' })
+  assignType?: TaskAssignType;
+
+  @IsOptional()
   @IsUUID('4', { message: '负责人ID格式不正确' })
   ownerId?: string;
 
@@ -106,9 +121,18 @@ export class UpdateTaskDto {
 }
 
 export class QueryTasksDto {
+  /** 支持单个状态或逗号分隔的多个状态，如 todo,in_progress */
   @IsOptional()
-  @IsEnum(TaskStatus, { message: '任务状态筛选参数不正确' })
-  status?: TaskStatus;
+  @Transform(({ value }) =>
+    typeof value === 'string'
+      ? value
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : value,
+  )
+  @IsEnum(TaskStatus, { each: true, message: '任务状态筛选参数不正确' })
+  status?: TaskStatus[];
 
   @IsOptional()
   @Type(() => Number)

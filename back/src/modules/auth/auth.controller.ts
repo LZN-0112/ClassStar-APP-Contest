@@ -14,20 +14,27 @@ import { v4 as uuidv4 } from 'uuid';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
+import { SmsCodeService } from './sms-code.service';
+import { EmailCodeService } from './email-code.service';
 import { Public } from '@/common/decorators/public.decorator';
 import { SkipCsrf } from '@/common/decorators/skip-csrf.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CsrfService } from '@/common/security/csrf.service';
 import {
   RegisterDto,
+  SendSmsCodeDto,
+  SendEmailCodeDto,
+  BindEmailDto,
   LoginDto,
   ResetPasswordDto,
+  SendResetPasswordCodeDto,
   ChangePasswordDto,
   RefreshTokenDto,
   UpdateStudentIdDto,
   WechatLoginDto,
   WechatBindPhoneDto,
   WechatBindDto,
+  DeleteAccountDto,
 } from './dto/auth.dto';
 
 @ApiTags('认证账号')
@@ -35,8 +42,34 @@ import {
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly smsCodeService: SmsCodeService,
+    private readonly emailCodeService: EmailCodeService,
     private readonly csrfService: CsrfService,
   ) {}
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Post('sms/send-code')
+  @ApiOperation({ summary: '发送短信验证码（注册 / 微信绑定手机号）' })
+  sendSmsCode(@Body() dto: SendSmsCodeDto) {
+    return this.smsCodeService.send(dto.phone, dto.scene);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Post('email/send-code')
+  @ApiOperation({ summary: '发送邮箱验证码（注册 / 绑定邮箱）' })
+  sendEmailCode(@Body() dto: SendEmailCodeDto) {
+    return this.emailCodeService.send(dto.email, dto.scene);
+  }
+
+  @Post('email/bind')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '绑定 / 更换邮箱' })
+  bindEmail(@Req() req: any, @Body() dto: BindEmailDto) {
+    return this.authService.bindEmail(req.user.userId, dto);
+  }
 
   @Public()
   @SkipCsrf()
@@ -77,6 +110,14 @@ export class AuthController {
   @ApiOperation({ summary: '微信登录（开放平台移动应用）' })
   wechatLogin(@Body() dto: WechatLoginDto) {
     return this.authService.wechatLogin(dto.code);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Post('wechat/miniprogram-login')
+  @ApiOperation({ summary: '微信登录（小程序）' })
+  wechatMiniProgramLogin(@Body() dto: WechatLoginDto) {
+    return this.authService.wechatMiniProgramLogin(dto.code);
   }
 
   @Public()
@@ -127,8 +168,16 @@ export class AuthController {
 
   @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Post('reset-password/send-code')
+  @ApiOperation({ summary: '发送重置密码邮箱验证码（发送到输入的邮箱）' })
+  sendResetPasswordCode(@Body() dto: SendResetPasswordCodeDto) {
+    return this.authService.sendResetPasswordCode(dto.email);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('reset-password')
-  @ApiOperation({ summary: '重置密码' })
+  @ApiOperation({ summary: '重置密码（旧密码 + 邮箱验证码双重验证）' })
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
   }
@@ -163,6 +212,14 @@ export class AuthController {
   @ApiOperation({ summary: '补全学号' })
   updateStudentId(@Body() dto: UpdateStudentIdDto, @Req() req: any) {
     return this.authService.updateStudentId(req.user.userId, dto.studentId);
+  }
+
+  @Delete('account')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '注销账号（删除或匿名化个人信息）' })
+  deleteAccount(@Body() dto: DeleteAccountDto, @Req() req: any) {
+    return this.authService.deleteAccount(req.user.userId, dto.password);
   }
 
 }

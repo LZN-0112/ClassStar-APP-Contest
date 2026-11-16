@@ -235,7 +235,7 @@ export default function CheckResult() {
                 key={student.userId}
                 className="box-border flex h-[52px] w-full shrink-0 flex-row items-center gap-3 rounded-xl bg-white px-4 shadow-soft"
               >
-                <div className="box-border flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-full bg-[#076CAB]">
+                <div className="box-border flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-full bg-[#0062FF]">
                   <div className="text-[12px]/[normal] font-body font-semibold text-white">{student.name.charAt(0)}</div>
                 </div>
                 <div className="flex flex-col items-start justify-center gap-0">

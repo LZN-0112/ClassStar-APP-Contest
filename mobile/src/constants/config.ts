@@ -2,9 +2,9 @@
 // 全局常量配置
 // ============================================================
 
-/** API 基础地址：生产从环境变量读取，开发默认 localhost:3000 */
+/** API 基础地址：生产从环境变量读取，开发默认 127.0.0.1:3000 */
 export const API_BASE_URL: string =
-  process.env.TARO_APP_API_BASE_URL || 'http://localhost:3000/api/v1'
+  process.env.TARO_APP_API_BASE_URL || 'http://127.0.0.1:3000/api/v1'
 
 /** 请求超时时间（毫秒） */
 export const REQUEST_TIMEOUT = 15000

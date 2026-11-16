@@ -1,11 +1,11 @@
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Users, Shuffle, Award, RotateCcw, AlertCircle } from 'lucide-react';
+import { ChevronLeft, Users, Shuffle, Award, RotateCcw, Megaphone, AlertCircle } from 'lucide-react';
 
 const rules = [
   {
     icon: Users,
     title: '参与范围',
-    content: '抽签从当前班级的所有成员中随机抽取，包括班长和班委。总人数以班级实际导入的成员名单为准。',
+    content: '全班所有成员都可以发起抽签，抽签从当前班级的所有成员中随机抽取，包括班长和班委。总人数以班级实际导入的成员名单为准。',
   },
   {
     icon: Shuffle,
@@ -23,9 +23,14 @@ const rules = [
     content: '每次点击「开始抽签」将产生全新的随机结果，之前的抽签结果不会被覆盖，可在「中签记录」中查看历史结果。',
   },
   {
+    icon: Megaphone,
+    title: '公开与隐私',
+    content: '班委或管理员发起的抽签记录全班可见，并可一键公示到班级消息，通知全班成员；普通成员发起的抽签记录仅自己可见，不能公示给全班。',
+  },
+  {
     icon: AlertCircle,
     title: '注意事项',
-    content: '抽签结果仅作为参考，最终决定权由班长或活动负责人确认。抽签记录可保存并同步至班级通知，方便全班查看。',
+    content: '抽签结果仅作为参考，最终决定权由班长或活动负责人确认。',
   },
 ];
 

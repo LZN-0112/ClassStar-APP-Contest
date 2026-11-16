@@ -1,143 +1,159 @@
-import { useState } from 'react'
-import { View, Text } from '@tarojs/components'
-import Taro, { useLoad } from '@tarojs/taro'
+import { useCallback, useEffect, useState } from 'react'
+import { Text, View } from '@tarojs/components'
+import Taro from '@tarojs/taro'
 
-import { NavBar, ListEmpty, ListLoading } from '@/components/business'
+import { PageHeader } from '@/components/business'
+import { Icon } from '@/components/ui'
 import { attendanceApi } from '@/services'
-import { useUserStore } from '@/stores'
 import { useAuth } from '@/utils'
 import './index.scss'
 
-interface LeaveApplication {
+interface PendingLeave {
   id: string
-  studentName?: string
-  reason?: string
-  status?: 'pending' | 'approved' | 'rejected'
-  createdAt?: string
+  attendance: { id: string; title: string; startTime: string; endTime: string }
+  student: { id: string; name: string; studentId?: string; avatar?: string }
+  reason: string
+  createdAt: string
 }
 
-const STATUS_MAP: Record<string, { label: string; className: string }> = {
-  pending: { label: '待审批', className: 'badge--pending' },
-  approved: { label: '已通过', className: 'badge--approved' },
-  rejected: { label: '已拒绝', className: 'badge--rejected' }
+function formatTime(iso: string) {
+  const d = new Date(iso)
+  return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(
+    2,
+    '0'
+  )} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-export default function LeaveApprove() {
-  const currentClassId = useUserStore((s) => s.currentClassId)
-  const { requireLogin } = useAuth()
+export default function LeaveApproval() {
+  const { user } = useAuth()
+  const classId = user?.classId
 
-  const [list, setList] = useState<LeaveApplication[]>([])
+  const [items, setItems] = useState<PendingLeave[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'pending' | 'all'>('pending')
+  const [error, setError] = useState('')
+  const [actionId, setActionId] = useState('')
 
-  const classIdRef = { id: '' }
-  const idRef = { id: '' }
-
-  useLoad((options) => {
-    if (!requireLogin()) return
-    const classId = (options?.classId as string) || currentClassId
-    const attendanceId = options?.attendanceId as string
-    if (!classId || !attendanceId) {
-      Taro.showToast({ title: '参数缺失', icon: 'none' })
-      Taro.navigateBack()
+  const fetchList = useCallback(async () => {
+    if (!classId) {
+      setLoading(false)
       return
     }
-    classIdRef.id = classId
-    idRef.id = attendanceId
-    fetchList()
-  })
-
-  const fetchList = async () => {
     setLoading(true)
+    setError('')
     try {
-      const res: any = await attendanceApi.getDetail(classIdRef.id, idRef.id)
-      const leaves: LeaveApplication[] = res?.leaves || []
-      setList(leaves)
-    } catch {
-      setList([])
+      const data = (await attendanceApi.getPendingLeaves(classId)) as any
+      const list = Array.isArray(data) ? data : data?.list
+      setItems(Array.isArray(list) ? list : [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '获取请假申请失败')
     } finally {
       setLoading(false)
     }
-  }
+  }, [classId])
 
-  const handleReview = async (applicationId: string, status: 'approved' | 'rejected') => {
-    Taro.showLoading({ title: '处理中' })
+  useEffect(() => {
+    void fetchList()
+  }, [fetchList])
+
+  const handleReview = async (item: PendingLeave, status: 'approved' | 'rejected') => {
+    if (!classId || actionId) return
+    setActionId(item.id)
     try {
-      await attendanceApi.leaveApproval(classIdRef.id, idRef.id, applicationId, { status })
-      Taro.hideLoading()
-      Taro.showToast({ title: status === 'approved' ? '已通过' : '已拒绝', icon: 'success' })
-      fetchList()
+      await attendanceApi.leaveApproval(classId, item.attendance.id, item.id, { status })
+      Taro.showToast({ title: status === 'approved' ? '已同意请假' : '已驳回请假', icon: 'none' })
+      setItems((prev) => prev.filter((p) => p.id !== item.id))
     } catch (err) {
-      Taro.hideLoading()
       Taro.showToast({
-        title: err instanceof Error ? err.message : '操作失败，请重试',
+        title: err instanceof Error ? err.message : '审批失败',
         icon: 'none'
       })
+    } finally {
+      setActionId('')
     }
   }
 
-  const filtered = activeTab === 'pending'
-    ? list.filter((l) => l.status === 'pending')
-    : list
-
   return (
     <View className='attleave-approve'>
-      <NavBar title='请假审批' />
+      <PageHeader
+        title='请假审批'
+        variant='a'
+        right={
+          <View className='attleave-approve__refresh' onClick={() => void fetchList()}>
+            <Text>刷新</Text>
+          </View>
+        }
+      />
 
-      <View className='attleave-approve__tabs'>
-        <View
-          className={`attleave-approve__tab ${activeTab === 'pending' ? 'attleave-approve__tab--active' : ''}`}
-          onClick={() => setActiveTab('pending')}
-        >
-          <Text>待审批</Text>
-        </View>
-        <View
-          className={`attleave-approve__tab ${activeTab === 'all' ? 'attleave-approve__tab--active' : ''}`}
-          onClick={() => setActiveTab('all')}
-        >
-          <Text>全部</Text>
-        </View>
-      </View>
-
-      {loading ? (
-        <ListLoading />
-      ) : filtered.length === 0 ? (
-        <ListEmpty text='暂无请假记录' />
-      ) : (
-        <View className='attleave-approve__list'>
-          {filtered.map((item) => {
-            const st = STATUS_MAP[item.status || 'pending']
-            return (
+      <View className='attleave-approve__body'>
+        {loading ? (
+          <View className='attleave-approve__loading'>
+            <Text className='attleave-approve__loading-text'>加载中...</Text>
+          </View>
+        ) : error ? (
+          <View className='attleave-approve__state'>
+            <Icon name='x-circle' size={80} color='#CBD5E1' strokeWidth={1.5} />
+            <Text className='attleave-approve__state-text'>{error}</Text>
+          </View>
+        ) : items.length === 0 ? (
+          <View className='attleave-approve__state'>
+            <Icon name='inbox' size={96} color='#CBD5E1' strokeWidth={1.5} />
+            <Text className='attleave-approve__state-text'>暂无待审批的请假申请</Text>
+          </View>
+        ) : (
+          <>
+            <Text className='attleave-approve__count'>待审批（{items.length}）</Text>
+            {items.map((item) => (
               <View key={item.id} className='attleave-approve__item'>
                 <View className='attleave-approve__item-head'>
-                  <Text className='attleave-approve__name'>{item.studentName || '同学'}</Text>
-                  {st ? (
-                    <Text className={`attleave-approve__badge ${st.className}`}>{st.label}</Text>
-                  ) : null}
-                </View>
-                <Text className='attleave-approve__reason'>{item.reason || '—'}</Text>
-                <Text className='attleave-approve__time'>{item.createdAt || ''}</Text>
-                {item.status === 'pending' ? (
-                  <View className='attleave-approve__actions'>
-                    <View
-                      className='attleave-approve__btn attleave-approve__btn--reject'
-                      onClick={() => handleReview(item.id, 'rejected')}
-                    >
-                      拒绝
+                  <View className='attleave-approve__student'>
+                    <View className='attleave-approve__name-row'>
+                      <Text className='attleave-approve__name'>
+                        {item.student?.name || '未知成员'}
+                      </Text>
+                      {item.student?.studentId ? (
+                        <Text className='attleave-approve__sid'>{item.student.studentId}</Text>
+                      ) : null}
                     </View>
-                    <View
-                      className='attleave-approve__btn attleave-approve__btn--approve'
-                      onClick={() => handleReview(item.id, 'approved')}
-                    >
-                      通过
-                    </View>
+                    <Text className='attleave-approve__meta'>
+                      {item.attendance?.title} · {formatTime(item.attendance?.startTime)}
+                    </Text>
                   </View>
-                ) : null}
+                  <Text className='attleave-approve__pill'>待审批</Text>
+                </View>
+
+                <View className='attleave-approve__reason'>
+                  <Text>{item.reason}</Text>
+                </View>
+
+                <View className='attleave-approve__actions'>
+                  <View
+                    className={`attleave-approve__btn attleave-approve__btn--approve ${
+                      actionId === item.id ? 'attleave-approve__btn--disabled' : ''
+                    }`}
+                    onClick={() => {
+                      if (actionId !== item.id) void handleReview(item, 'approved')
+                    }}
+                  >
+                    <Icon name='check-circle' size={32} color='#FFFFFF' />
+                    <Text>同意</Text>
+                  </View>
+                  <View
+                    className={`attleave-approve__btn attleave-approve__btn--reject ${
+                      actionId === item.id ? 'attleave-approve__btn--disabled' : ''
+                    }`}
+                    onClick={() => {
+                      if (actionId !== item.id) void handleReview(item, 'rejected')
+                    }}
+                  >
+                    <Icon name='x-circle' size={32} color='#DC2626' />
+                    <Text>驳回</Text>
+                  </View>
+                </View>
               </View>
-            )
-          })}
-        </View>
-      )}
+            ))}
+          </>
+        )}
+      </View>
     </View>
   )
 }

@@ -1,172 +1,353 @@
-.attdmethod {
+.attmethod {
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
+  gap: 32rpx;
 
+  &__btn--disabled {
+    opacity: 0.5;
+  }
+
+  // ---------- 通用信息条 ----------
   &__banner {
-    border-radius: $radius-lg;
-    border: 1rpx solid;
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
     padding: 32rpx;
-    display: flex;
-    flex-direction: column;
-    gap: 12rpx;
+    border-radius: 16rpx;
 
-    &--blue { background: #f0f9ff; border-color: #bae6fd; }
-    &--green { background: #f0fdf4; border-color: #bbf7d0; }
-    &--orange { background: #fff7ed; border-color: #fed7aa; }
-    &--red { background: #fef2f2; border-color: #fecaca; }
-  }
+    &--gps {
+      border: 2rpx solid #bae6fd;
+      border-radius: 24rpx;
+      background: #f0f9ff;
+    }
 
-  &__banner-head {
-    display: flex;
-    align-items: center;
-    gap: 12rpx;
-  }
+    &--face {
+      border: 2rpx solid #fed7aa;
+      background: #fff7ed;
+    }
 
-  &__banner-title {
-    font-size: $text-sm;
-    font-weight: 600;
-    color: $text-primary;
-  }
-
-  &__banner-sub {
-    font-size: $text-xs;
-    color: $text-secondary;
-  }
-
-  &__panel {
-    background: $surface;
-    border: 1rpx solid $border;
-    border-radius: $radius-lg;
-    padding: 48rpx 32rpx;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20rpx;
-
-    &--camera {
-      padding: 0;
-      overflow: hidden;
+    &--code {
+      border: 2rpx solid #fecaca;
+      background: #fef2f2;
     }
   }
 
-  &__navi {
-    width: 128rpx;
-    height: 128rpx;
-    border-radius: $radius-full;
-    background: #f3f4f6;
+  &__banner-title {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+    font-size: 28rpx;
+    font-weight: 500;
+
+    &--gps {
+      color: #0369a1;
+    }
+
+    &--face {
+      color: #c2410c;
+    }
+
+    &--code {
+      color: #dc2626;
+    }
+  }
+
+  &__banner-desc {
+    font-size: 24rpx;
+    color: #4b5563;
+  }
+
+  &__banner-note {
+    padding: 16rpx 20rpx;
+    border-radius: 16rpx;
+    background: #ffffff;
+    font-size: 22rpx;
+    color: #b45309;
+  }
+
+  // ---------- 二维码签到 ----------
+  &__qr-banner {
+    display: flex;
+    align-items: center;
+    gap: 24rpx;
+    padding: 32rpx;
+    border: 2rpx solid #bbf7d0;
+    border-radius: 24rpx;
+    background: #f0fdf4;
+  }
+
+  &__qr-banner-icon {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 104rpx;
+    height: 104rpx;
+    border-radius: 24rpx;
+    background: #ffffff;
+  }
+
+  &__qr-banner-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 8rpx;
+    min-width: 0;
+  }
+
+  &__qr-banner-title {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #15803d;
+  }
+
+  &__qr-banner-desc {
+    font-size: 24rpx;
+    line-height: 36rpx;
+    color: #4b5563;
+  }
+
+  &__qr-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-
-    &--ok { background: #dcfce7; }
+    gap: 16rpx;
+    width: 100%;
+    height: 104rpx;
+    border-radius: 24rpx;
+    background: #0062ff;
+    color: #ffffff;
+    font-size: 30rpx;
+    font-weight: 600;
+    box-shadow: 0 16rpx 40rpx -16rpx rgba(0, 98, 255, 0.7);
+    &:active {
+      opacity: 0.8;
+    }
   }
 
-  &__center {
+  &__qr {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+  }
+
+  &__qr-canvas {
+    display: block;
+  }
+
+  // ---------- GPS ----------
+  &__panel {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12rpx;
-  }
-
-  &__center-title {
-    font-size: $text-sm;
-    font-weight: 600;
-    color: $text-primary;
-  }
-
-  &__center-sub {
-    font-size: $text-xs;
-    color: $text-secondary;
-  }
-
-  &__center-hint {
-    font-size: $text-xs;
-    color: $text-tertiary;
-  }
-
-  &__distance {
-    font-size: $text-sm;
-    font-weight: 600;
-
-    &--ok { color: #16a34a; }
-    &--bad { color: #ef4444; }
-  }
-
-  &__qrcode {
-    padding: 32rpx;
+    gap: 24rpx;
+    padding: 48rpx;
+    border: 2rpx solid #e5e7eb;
+    border-radius: 16rpx;
     background: #ffffff;
-    border-radius: $radius-lg;
-    border: 1rpx solid $border;
   }
 
-  &__qrcode-tip {
-    font-size: $text-sm;
-    color: $text-secondary;
-    text-align: center;
-  }
-
-  &__code-icon {
+  &__gps-circle {
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 128rpx;
+    height: 128rpx;
+    border-radius: 50%;
+    background: #f3f4f6;
+
+    &--active {
+      background: #dcfce7;
+    }
+  }
+
+  &__gps-result {
+    text-align: center;
+  }
+
+  &__gps-success {
+    display: block;
+    font-size: 28rpx;
+    font-weight: 500;
+    color: #1a1a1a;
+  }
+
+  &__gps-coords {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 24rpx;
+    color: #4b5563;
+  }
+
+  &__gps-distance {
+    display: block;
+    margin-top: 16rpx;
+    font-size: 28rpx;
+    font-weight: 500;
+
+    &--in {
+      color: #16a34a;
+    }
+
+    &--out {
+      color: #ef4444;
+    }
+  }
+
+  &__gps-idle {
+    display: block;
+    font-size: 28rpx;
+    color: #4b5563;
+  }
+
+  &__gps-idle-hint {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 24rpx;
+    color: #9ca3af;
+  }
+
+  // ---------- 按钮 ----------
+  &__primary-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    width: 100%;
+    height: 96rpx;
+    border-radius: 16rpx;
+    background: #0062ff;
+    color: #ffffff;
+    font-size: 28rpx;
+    font-weight: 500;
+    &:active {
+      opacity: 0.8;
+    }
+
+    &--rounded {
+      border-radius: 24rpx;
+    }
+  }
+
+  &__outline-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    width: 100%;
+    height: 88rpx;
+    border: 2rpx solid #e2e8f0;
+    border-radius: 24rpx;
+    background: #ffffff;
+    color: #0062ff;
+    font-size: 28rpx;
+    font-weight: 500;
+    &:active {
+      background: #f8fafc;
+    }
+  }
+
+  // ---------- 口令签到 ----------
+  &__code-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 48rpx;
+    padding: 48rpx;
+    border: 2rpx solid #e5e7eb;
+    border-radius: 16rpx;
+    background: #ffffff;
   }
 
   &__code-tip {
-    font-size: $text-sm;
-    color: $text-secondary;
+    font-size: 28rpx;
+    color: #4b5563;
+  }
+
+  &__code-inputs {
+    display: flex;
+    gap: 24rpx;
   }
 
   &__code-input {
-    width: 320rpx;
+    box-sizing: border-box;
+    width: 96rpx;
     height: 112rpx;
-    text-align: center;
-    font-size: $text-xl;
+    border: 4rpx solid #e5e7eb;
+    border-radius: 16rpx;
+    background: #f9fafb;
+    color: #1a1a1a;
+    font-size: 40rpx;
     font-weight: 700;
-    letter-spacing: 16rpx;
-    background: $gray-50;
-    border: 2rpx solid $border;
-    border-radius: $radius-md;
-    color: $text-primary;
+    text-align: center;
+
+    &--focus {
+      border-color: #0062ff;
+    }
   }
 
-  &__code-placeholder {
-    color: $text-tertiary;
-    letter-spacing: 16rpx;
+  // ---------- 拍照签到 ----------
+  &__face-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24rpx;
+    overflow: hidden;
+    border: 2rpx solid #e5e7eb;
+    border-radius: 16rpx;
+    background: #ffffff;
   }
 
-  &__camera {
+  &__face-camera {
     position: relative;
     width: 100%;
-    height: 600rpx;
   }
 
-  &__camera-view {
+  &__face-camera-view {
+    display: block;
     width: 100%;
     height: 600rpx;
-    background: #000;
+    background: #000000;
   }
 
   &__shutter {
     position: absolute;
-    left: 50%;
     bottom: 32rpx;
-    transform: translateX(-50%);
-    width: 112rpx;
-    height: 112rpx;
-    border-radius: $radius-full;
-    background: #fff;
-    border: 8rpx solid $primary;
+    left: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 112rpx;
+    height: 112rpx;
+    border: 8rpx solid #0062ff;
+    border-radius: 50%;
+    background: #ffffff;
+    transform: translateX(-50%);
+    &:active {
+      opacity: 0.8;
+    }
   }
 
   &__shutter-inner {
     width: 80rpx;
     height: 80rpx;
-    border-radius: $radius-full;
-    background: $primary;
+    border-radius: 50%;
+    background: #0062ff;
+  }
+
+  &__face-preview {
+    position: relative;
+    width: 100%;
+  }
+
+  &__face-image {
+    display: block;
+    width: 100%;
+    height: 600rpx;
   }
 
   &__retake {
@@ -174,68 +355,83 @@
     top: 16rpx;
     right: 16rpx;
     padding: 8rpx 24rpx;
+    border-radius: 999rpx;
     background: rgba(0, 0, 0, 0.5);
-    border-radius: $radius-full;
+    color: #ffffff;
+    font-size: 24rpx;
+    &:active {
+      opacity: 0.8;
+    }
   }
 
-  &__retake-text {
-    font-size: $text-xs;
-    color: #fff;
-  }
-
-  &__camera-empty {
-    height: 600rpx;
-    width: 100%;
-    background: #f3f4f6;
+  &__face-empty {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    width: 100%;
+    height: 600rpx;
+    background: #f3f4f6;
+  }
+
+  &__face-empty-text {
+    margin-top: 16rpx;
+    font-size: 28rpx;
+    color: #9ca3af;
+  }
+
+  &__face-error {
+    margin-top: 16rpx;
+    padding: 0 32rpx;
+    font-size: 24rpx;
+    color: #ef4444;
+    text-align: center;
+  }
+
+  &__face-actions {
+    display: flex;
     gap: 16rpx;
   }
 
-  &__camera-hint {
-    font-size: $text-sm;
-    color: $text-tertiary;
-  }
-
-  &__btnrow {
+  &__face-open {
     display: flex;
-    gap: 24rpx;
-  }
-
-  &__btn {
-    height: 96rpx;
-    border-radius: $radius-lg;
-    background: $primary;
-    display: flex;
+    flex: 1;
     align-items: center;
     justify-content: center;
-    gap: 12rpx;
-
-    &--half {
-      flex: 1;
-    }
-
-    &--ghost {
-      background: $surface;
-      border: 1rpx solid $border;
-    }
-
-    &--disabled {
-      opacity: 0.5;
+    gap: 16rpx;
+    height: 96rpx;
+    border-radius: 16rpx;
+    background: #0062ff;
+    color: #ffffff;
+    font-size: 28rpx;
+    font-weight: 500;
+    &:active {
+      opacity: 0.8;
     }
   }
 
-  &__btn-text {
-    font-size: $text-lg;
-    color: $text-inverse;
-    font-weight: 600;
-
-    &--dark {
-      font-size: $text-lg;
-      color: $text-primary;
-      font-weight: 600;
+  &__face-album {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    height: 96rpx;
+    border: 2rpx solid #e5e7eb;
+    border-radius: 16rpx;
+    background: #f9fafb;
+    color: #374151;
+    font-size: 28rpx;
+    font-weight: 500;
+    &:active {
+      opacity: 0.8;
     }
+  }
+
+  &__wm-canvas {
+    position: fixed;
+    top: 0;
+    left: -9999px;
+    pointer-events: none;
   }
 }

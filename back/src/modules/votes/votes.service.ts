@@ -76,8 +76,18 @@ export class VotesService {
       throw new BadRequestException('截止时间必须晚于当前时间');
     }
 
+    const title = dto.title.trim();
+    if (!title) throw new BadRequestException('投票标题不能为空');
+    const labels = dto.options.map((label) => label.trim());
+    if (labels.some((label) => !label)) {
+      throw new BadRequestException('投票选项不能为空');
+    }
+    if (new Set(labels).size !== labels.length) {
+      throw new BadRequestException('投票选项不能重复');
+    }
+
     const voteId = uuidv4();
-    const options = dto.options.map((label, index) => ({
+    const options = labels.map((label, index) => ({
       id: uuidv4(),
       vote_id: voteId,
       label: this.escapeHtml(label),

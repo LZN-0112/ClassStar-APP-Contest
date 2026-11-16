@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import PhoneFrame from '@/components/layout/PhoneFrame';
 import StatusBar from '@/components/layout/StatusBar';
 import { api } from '@/lib/api';
+import { syncPushRegistration } from '@/lib/push';
 
 const PHONE_REGEX = /^1[3-9]\d{9}$/;
 const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,20}$/;
@@ -12,6 +13,9 @@ export default function WechatBind() {
   const navigate = useNavigate();
   const [bindTicket] = useState(() => sessionStorage.getItem('wechatBindTicket') || '');
   const [phone, setPhone] = useState('');
+  const [smsCode, setSmsCode] = useState('');
+  const [sendingCode, setSendingCode] = useState(false);
+  const [countdown, setCountdown] = useState(0);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
@@ -26,6 +30,40 @@ export default function WechatBind() {
     }
   }, [bindTicket, navigate]);
 
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setTimeout(() => setCountdown((v) => v - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
+  const handleSendCode = async () => {
+    if (sendingCode || countdown > 0) return;
+    const trimmedPhone = phone.trim();
+    if (!PHONE_REGEX.test(trimmedPhone)) {
+      toast.error('请输入正确的 11 位手机号');
+      return;
+    }
+    setSendingCode(true);
+    try {
+      const res = await api.post('/auth/sms/send-code', {
+        phone: trimmedPhone,
+        scene: 'wechat_bind',
+      });
+      const data = res.data?.data || res.data;
+      if (data?.devCode) {
+        setSmsCode(String(data.devCode));
+        toast.success('测试环境验证码已自动填入');
+      } else {
+        toast.success('验证码已发送，请留意短信');
+      }
+      setCountdown(60);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '验证码发送失败，请稍后重试');
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (loading || !bindTicket) return;
 
@@ -35,6 +73,10 @@ export default function WechatBind() {
 
     if (!PHONE_REGEX.test(trimmedPhone)) {
       toast.error('请输入正确的 11 位手机号');
+      return;
+    }
+    if (!/^\d{6}$/.test(smsCode)) {
+      toast.error('请输入 6 位短信验证码');
       return;
     }
     if (!password) {
@@ -61,6 +103,7 @@ export default function WechatBind() {
       const res = await api.post('/auth/wechat/bind-phone', {
         bindTicket,
         phone: trimmedPhone,
+        code: smsCode,
         password,
         confirmPassword: confirmPassword || undefined,
         name: trimmedName || undefined,
@@ -69,6 +112,8 @@ export default function WechatBind() {
       const data = res.data?.data || res.data;
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
+      // 登录态建立后上报本机推送标识
+      void syncPushRegistration();
       sessionStorage.removeItem('wechatBindTicket');
       toast.success(data.isNewUser ? '注册成功，微信已绑定' : '微信绑定成功');
 
@@ -133,6 +178,30 @@ export default function WechatBind() {
                 placeholder="请输入手机号"
                 className="h-14 w-full rounded-lg border border-[#E5E7EB] px-4 text-[14px] text-[#1A1A1A] outline-none placeholder:text-[#9CA3AF] focus:border-[#0062FF]"
               />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-[13px] text-[#4B5563]">短信验证码</label>
+              <div className="flex h-14 w-full items-center rounded-lg border border-[#E5E7EB] px-4 focus-within:border-[#0062FF]">
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={smsCode}
+                  onChange={(e) => setSmsCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="请输入 6 位验证码"
+                  className="h-full flex-1 bg-transparent text-[14px] text-[#1A1A1A] outline-none placeholder:text-[#9CA3AF]"
+                />
+                <button
+                  type="button"
+                  disabled={sendingCode || countdown > 0}
+                  onClick={handleSendCode}
+                  className="shrink-0 px-2 text-[13px] text-[#0062FF] disabled:text-[#9CA3AF]"
+                >
+                  {countdown > 0 ? `${countdown}s 后重发` : sendingCode ? '发送中...' : '获取验证码'}
+                </button>
+              </div>
             </div>
 
             <div>

@@ -1,154 +1,820 @@
+// ============================================================
+// 发起签到
+// 1:1 对齐 front/src/pages/attendances/PublishAttendance.tsx
+// 2rpx = 1px（375 设计稿）
+// ============================================================
 .attpublish {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  background-color: $bg;
+  min-height: 100vh;
+  background: #f5f7fa;
 
-  &__body {
-    flex: 1;
-    padding: $spacing-4 $page-padding-x $page-padding-bottom;
-    box-sizing: border-box;
-    overflow-y: auto;
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+    padding: 32rpx 32rpx calc(230rpx + env(safe-area-inset-bottom));
   }
 
-  &__field {
-    margin-bottom: $spacing-4;
+  // ---------- 区块 ----------
+  &__section {
+    padding: 32rpx;
+    border-radius: 32rpx;
+    background: #ffffff;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
   }
 
-  &__field--mt {
-    margin-top: $spacing-3;
+  &__section-head {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
   }
 
-  &__label {
-    display: block;
-    font-size: $text-sm;
-    color: $text-secondary;
-    margin-bottom: $spacing-2;
+  &__section-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48rpx;
+    height: 48rpx;
+    border-radius: 12rpx;
+    background: #eff6ff;
+  }
+
+  &__section-title {
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #0f172a;
+  }
+
+  &__section-hint {
+    margin-left: auto;
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  &__section-body {
+    margin-top: 24rpx;
+  }
+
+  // ---------- 签到主题 ----------
+  &__presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16rpx;
+  }
+
+  &__preset {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 64rpx;
+    padding: 0 24rpx;
+    border: 2rpx solid #e5e7eb;
+    border-radius: 999rpx;
+    background: #ffffff;
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  &__preset--active {
+    border-color: #0062ff;
+    background: #eff6ff;
+
+    .attpublish__preset-text {
+      color: #0062ff;
+    }
+  }
+
+  &__preset-text {
+    font-size: 24rpx;
+    font-weight: 500;
+    color: #475569;
   }
 
   &__input {
     width: 100%;
-    height: 88rpx;
-    background-color: $gray-50;
-    border: 1rpx solid $border;
-    border-radius: $radius-md;
-    padding: 0 $spacing-4;
-    font-size: $text-base;
-    color: $text-primary;
+    height: 96rpx;
+    padding: 0 32rpx;
+    border: 2rpx solid #e5e7eb;
+    border-radius: 24rpx;
+    background: #f8fafc;
     box-sizing: border-box;
+    font-size: 30rpx;
+    color: #0f172a;
+  }
+
+  &__input--mt {
+    margin-top: 24rpx;
   }
 
   &__placeholder {
-    font-size: $text-base;
-    color: $text-tertiary;
+    font-size: 30rpx;
+    color: #94a3b8;
   }
 
-  &__method-box {
-    padding: $spacing-4;
-    background-color: $gray-50;
-    border: 1rpx solid $border;
-    border-radius: $radius-md;
-    margin-bottom: $spacing-4;
-  }
-
-  &__method-title {
-    display: block;
-    font-size: $text-base;
-    font-weight: $font-medium;
-    color: $text-primary;
-    margin-bottom: $spacing-3;
-  }
-
-  &__method-grid {
-    display: flex;
-    flex-direction: row;
-    gap: $spacing-2;
+  // ---------- 签到方式 ----------
+  &__methods {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20rpx;
   }
 
   &__method {
-    flex: 1;
+    position: relative;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: $spacing-2;
-    padding: $spacing-2;
-    border-radius: $radius-md;
-    border: 2rpx solid $border;
-    background-color: $surface;
+    align-items: flex-start;
+    gap: 16rpx;
+    padding: 24rpx;
+    border: 2rpx solid #e5e7eb;
+    border-radius: 24rpx;
+    background: #ffffff;
+    box-sizing: border-box;
 
-    &--active {
-      border-color: $primary;
-      background-color: #eff6ff;
+    &:active {
+      transform: scale(0.98);
     }
   }
 
+  &__method--active {
+    border-color: #0062ff;
+    background: #eff6ff;
+    box-shadow: 0 8rpx 28rpx -16rpx rgba(0, 98, 255, 0.6);
+  }
+
   &__method-icon {
-    width: 80rpx;
-    height: 80rpx;
-    border-radius: $radius-md;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 72rpx;
+    height: 72rpx;
+    border-radius: 16rpx;
   }
 
-  &__method-label {
-    font-size: $text-xs;
-    color: $text-primary;
+  &__method-icon--gps {
+    background: #eff6ff;
   }
 
-  &__gps-box {
-    padding: $spacing-4;
-    background-color: #f0f9ff;
-    border: 1rpx solid #bae6fd;
-    border-radius: $radius-md;
-    margin-bottom: $spacing-4;
+  &__method-icon--qr {
+    background: #ecfdf5;
   }
 
-  &__gps-row {
+  &__method-icon--face {
+    background: #fff7ed;
+  }
+
+  &__method-icon--code {
+    background: #fef2f2;
+  }
+
+  &__method-text {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__method-name {
+    font-size: 26rpx;
+    font-weight: 600;
+    color: #0f172a;
+  }
+
+  &__method-desc {
+    margin-top: 4rpx;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  &__method-check {
+    position: absolute;
+    right: 20rpx;
+    top: 20rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40rpx;
+    height: 40rpx;
+    border-radius: 999rpx;
+    background: #0062ff;
+  }
+
+  // ---------- 定位要求 ----------
+  &__gps {
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+  }
+
+  &__located {
+    display: flex;
+    align-items: center;
+    gap: 24rpx;
+    padding: 20rpx 24rpx;
+    border: 2rpx solid #bbf7d0;
+    border-radius: 24rpx;
+    background: #f0fdf4;
+  }
+
+  &__located-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64rpx;
+    height: 64rpx;
+    flex-shrink: 0;
+    border-radius: 999rpx;
+    background: #16a34a;
+  }
+
+  &__located-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__located-title {
+    display: block;
+    font-size: 26rpx;
+    font-weight: 500;
+    color: #15803d;
+  }
+
+  &__located-coords {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 20rpx;
+    color: #4d7c5c;
+    font-family: $font-data;
+  }
+
+  &__located-action {
+    flex-shrink: 0;
+    font-size: 24rpx;
+    font-weight: 500;
+    color: #0062ff;
+  }
+
+  &__locate-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    width: 100%;
+    padding: 28rpx 0;
+    border: 2rpx dashed #bfdbfe;
+    border-radius: 24rpx;
+    background: #f8fafc;
+    box-sizing: border-box;
+
+    &:active {
+      transform: scale(0.99);
+    }
+  }
+
+  &__locate-btn-text {
+    font-size: 26rpx;
+    font-weight: 500;
+    color: #0062ff;
+  }
+
+  &__radius-head {
+    display: flex;
     align-items: center;
     justify-content: space-between;
   }
 
-  &__gps-title {
-    font-size: $text-base;
-    font-weight: $font-medium;
-    color: #0369a1;
+  &__radius-label {
+    font-size: 24rpx;
+    color: #64748b;
   }
 
-  &__gps-btn {
+  &__radius-hint {
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  &__radius-options {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16rpx;
+    margin-top: 16rpx;
+  }
+
+  &__radius-item {
     display: flex;
-    flex-direction: row;
     align-items: center;
-    gap: 8rpx;
-    padding: 12rpx $spacing-3;
-    background-color: $primary;
-    border-radius: $radius-md;
+    justify-content: center;
+    height: 72rpx;
+    border: 2rpx solid #e5e7eb;
+    border-radius: 16rpx;
+    background: #ffffff;
+
+    &:active {
+      transform: scale(0.95);
+    }
   }
 
-  &__gps-btn-text {
-    font-size: $text-sm;
-    color: $text-inverse;
+  &__radius-item--active {
+    border-color: #0062ff;
+    background: #eff6ff;
+
+    .attpublish__radius-item-text {
+      color: #0062ff;
+    }
   }
 
-  &__gps-info,
-  &__gps-hint {
+  &__radius-item-text {
+    font-size: 24rpx;
+    font-weight: 500;
+    color: #475569;
+  }
+
+  // ---------- 口令 ----------
+  &__code-row {
+    display: flex;
+    align-items: stretch;
+    gap: 16rpx;
+  }
+
+  &__code-input {
+    flex: 1;
+    min-width: 0;
+    height: 112rpx;
+    border: 2rpx solid #e5e7eb;
+    border-radius: 24rpx;
+    background: #f8fafc;
+    box-sizing: border-box;
+    text-align: center;
+    font-size: 48rpx;
+    letter-spacing: 0.5em;
+    color: #0f172a;
+    font-family: $font-data;
+  }
+
+  &__code-placeholder {
+    color: #cbd5e1;
+  }
+
+  &__code-random {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4rpx;
+    flex-shrink: 0;
+    height: 112rpx;
+    padding: 0 28rpx;
+    border-radius: 24rpx;
+    background: #eff6ff;
+    color: #0062ff;
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  &__code-random-text {
+    font-size: 20rpx;
+    font-weight: 500;
+    color: #0062ff;
+  }
+
+  &__code-tip {
     display: block;
-    font-size: $text-sm;
-    color: $text-weak;
-    margin-top: $spacing-2;
+    margin-top: 16rpx;
+    font-size: 22rpx;
+    line-height: 1.6;
+    color: #94a3b8;
   }
 
-  &__gps-info {
-    color: $text-weak;
+  // ---------- 方式说明 ----------
+  &__hintbox {
+    display: flex;
+    gap: 20rpx;
+    padding: 24rpx;
+    border-radius: 24rpx;
+    background: #f8fafc;
   }
 
-  &__gps-hint {
-    color: $text-tertiary;
+  &__hintbox-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48rpx;
+    height: 48rpx;
+    margin-top: 4rpx;
+    flex-shrink: 0;
+    border-radius: 999rpx;
+    background: #e2e8f0;
   }
 
+  &__hintbox-text {
+    font-size: 24rpx;
+    line-height: 1.6;
+    color: #475569;
+  }
+
+  // ---------- 签到时间 ----------
+  &__durations {
+    display: flex;
+    gap: 12rpx;
+  }
+
+  &__duration {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    height: 72rpx;
+    border: 2rpx solid #e5e7eb;
+    border-radius: 16rpx;
+    background: #ffffff;
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  &__duration--active {
+    border-color: #0062ff;
+    background: #eff6ff;
+
+    .attpublish__duration-text {
+      color: #0062ff;
+    }
+  }
+
+  &__duration-text {
+    font-size: 24rpx;
+    font-weight: 500;
+    color: #475569;
+  }
+
+  &__time-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+    margin-top: 24rpx;
+  }
+
+  &__time-field {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  &__time-label {
+    width: 96rpx;
+    flex-shrink: 0;
+    font-size: 24rpx;
+    color: #64748b;
+  }
+
+  &__time-picker {
+    flex: 1;
+    min-width: 0;
+
+    .cx-datetime {
+      gap: 12rpx;
+      width: 100%;
+    }
+
+    .cx-datetime__field {
+      height: 88rpx;
+      min-width: 0;
+      padding: 0 24rpx;
+      border: 2rpx solid #e5e7eb;
+      border-radius: 24rpx;
+      background: #f8fafc;
+      box-sizing: border-box;
+    }
+
+    .cx-datetime__text {
+      font-size: 26rpx;
+      color: #0f172a;
+    }
+
+    .cx-datetime__text--placeholder {
+      color: #94a3b8;
+    }
+  }
+
+  &__time-tip {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+    margin-top: 24rpx;
+    padding: 20rpx 24rpx;
+    border-radius: 24rpx;
+    background: #f8fafc;
+  }
+
+  &__time-dot {
+    width: 12rpx;
+    height: 12rpx;
+    flex-shrink: 0;
+    border-radius: 999rpx;
+    background: #22c55e;
+  }
+
+  &__time-tip-text {
+    font-size: 24rpx;
+    color: #475569;
+  }
+
+  &__time-tip-hint {
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  // ---------- 签到规则 ----------
+  &__rules {
+    padding: 32rpx;
+    border: 2rpx solid #dbeafe;
+    border-radius: 32rpx;
+    background: #eff6ff;
+  }
+
+  &__rules-head {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+  }
+
+  &__rules-title {
+    font-size: 26rpx;
+    font-weight: 600;
+    color: #1e40af;
+  }
+
+  &__rules-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+    margin-top: 16rpx;
+  }
+
+  &__rules-item {
+    font-size: 24rpx;
+    line-height: 1.7;
+    color: #1e3a8a;
+  }
+
+  // ---------- 吸底操作栏 ----------
   &__footer {
-    margin-top: $spacing-4;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    padding: 24rpx 32rpx calc(20rpx + env(safe-area-inset-bottom));
+    border-top: 2rpx solid #eef2f7;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20rpx);
+  }
+
+  &__footer-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24rpx;
+    margin-bottom: 16rpx;
+  }
+
+  &__footer-status-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  &__footer-count {
+    flex-shrink: 0;
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  &__submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    width: 100%;
+    height: 104rpx;
+    border-radius: 32rpx;
+    background: #0062ff;
+    box-shadow: 0 16rpx 40rpx -16rpx rgba(0, 98, 255, 0.7);
+
+    &:active {
+      transform: scale(0.99);
+    }
+  }
+
+  &__submit--disabled {
+    background: #cbd5e1;
+    box-shadow: none;
+  }
+
+  &__submit-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: attpublish-spin 1s linear infinite;
+  }
+
+  &__submit-text {
+    font-size: 32rpx;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  // ---------- 发布成功 ----------
+  &--success {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 0 64rpx;
+    background: #ffffff;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  &__glow {
+    position: absolute;
+    top: -224rpx;
+    left: 50%;
+    width: 576rpx;
+    height: 576rpx;
+    transform: translateX(-50%);
+    border-radius: 999rpx;
+    background: radial-gradient(circle, rgba(220, 252, 231, 0.95) 0%, rgba(220, 252, 231, 0) 70%);
+    pointer-events: none;
+  }
+
+  &__success-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: attpublish-pop-in 0.5s ease-out both;
+  }
+
+  &__success-badge {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 192rpx;
+    height: 192rpx;
+  }
+
+  &__success-ring {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 999rpx;
+    background: rgba(22, 163, 74, 0.25);
+    animation: attpublish-ring 1.8s ease-out infinite;
+  }
+
+  &__success-circle {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 160rpx;
+    height: 160rpx;
+    border-radius: 999rpx;
+    background: linear-gradient(135deg, #22c55e, #15803d);
+    box-shadow: 0 28rpx 64rpx -20rpx rgba(22, 163, 74, 0.6);
+  }
+
+  &__success-title {
+    margin-top: 48rpx;
+    font-size: 48rpx;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  &__success-sub {
+    margin-top: 16rpx;
+    font-size: 28rpx;
+    color: #64748b;
+  }
+
+  &__success-pill {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+    margin-top: 32rpx;
+    padding: 12rpx 32rpx;
+    border-radius: 999rpx;
+    background: #f1f5f9;
+  }
+
+  &__success-pill-text {
+    font-size: 24rpx;
+    color: #475569;
+  }
+
+  &__success-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+    width: 100%;
+    margin-top: 96rpx;
+  }
+
+  &__success-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 104rpx;
+    border-radius: 32rpx;
+    background: #0062ff;
+    box-shadow: 0 16rpx 40rpx -16rpx rgba(0, 98, 255, 0.7);
+
+    &:active {
+      transform: scale(0.99);
+    }
+  }
+
+  &__success-primary-text {
+    font-size: 32rpx;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  &__success-secondary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 88rpx;
+
+    &:active {
+      opacity: 0.7;
+    }
+  }
+
+  &__success-secondary-text {
+    font-size: 28rpx;
+    font-weight: 500;
+    color: #64748b;
+  }
+
+  &__success-tip {
+    margin-top: 64rpx;
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+}
+
+@keyframes attpublish-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(16rpx);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes attpublish-ring {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.7;
+  }
+  70% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+
+@keyframes attpublish-spin {
+  to {
+    transform: rotate(360deg);
   }
 }

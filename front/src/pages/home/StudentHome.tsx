@@ -174,16 +174,19 @@ function pickHomeAttendance(list: HomeAttendanceRaw[]): HomeAttendanceCard | nul
     checkedAt: item.myRecord?.checkInAt,
   });
 
+  // 已批准的请假优先于「去签到」提示
+  const onLeave = (item: HomeAttendanceRaw) => item.myLeaveApplication?.status === 'approved';
+
   const ongoing = list.find(
     (item) => item.status === 'open' && startOf(item) <= now && now <= endOf(item),
   );
-  if (ongoing) return base(ongoing, 'ongoing');
+  if (ongoing) return base(ongoing, onLeave(ongoing) ? 'leave' : 'ongoing');
 
   // 24 小时内的下一场
   const upcoming = list
     .filter((item) => item.status === 'open' && startOf(item) > now && startOf(item) - now <= 86400000)
     .sort((a, b) => startOf(a) - startOf(b))[0];
-  if (upcoming) return base(upcoming, 'upcoming');
+  if (upcoming) return base(upcoming, onLeave(upcoming) ? 'leave' : 'upcoming');
 
   // 今天最近结束的一场：只展示已签到 / 已请假的回执
   const today = new Date();
@@ -254,11 +257,9 @@ export default function StudentHome() {
   const [loadingFeed, setLoadingFeed] = useState(true);
   const [greeting, setGreeting] = useState(getGreeting());
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [attendanceOpening, setAttendanceOpening] = useState(false);
   const [attendanceCard, setAttendanceCard] = useState<HomeAttendanceCard | null>(null);
   const [pendingHomeworkCount, setPendingHomeworkCount] = useState(0);
   const [pendingActivityCount, setPendingActivityCount] = useState(0);
-  const [newMaterialCount, setNewMaterialCount] = useState(0);
   const [pendingTasks, setPendingTasks] = useState<PendingTask[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [quickPage, setQuickPage] = useState(0);
@@ -344,29 +345,6 @@ export default function StudentHome() {
     };
   }, [user?.classId, refreshToken]);
 
-  // 资料入口角标：近 7 天新增的资料数量
-  useEffect(() => {
-    if (!user?.classId) {
-      setNewMaterialCount(0);
-      return;
-    }
-    let cancelled = false;
-    api
-      .get('/material/summary', { params: { classId: user.classId } })
-      .then((res) => {
-        if (cancelled) return;
-        const body = res.data?.data || res.data;
-        const count = Number(body?.newIn7Days);
-        setNewMaterialCount(Number.isFinite(count) && count > 0 ? count : 0);
-      })
-      .catch(() => {
-        if (!cancelled) setNewMaterialCount(0);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.classId, refreshToken]);
-
   // 问候语平滑过渡逻辑
   const updateGreeting = useCallback(() => {
     const newGreeting = getGreeting();
@@ -442,7 +420,9 @@ export default function StudentHome() {
     }
     let cancelled = false;
     api
-      .get(`/classes/${user.classId}/tasks`, { params: { status: 'todo', page: 1, pageSize: 3 } })
+      .get(`/classes/${user.classId}/tasks`, {
+        params: { status: 'todo,in_progress', page: 1, pageSize: 3 },
+      })
       .then((res) => {
         if (cancelled) return;
         const body = res.data?.data || res.data;
@@ -489,33 +469,9 @@ export default function StudentHome() {
     return () => document.removeEventListener('visibilitychange', handleVisible);
   }, []);
 
-  const handleAttendanceEntry = async () => {
-    if (attendanceOpening) return;
-    if (!user?.classId) {
-      navigate('/attendance-list');
-      return;
-    }
-    setAttendanceOpening(true);
-    try {
-      const { data } = await api.get<
-        ApiResponse<{
-          list: Array<{ id: string; status: string; startTime: string; endTime: string }>;
-        }>
-      >(`/classes/${user.classId}/attendances`, { params: { page: 1, pageSize: 50 } });
-      const list = data.data?.list ?? [];
-      const now = Date.now();
-      const active = list.find(
-        (item) =>
-          item.status === 'open' &&
-          new Date(item.startTime).getTime() <= now &&
-          now <= new Date(item.endTime).getTime(),
-      );
-      navigate(active ? `/check-in-detail/${user.classId}/${active.id}` : '/attendance-list');
-    } catch {
-      navigate('/attendance-list');
-    } finally {
-      setAttendanceOpening(false);
-    }
+  // 首页「签到」入口统一进考勤首页，由用户自行选择具体签到
+  const handleAttendanceEntry = () => {
+    navigate('/attendance-list');
   };
 
   // 班委才能记账，普通同学入口文案改为「班费明细」，避免点进去发现不能操作
@@ -546,6 +502,8 @@ export default function StudentHome() {
     path?: string;
     onClick?: () => void;
     badge?: number;
+    /** 红点数据拉取失败、数字可能过期时置灰提示 */
+    badgeStale?: boolean;
   }[] = [
     {
       key: 'attendance',
@@ -576,7 +534,6 @@ export default function StudentHome() {
       icon: Folder,
       gradient: 'linear-gradient(145deg, #5EEAD4, #0D9488)',
       path: '/material-library',
-      badge: newMaterialCount,
     },
     {
       key: 'notice',
@@ -585,6 +542,7 @@ export default function StudentHome() {
       gradient: 'linear-gradient(145deg, #60A5FA, #2563EB)',
       path: '/messages',
       badge: unread.total,
+      badgeStale: unread.stale,
     },
     {
       key: 'vote',
@@ -665,9 +623,17 @@ export default function StudentHome() {
     },
   ];
 
+  // 已签到 / 已请假的签到不再列入今日待办，只保留待签到（进行中 / 即将开始）
+  const todoAttendance =
+    attendanceCard &&
+    !attendanceCard.checkedAt &&
+    (attendanceCard.state === 'ongoing' || attendanceCard.state === 'upcoming')
+      ? attendanceCard
+      : null;
+
   // 有待办时最多列出 3 条；签到卡占用一行时，任务展示 2 条
-  const timelineTasks = pendingTasks.slice(0, attendanceCard ? 2 : 3);
-  const hasTodo = Boolean(attendanceCard) || timelineTasks.length > 0;
+  const timelineTasks = pendingTasks.slice(0, todoAttendance ? 2 : 3);
+  const hasTodo = Boolean(todoAttendance) || timelineTasks.length > 0;
   const ringCircumference = 2 * Math.PI * 24;
   const ringRate = taskStatsState === 'ready' ? completionRate : 0;
 
@@ -751,7 +717,11 @@ export default function StudentHome() {
               >
                 <Bell className="h-[18px] w-[18px]" strokeWidth={2} />
                 {unread.total > 0 ? (
-                  <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[#FF5A5A] ring-2 ring-[#0B66FF]" />
+                  <span
+                    className={`absolute right-1.5 top-1.5 h-2 w-2 rounded-full ring-2 ring-[#0B66FF] ${
+                      unread.stale ? 'bg-[#9CA3AF]' : 'bg-[#FF5A5A]'
+                    }`}
+                  />
                 ) : null}
               </button>
               <button
@@ -873,26 +843,18 @@ export default function StudentHome() {
             </div>
 
             <div className="mt-2.5 flex flex-col gap-1.5">
-              {attendanceCard && (
+              {todoAttendance && (
                 <div
                   data-pencil-name="待办-签到"
                   className={`flex cursor-pointer items-center gap-2 rounded-[14px] px-3 py-2 transition-colors active:opacity-80 ${
-                    attendanceCard.state === 'ongoing' ? 'bg-[#EFF6FF]' : 'bg-[#F8FAFC]'
+                    todoAttendance.state === 'ongoing' ? 'bg-[#EFF6FF]' : 'bg-[#F8FAFC]'
                   }`}
                   onClick={() =>
-                    navigate(`/check-in-detail/${user?.classId}/${attendanceCard.id}`)
+                    navigate(`/check-in-detail/${user?.classId}/${todoAttendance.id}`)
                   }
                 >
-                  <span
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
-                      attendanceCard.checkedAt ? 'bg-[#DCFCE7]' : 'bg-[#DBEAFE]'
-                    }`}
-                  >
-                    {attendanceCard.checkedAt ? (
-                      <CheckCircle className="h-3.5 w-3.5 text-[#16A34A]" strokeWidth={2.5} />
-                    ) : (
-                      <Clock className="h-3.5 w-3.5 text-[#2563EB]" strokeWidth={2.5} />
-                    )}
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#DBEAFE]">
+                    <Clock className="h-3.5 w-3.5 text-[#2563EB]" strokeWidth={2.5} />
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
@@ -900,35 +862,29 @@ export default function StudentHome() {
                         签到
                       </span>
                       <span className="truncate text-[13px]/[normal] font-body font-medium text-[#1A1A1A]">
-                        {attendanceCard.title}
+                        {todoAttendance.title}
                       </span>
                     </div>
                     <div className="mt-0.5 flex items-center gap-1 text-[10.5px]/[normal] font-caption text-[#94A3B8]">
-                      {attendanceCard.state === 'ongoing' ? (
+                      {todoAttendance.state === 'ongoing' ? (
                         <>
                           剩余
                           <AttendanceCountdown
-                            endTime={attendanceCard.endTime}
+                            endTime={todoAttendance.endTime}
                             onExpire={fetchHomeAttendance}
                           />
                         </>
-                      ) : attendanceCard.checkedAt ? (
-                        `${formatClock(attendanceCard.checkedAt)} 已签到`
-                      ) : attendanceCard.state === 'upcoming' ? (
-                        `${formatSchedule(attendanceCard.startTime)} 开始`
-                      ) : attendanceCard.state === 'leave' ? (
-                        '已请假'
                       ) : (
-                        '今日已结束'
+                        `${formatSchedule(todoAttendance.startTime)} 开始`
                       )}
                     </div>
                   </div>
-                  {attendanceCard.state === 'ongoing' && !attendanceCard.checkedAt ? (
+                  {todoAttendance.state === 'ongoing' ? (
                     <button
                       type="button"
                       onClick={(event) => {
                         event.stopPropagation();
-                        navigate(`/check-in-detail/${user?.classId}/${attendanceCard.id}`);
+                        navigate(`/check-in-detail/${user?.classId}/${todoAttendance.id}`);
                       }}
                       className="shrink-0 rounded-full bg-[linear-gradient(135deg,#3D93FF,#0B66FF)] px-3 py-1.5 text-[11px]/[normal] font-body font-semibold text-white shadow-[0_6px_14px_-6px_#0B66FF99] transition-transform active:scale-95"
                     >
@@ -967,7 +923,7 @@ export default function StudentHome() {
                             hot ? 'bg-[#FFEDD5] text-[#F97316]' : 'bg-[#EDE9FE] text-[#7C3AED]'
                           }`}
                         >
-                          待办
+                          {task.status === 'in_progress' ? '进行中' : '待办'}
                         </span>
                         <span className="truncate text-[13px]/[normal] font-body font-medium text-[#1A1A1A]">
                           {task.title}
@@ -1058,7 +1014,12 @@ export default function StudentHome() {
                             <Icon className="relative h-[21px] w-[21px] text-white" strokeWidth={2} />
                           </span>
                           {item.badge && item.badge > 0 ? (
-                            <span className="absolute -right-1.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#EF4444] px-1 text-[9.5px] font-semibold leading-none text-white ring-2 ring-white">
+                            <span
+                              title={item.badgeStale ? '数据更新延迟，正在重试' : undefined}
+                              className={`absolute -right-1.5 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9.5px] font-semibold leading-none text-white ring-2 ring-white ${
+                                item.badgeStale ? 'bg-[#9CA3AF]' : 'bg-[#EF4444]'
+                              }`}
+                            >
                               {item.badge > 99 ? '99+' : item.badge}
                             </span>
                           ) : null}
@@ -1189,7 +1150,6 @@ export default function StudentHome() {
           unread: unread.total,
           homework: pendingHomeworkCount,
           activity: pendingActivityCount,
-          material: newMaterialCount,
         }}
       />
     </>

@@ -1,158 +1,306 @@
+// ============================================================
+// 上传资料
+// 1:1 对齐 front/src/pages/tools/UploadMaterial.tsx
+// 含：多文件选择、200MB 校验、分类选择、真实上传进度、上传后跳转
+// ============================================================
 import { useState } from 'react'
-import { View, Text } from '@tarojs/components'
+import { Text, View } from '@tarojs/components'
 import Taro, { useLoad } from '@tarojs/taro'
 
-import { NavBar } from '@/components/business'
-import { Button, Icon } from '@/components/ui'
+import { StatusBar } from '@/components/business'
+import { Icon } from '@/components/ui'
 import { useUserStore } from '@/stores'
-import { useAuth } from '@/utils'
-import { chooseFile } from '@/utils/native'
-import { uploadFile } from '@/utils/upload'
+import { MATERIAL_FOLDERS, formatFileSize, getMaterialType } from '@/utils/material'
+import type { MaterialFolderMeta } from '@/utils/material'
+import { chooseFiles } from '@/utils/native'
+import type { LocalFileMeta } from '@/utils/native'
+import { uploadMaterialFile } from '@/utils/upload'
 import './index.scss'
 
-const FOLDERS = ['班会资料', '课程作业', '活动照片', '评优材料']
 const MAX_FILES = 20
+const MAX_SIZE = 200 * 1024 * 1024
+const FILE_LIST_URL = '/pages-sub/archive/file-list/index'
 
-interface SelFile {
-  path: string
-  name: string
-  size?: number
-  done?: boolean
+interface UploadFile extends LocalFileMeta {
+  id: string
 }
 
 export default function UploadMaterial() {
-  const currentClassId = useUserStore((s) => s.currentClassId)
-  const { requireAuth } = useAuth()
+  const classId = useUserStore((s) => s.currentClassId)
 
-  const [files, setFiles] = useState<SelFile[]>([])
-  const [folder, setFolder] = useState('')
+  const [files, setFiles] = useState<UploadFile[]>([])
+  const [folder, setFolder] = useState<MaterialFolderMeta>(MATERIAL_FOLDERS[0])
   const [uploading, setUploading] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [currentName, setCurrentName] = useState('')
 
-  const classIdRef = { id: currentClassId || '' }
-
-  useLoad((o) => {
-    if (!requireAuth('committee')) return
-    const cid = (o?.classId as string) || currentClassId
-    classIdRef.id = cid || ''
+  useLoad((query) => {
+    const name = decodeURIComponent(query?.folder || '')
+    const matched = MATERIAL_FOLDERS.find((item) => item.name === name)
+    if (matched) setFolder(matched)
   })
 
-  const addFiles = async () => {
-    const total = files.length + 1
-    if (total > MAX_FILES) {
-      Taro.showToast({ title: `单次最多 ${MAX_FILES} 个文件`, icon: 'none' })
+  const handlePick = async () => {
+    if (uploading) return
+    const remain = MAX_FILES - files.length
+    if (remain <= 0) {
+      Taro.showToast({ title: `一次最多上传 ${MAX_FILES} 个文件`, icon: 'none' })
       return
     }
     try {
-      const paths = await chooseFile(1)
-      if (!paths || paths.length === 0) return
-      const name = paths[0].split(/[/\\]/).pop() || '文件'
-      setFiles((prev) => [...prev, { path: paths[0], name }])
-    } catch {
-      Taro.showToast({ title: '选择文件失败', icon: 'none' })
+      const picked = await chooseFiles(remain)
+      if (!picked.length) return
+      const accepted: UploadFile[] = []
+      let tooLarge = 0
+      let empty = 0
+      picked.forEach((item) => {
+        if (item.size <= 0) {
+          empty += 1
+          return
+        }
+        if (item.size > MAX_SIZE) {
+          tooLarge += 1
+          return
+        }
+        accepted.push({
+          ...item,
+          id: `${Date.now()}-${item.name}-${Math.random().toString(36).slice(2, 7)}`
+        })
+      })
+      if (tooLarge > 0) {
+        Taro.showToast({ title: `${tooLarge} 个文件超过 200MB，已跳过`, icon: 'none' })
+      } else if (empty > 0 && accepted.length === 0) {
+        Taro.showToast({ title: '文件为空，已跳过', icon: 'none' })
+      }
+      if (accepted.length) setFiles((prev) => [...prev, ...accepted].slice(0, MAX_FILES))
+    } catch (err) {
+      Taro.showToast({
+        title: err instanceof Error ? err.message : '选择文件失败',
+        icon: 'none'
+      })
     }
   }
 
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index))
+  const removeFile = (id: string) => {
+    if (uploading) return
+    setFiles((prev) => prev.filter((item) => item.id !== id))
+  }
+
+  const handleBack = () => {
+    if (uploading) {
+      Taro.showToast({ title: '正在上传，请稍候', icon: 'none' })
+      return
+    }
+    if (Taro.getCurrentPages().length > 1) Taro.navigateBack()
+    else Taro.redirectTo({ url: FILE_LIST_URL })
   }
 
   const handleUpload = async () => {
-    if (files.length === 0) {
-      Taro.showToast({ title: '请先选择文件', icon: 'none' })
+    if (!classId) {
+      Taro.showToast({ title: '请先加入班级', icon: 'none' })
       return
     }
-    if (!folder) {
-      Taro.showToast({ title: '请选择文件分类', icon: 'none' })
-      return
-    }
-    if (!classIdRef.id) {
-      Taro.showToast({ title: '未找到班级信息', icon: 'none' })
-      return
-    }
+    if (!files.length || uploading) return
     setUploading(true)
-    let ok = 0
+    setProgress(0)
+    let uploaded = 0
     try {
-      for (const f of files) {
-        await uploadFile(f.path, f.name)
-        ok++
+      for (const file of files) {
+        setCurrentName(file.name)
+        await uploadMaterialFile(file.path, {
+          classId,
+          fileName: file.name,
+          folderName: folder.name,
+          onProgress: (percent) => {
+            setProgress(Math.round(((uploaded + percent / 100) / files.length) * 100))
+          }
+        })
+        uploaded += 1
+        setProgress(Math.round((uploaded / files.length) * 100))
       }
-      if (ok === files.length) {
-        Taro.showToast({ title: `成功上传 ${ok} 个文件`, icon: 'success' })
-        setTimeout(() => Taro.navigateBack(), 600)
-      } else {
-        Taro.showToast({ title: `成功上传 ${ok}/${files.length} 个`, icon: 'none' })
-      }
+      Taro.showToast({
+        title: `已上传 ${files.length} 个文件`,
+        icon: 'success',
+        duration: 600
+      })
+      setFiles([])
+      setTimeout(() => {
+        Taro.redirectTo({
+          url: `${FILE_LIST_URL}?folder=${encodeURIComponent(folder.name)}`
+        })
+      }, 600)
     } catch (err) {
-      Taro.showToast({ title: err instanceof Error ? err.message : '上传失败', icon: 'none' })
+      const message = err instanceof Error ? err.message : '上传失败'
+      Taro.showToast({
+        title: uploaded > 0 ? `已上传 ${uploaded} 个，其余失败` : message,
+        icon: 'none'
+      })
+      if (uploaded > 0) {
+        setFiles((prev) => prev.slice(uploaded))
+      }
     } finally {
       setUploading(false)
+      setCurrentName('')
     }
   }
 
-  const goRepost = () => {
-    Taro.navigateTo({ url: '/pages-sub/material/repost-message/index' })
-  }
+  const totalSize = files.reduce((sum, item) => sum + item.size, 0)
 
   return (
-    <View className='matup'>
-      <NavBar title='上传资料' />
+    <View className='matupload'>
+      <View className='matupload__header'>
+        <StatusBar />
+        <View className='matupload__head-row'>
+          <View className='matupload__head-left'>
+            <View className='matupload__back' onClick={handleBack}>
+              <Icon name='chevron-left' size={44} color='#1A1A1A' strokeWidth={2} />
+            </View>
+            <Text className='matupload__head-title'>上传资料</Text>
+          </View>
+          <Text className='matupload__head-hint'>最多 {MAX_FILES} 个 · 单个 200MB</Text>
+        </View>
+      </View>
 
-      <View className='matup__body'>
-        {/* 文件选择区 */}
-        <View className='matup__drop' onClick={addFiles}>
+      <View className='matupload__body'>
+        {/* 选择文件 */}
+        <View
+          className={`matupload__dropzone ${files.length ? 'matupload__dropzone--picked' : ''}`}
+          onClick={files.length ? undefined : handlePick}
+        >
           {files.length === 0 ? (
-            <View className='matup__drop-empty'>
-              <Icon name='upload' size={56} color='#0062FF' strokeWidth={2} />
-              <Text className='matup__drop-tip'>点击选择多个文件上传</Text>
+            <View className='matupload__drop-empty'>
+              <View className='matupload__drop-icon'>
+                <Icon name='upload-cloud' size={56} color='#0062FF' strokeWidth={2} />
+              </View>
+              <Text className='matupload__drop-title'>点击选择文件</Text>
+              <Text className='matupload__drop-desc'>
+                从微信聊天记录选择，支持 Word / PDF / 图片等
+              </Text>
             </View>
           ) : (
-            <View className='matup__file-list' onClick={(e) => e.stopPropagation()}>
-              {files.map((f, index) => (
-                <View key={`${f.name}-${index}`} className='matup__file-item'>
-                  <View className='matup__file-info'>
-                    <Text className='matup__file-name'>{f.name}</Text>
-                    {f.size ? (
-                      <Text className='matup__file-size'>{(f.size / 1024 / 1024).toFixed(2)} MB</Text>
-                    ) : null}
-                  </View>
-                  <View className='matup__file-remove' onClick={() => removeFile(index)}>
-                    <Icon name='x' size={28} color='#9CA3AF' strokeWidth={2} />
-                  </View>
-                </View>
-              ))}
-              <Text className='matup__file-more' onClick={addFiles}>
-                + 继续添加文件
-              </Text>
+            <View className='matupload__picked'>
+              <View className='matupload__picked-head'>
+                <Text className='matupload__picked-title'>已选 {files.length} 个文件</Text>
+                <Text className='matupload__picked-size'>{formatFileSize(totalSize)}</Text>
+              </View>
+              <View className='matupload__picked-list'>
+                {files.map((file) => {
+                  const type = getMaterialType(file.name)
+                  return (
+                    <View className='matupload__picked-item' key={file.id}>
+                      <View
+                        className='matupload__picked-icon'
+                        style={{ backgroundColor: type.bg }}
+                      >
+                        <Icon name={type.icon} size={36} color={type.color} strokeWidth={2} />
+                      </View>
+                      <View className='matupload__picked-main'>
+                        <Text className='matupload__picked-name'>{file.name}</Text>
+                        <Text className='matupload__picked-meta'>{formatFileSize(file.size)}</Text>
+                      </View>
+                      <View
+                        className='matupload__picked-remove'
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          removeFile(file.id)
+                        }}
+                      >
+                        <Icon name='x' size={28} color='#64748B' strokeWidth={2.5} />
+                      </View>
+                    </View>
+                  )
+                })}
+              </View>
+              <View
+                className='matupload__add-more'
+                onClick={(e) => {
+                  e.stopPropagation()
+                  void handlePick()
+                }}
+              >
+                <Icon name='plus' size={28} color='#0062FF' strokeWidth={2.5} />
+                <Text>继续添加文件</Text>
+              </View>
             </View>
           )}
         </View>
 
-        {/* 分类选择 */}
-        <View className='matup__cat'>
-          <Text className='matup__cat-title'>选择分类</Text>
-          <View className='matup__cat-list'>
-            {FOLDERS.map((f) => {
-              const active = folder === f
+        {/* 分类 */}
+        <View className='matupload__folder-section'>
+          <View className='matupload__folder-head'>
+            <Text className='matupload__folder-title'>选择分类</Text>
+            <Text className='matupload__folder-required'>必选</Text>
+          </View>
+          <View className='matupload__folder-grid'>
+            {MATERIAL_FOLDERS.map((item) => {
+              const active = folder.name === item.name
               return (
                 <View
-                  key={f}
-                  className={`matup__cat-chip ${active ? 'matup__cat-chip--active' : ''}`}
-                  onClick={() => setFolder(active ? '' : f)}
+                  key={item.name}
+                  className={`matupload__folder ${active ? 'matupload__folder--active' : ''}`}
+                  onClick={() => !uploading && setFolder(item)}
                 >
-                  <Text className={`matup__cat-chip-text ${active ? 'matup__cat-chip-text--active' : ''}`}>{f}</Text>
+                  <View className='matupload__folder-icon' style={{ backgroundColor: item.bg }}>
+                    <Icon name={item.icon} size={36} color={item.color} strokeWidth={2} />
+                  </View>
+                  <Text className='matupload__folder-name'>{item.name}</Text>
+                  <Text className='matupload__folder-hint'>{item.hint}</Text>
+                  {active ? (
+                    <View className='matupload__folder-check'>
+                      <Icon name='check' size={24} color='#FFFFFF' strokeWidth={3} />
+                    </View>
+                  ) : null}
                 </View>
               )
             })}
           </View>
         </View>
 
-        <Button type='primary' size='lg' block loading={uploading} onClick={handleUpload}>
-          {uploading ? '上传中...' : '批量上传'}
-        </Button>
+        {/* 上传进度 */}
+        {uploading ? (
+          <View className='matupload__progress'>
+            <View className='matupload__progress-head'>
+              <Text className='matupload__progress-label'>
+                正在上传 {currentName ? currentName.slice(0, 12) : ''}
+              </Text>
+              <Text className='matupload__progress-value'>{progress}%</Text>
+            </View>
+            <View className='matupload__progress-track'>
+              <View className='matupload__progress-bar' style={{ width: `${progress}%` }} />
+            </View>
+            <Text className='matupload__progress-tip'>请勿关闭页面，大文件需要一点时间</Text>
+          </View>
+        ) : null}
 
-        {/* 转载入口 */}
-        <View className='matup__repost' onClick={goRepost}>
-          <Text className='matup__repost-text'>一键转载（文字+文件）</Text>
+        {/* 操作 */}
+        <View className='matupload__actions'>
+          <View
+            className={`matupload__submit ${
+              files.length === 0 || uploading ? 'matupload__submit--disabled' : ''
+            }`}
+            hoverClass='matupload__submit--hover'
+            onClick={handleUpload}
+          >
+            <Icon name='upload-cloud' size={36} color='#FFFFFF' strokeWidth={2} />
+            <Text>{uploading ? '上传中...' : `上传到「${folder.name}」`}</Text>
+          </View>
+          <View
+            className='matupload__repost'
+            onClick={() => {
+              if (uploading) return
+              Taro.navigateTo({ url: '/pages-sub/material/repost-message/index' })
+            }}
+          >
+            <Icon name='share-2' size={32} color='#0062FF' strokeWidth={2} />
+            <View className='matupload__repost-text'>
+              <Text className='matupload__repost-title'>上传并发送通知</Text>
+              <Text className='matupload__repost-desc'>需要全班知晓的资料，可一键转载到通知</Text>
+            </View>
+            <Icon name='chevron-right' size={28} color='#94A3B8' strokeWidth={2} />
+          </View>
+          <Text className='matupload__tips'>
+            同一分类下重复上传会保留两份；超过 200MB 的文件请先压缩
+          </Text>
         </View>
       </View>
     </View>

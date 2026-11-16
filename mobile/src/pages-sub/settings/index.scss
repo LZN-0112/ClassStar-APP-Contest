@@ -1,120 +1,319 @@
 // ============================================================
-// 设置主页
-// 结构参照 front Settings.tsx：分组标题 + 列表项 + 退出登录
+// 设置主页（1:1 对齐 front/src/pages/settings/Settings.tsx）
 // ============================================================
-.sett {
-  min-height: 100vh;
-  background: $bg;
-  box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom);
 
-  // 蓝色渐变头部（对齐 front Settings.tsx）
-  &__header {
-    height: 564rpx; // front 282px
+.stg {
+  min-height: 100vh;
+  background-color: #f4f6fa;
+
+  &__body {
+    position: relative;
+    z-index: 10;
+    padding: 32rpx 36rpx calc(56rpx + env(safe-area-inset-bottom));
     box-sizing: border-box;
-    background: linear-gradient(180deg, #004ecc 0%, #4b83ff 55%, #defcff 100%);
-    border-radius: 0 0 48rpx 48rpx; // front rounded-[0_0_24px_24px]
   }
 
-  &__nav {
+  // ---------- 搜索 ----------
+  &__search {
     display: flex;
     flex-direction: row;
     align-items: center;
-    justify-content: space-between;
     height: 88rpx;
-    padding: 0 24rpx;
+    padding: 0 28rpx;
+    border-radius: 26rpx;
+    border: 1rpx solid rgba(226, 232, 240, 0.7);
+    background-color: #ffffff;
+    box-shadow: 0 2rpx 8rpx rgba(15, 23, 42, 0.03);
     box-sizing: border-box;
   }
 
-  &__back {
-    width: 80rpx;
-    height: 80rpx;
+  &__search-input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    margin-left: 18rpx;
+    font-family: $font-body;
+    font-size: 28rpx;
+    color: #1a1f2c;
+  }
+
+  &__search-placeholder {
+    color: #9ca3af;
+    font-size: 27rpx;
+  }
+
+  &__search-clear {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
+    width: 44rpx;
+    height: 44rpx;
+    margin-left: 8rpx;
   }
 
-  &__title {
-    font-size: 36rpx;
-    font-weight: 600;
+  // ---------- 账号卡 ----------
+  &__account {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-top: 28rpx;
+    padding: 32rpx;
+    border-radius: 36rpx;
+    border: 1rpx solid rgba(226, 232, 240, 0.6);
+    background-color: #ffffff;
+    box-shadow: 0 10rpx 30rpx rgba(15, 23, 42, 0.05);
+    box-sizing: border-box;
+
+    &:active {
+      opacity: 0.9;
+    }
+  }
+
+  &__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 108rpx;
+    height: 108rpx;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 32rpx;
+    background-image: linear-gradient(145deg, #6aa6ff 0%, #0b5be0 100%);
+    font-family: $font-heading;
+    font-size: 44rpx;
+    font-weight: $font-bold;
     color: #ffffff;
   }
 
-  &__nav-right {
-    width: 80rpx;
+  &__avatar-img {
+    width: 108rpx;
+    height: 108rpx;
   }
 
-  &__body {
-    padding: $spacing-3 $page-padding-x $page-padding-bottom;
+  &__account-main {
+    flex: 1;
+    min-width: 0;
+    margin-left: 24rpx;
+  }
+
+  &__account-name-row {
     display: flex;
-    flex-direction: column;
-    gap: $spacing-lg;
+    flex-direction: row;
+    align-items: center;
   }
 
+  &__account-name {
+    font-family: $font-body;
+    font-size: 35rpx;
+    font-weight: $font-semibold;
+    color: #1a1f2c;
+  }
+
+  &__role {
+    margin-left: 12rpx;
+    padding: 2rpx 12rpx;
+    border-radius: 999rpx;
+    background-color: rgba(0, 98, 255, 0.1);
+    font-family: $font-body;
+    font-size: 20rpx;
+    font-weight: $font-semibold;
+    color: #0062ff;
+  }
+
+  &__account-sub {
+    display: block;
+    margin-top: 8rpx;
+    font-family: $font-body;
+    font-size: 24rpx;
+    color: #8a94a6;
+  }
+
+  &__account-edit {
+    margin-left: 12rpx;
+    font-family: $font-body;
+    font-size: 24rpx;
+    font-weight: $font-medium;
+    color: #0062ff;
+    white-space: nowrap;
+  }
+
+  // ---------- 分组 ----------
   &__group {
-    display: flex;
-    flex-direction: column;
-    gap: 20rpx;
+    margin-top: 36rpx;
   }
 
   &__group-title {
-    font-size: $text-11;
+    display: block;
+    padding: 0 16rpx 14rpx;
+    font-family: $font-body;
+    font-size: 25rpx;
     font-weight: $font-semibold;
-    color: $text-secondary;
+    letter-spacing: 1rpx;
+    color: #8a94a6;
   }
 
-  &__group-items {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-sm;
+  &__card {
+    overflow: hidden;
+    border-radius: 36rpx;
+    border: 1rpx solid rgba(226, 232, 240, 0.6);
+    background-color: #ffffff;
+    box-shadow: 0 10rpx 30rpx rgba(15, 23, 42, 0.05);
   }
 
-  &__item {
+  &__row {
+    position: relative;
     display: flex;
+    flex-direction: row;
     align-items: center;
-    gap: $spacing-3;
-    height: 128rpx;
-    padding: 0 32rpx;
+    min-height: 116rpx;
+    padding: 18rpx 30rpx;
     box-sizing: border-box;
-    background: $surface;
-    border-radius: $radius-md;
-    box-shadow: $shadow-sm;
 
     &:active {
-      opacity: 0.7;
+      background-color: #fafbfd;
     }
   }
 
-  &__item-icon {
-    width: 80rpx;
-    height: 80rpx;
-    border-radius: $radius-md;
+  &__divider {
+    position: absolute;
+    top: 0;
+    left: 130rpx;
+    right: 0;
+    height: 1rpx;
+    background-color: #eef1f6;
+  }
+
+  &__tile {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 76rpx;
+    height: 76rpx;
     flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 22rpx;
 
-    &--danger {
-      background: #fee2e2;
+    &--shield {
+      background-image: linear-gradient(145deg, #6aa6ff 0%, #0b5be0 100%);
+      box-shadow: 0 8rpx 20rpx rgba(11, 91, 224, 0.32);
+    }
+
+    &--key {
+      background-image: linear-gradient(145deg, #5ad39a 0%, #0e9f6e 100%);
+      box-shadow: 0 8rpx 20rpx rgba(14, 159, 110, 0.3);
+    }
+
+    &--bell {
+      background-image: linear-gradient(145deg, #ffb067 0%, #f97316 100%);
+      box-shadow: 0 8rpx 20rpx rgba(249, 115, 22, 0.3);
+    }
+
+    &--eye {
+      background-image: linear-gradient(145deg, #b79cff 0%, #7c3aed 100%);
+      box-shadow: 0 8rpx 20rpx rgba(124, 58, 237, 0.3);
+    }
+
+    &--gear {
+      background-image: linear-gradient(145deg, #8494ac 0%, #334155 100%);
+      box-shadow: 0 8rpx 20rpx rgba(51, 65, 85, 0.28);
+    }
+
+    &--help {
+      background-image: linear-gradient(145deg, #fcd34d 0%, #d97706 100%);
+      box-shadow: 0 8rpx 20rpx rgba(217, 119, 6, 0.28);
+    }
+
+    &--info {
+      background-image: linear-gradient(145deg, #9aa8bc 0%, #475569 100%);
+      box-shadow: 0 8rpx 20rpx rgba(71, 85, 105, 0.28);
     }
   }
 
-  &__item-label {
+  &__tile-gloss {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 100%);
+  }
+
+  &__row-main {
     flex: 1;
     min-width: 0;
-    font-size: $text-base;
-    font-weight: $font-semibold;
-    color: $text-primary;
+    margin-left: 24rpx;
+  }
 
-    &--danger {
-      color: #dc2626;
+  &__row-label {
+    display: block;
+    font-family: $font-body;
+    font-size: 29rpx;
+    font-weight: $font-medium;
+    color: #1a1f2c;
+  }
+
+  &__row-desc {
+    display: block;
+    margin-top: 6rpx;
+    font-family: $font-body;
+    font-size: 23rpx;
+    line-height: 1.45;
+    color: #8a94a6;
+  }
+
+  &__row-value {
+    margin-left: 12rpx;
+    font-family: $font-body;
+    font-size: 25rpx;
+    color: #8a94a6;
+    white-space: nowrap;
+
+    &--strong {
+      font-weight: $font-semibold;
+      color: #0062ff;
     }
   }
 
-  &__item-arrow {
+  &__empty {
+    margin-top: 36rpx;
+    padding: 64rpx 0;
+    text-align: center;
+    font-family: $font-body;
+    font-size: 26rpx;
+    color: #8a94a6;
+  }
+
+  // ---------- 退出 ----------
+  &__logout {
     display: flex;
     align-items: center;
+    justify-content: center;
+    height: 96rpx;
+    margin-top: 48rpx;
+    border-radius: 32rpx;
+    border: 1rpx solid #fde2e2;
+    background-color: #ffffff;
+    font-family: $font-body;
+    font-size: 29rpx;
+    font-weight: $font-semibold;
+    color: #e5484d;
+    box-shadow: 0 10rpx 30rpx rgba(229, 72, 77, 0.08);
+
+    &:active {
+      opacity: 0.85;
+    }
+
+    &--disabled {
+      opacity: 0.6;
+    }
+  }
+
+  &__version {
+    margin-top: 32rpx;
+    text-align: center;
+    font-family: $font-body;
+    font-size: 22rpx;
+    color: #9aa4b2;
   }
 }

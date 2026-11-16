@@ -7,6 +7,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { normalizeUploadFileName } from '@/common/utils/upload-name.util';
+import { PushService } from '../push/push.service';
 
 @Injectable()
 export class MaterialService {
@@ -17,6 +18,7 @@ export class MaterialService {
     private readonly prisma: PrismaService,
     private readonly minioService: MinioService,
     private readonly classPermission: ClassPermissionService,
+    private readonly push: PushService,
   ) {}
 
   private async getOrCreateArchive(classId: string, userId: string) {
@@ -293,6 +295,10 @@ export class MaterialService {
         });
       }
 
+      const messageId = uuidv4();
+      // 事务内收集接收人，提交成功后再推送
+      let recipientIds: string[] = [];
+
       // 2. 在事务中创建所有记录
       await this.prisma.$transaction(async (tx) => {
         // 2.1 创建 archive_files 记录
@@ -316,7 +322,6 @@ export class MaterialService {
         }
 
         // 2.2 创建 messages 记录
-        const messageId = uuidv4();
         const textExcerpt = dto.text.length > 50 ? dto.text.substring(0, 50) + '...' : dto.text;
 
         await tx.messages.create({
@@ -353,6 +358,8 @@ export class MaterialService {
           select: { user_id: true },
         });
 
+        recipientIds = members.map((m) => m.user_id).filter((uid) => uid !== userId);
+
         if (members.length > 0) {
           await tx.message_reads.createMany({
             data: members.map((m) => ({
@@ -367,6 +374,15 @@ export class MaterialService {
       this.logger.log(`一键转载成功，共 ${materialIds.length} 个文件`);
 
       const textExcerpt = dto.text.length > 50 ? dto.text.substring(0, 50) + '...' : dto.text;
+
+      // 资料上传通知推送给全班（除上传者本人）
+      void this.push.sendMessagePush(recipientIds, {
+        title: textExcerpt,
+        content: dto.text,
+        messageId,
+        classId: dto.classId,
+        type: 'notice',
+      });
 
       return {
         materialIds,
@@ -415,6 +431,13 @@ export class MaterialService {
     // 只有班级成员才能查看资料库概览
     await this.classPermission.assertMember(userId, classId);
 
+    const member = await this.prisma.class_members.findUnique({
+      where: { class_id_user_id: { class_id: classId, user_id: userId } },
+      select: { joined_at: true, material_viewed_at: true },
+    });
+    // 新成员以加入时间为基线，避免把入班前的历史资料算成未读
+    const unreadSince = member?.material_viewed_at ?? member?.joined_at ?? new Date(0);
+
     const archive = await this.prisma.archives.findFirst({
       where: { class_id: classId, archive_type: 'material' },
     });
@@ -424,6 +447,7 @@ export class MaterialService {
         totalCount: 0,
         totalSize: 0,
         newIn7Days: 0,
+        unreadCount: 0,
         myUploadCount: 0,
         folders: [],
         recentFiles: [],
@@ -447,12 +471,17 @@ export class MaterialService {
 
     let totalSize = 0;
     let newIn7Days = 0;
+    let unreadCount = 0;
     let myUploadCount = 0;
 
     for (const file of files) {
       totalSize += file.file_size || 0;
       if (now - file.created_at.getTime() <= sevenDays) {
         newIn7Days += 1;
+      }
+      // 自己上传的资料不提醒自己；只看上次进入资料库之后新增的文件
+      if (file.uploader_id !== userId && file.created_at > unreadSince) {
+        unreadCount += 1;
       }
       if (file.uploader_id === userId) {
         myUploadCount += 1;
@@ -477,6 +506,7 @@ export class MaterialService {
       totalCount: files.length,
       totalSize,
       newIn7Days,
+      unreadCount,
       myUploadCount,
       folders: Array.from(folderStats.entries()).map(([name, stat]) => ({
         name,
@@ -486,6 +516,17 @@ export class MaterialService {
       recentFiles: files.slice(0, 5).map((file) => this.toFileItem(file)),
       hotFiles,
     };
+  }
+
+  /** 进入资料库时上报，作为“资料”角标的已读水位 */
+  async markViewed(classId: string, userId: string) {
+    await this.classPermission.assertMember(userId, classId);
+    const viewedAt = new Date();
+    await this.prisma.class_members.update({
+      where: { class_id_user_id: { class_id: classId, user_id: userId } },
+      data: { material_viewed_at: viewedAt },
+    });
+    return { viewedAt };
   }
 
   async getFileList(dto: QueryMaterialDto, userId: string) {

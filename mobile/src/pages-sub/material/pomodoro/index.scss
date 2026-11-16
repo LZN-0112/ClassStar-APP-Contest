@@ -1,262 +1,520 @@
 // ============================================================
-// 番茄钟页面
+// 番茄钟
+// 1:1 对齐 front/src/pages/tools/Pomodoro.tsx
 // ============================================================
-// 背景渐变借用 NavBar transparent 沉浸式，整体使用浅蓝渐变
 .pomodoro {
   min-height: 100vh;
   box-sizing: border-box;
-  background: linear-gradient(
-    180deg,
-    #dfefff 0%,
-    #f4f9ff 45%,
-    #f8fafc 100%
-  );
+  background: linear-gradient(180deg, #edf4fc 0%, #f7fafe 45%, #ffffff 100%);
+  overflow: hidden;
 
-  &__body {
-    padding: 40rpx 40rpx 96rpx;
+  &__page {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-  }
-
-  &__nav-set {
-    width: 72rpx;
-    height: 72rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  // 任务卡
-  &__task {
     width: 100%;
-    background: #ffffff;
-    border-radius: 24rpx;
-    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
-    padding: 24rpx;
+    padding: 0 32rpx calc(40rpx + env(safe-area-inset-bottom));
     box-sizing: border-box;
+  }
+
+  &__glow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 640rpx;
+    z-index: 0;
+    pointer-events: none;
+    transition: background 0.5s ease;
+  }
+
+  &__content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  // 顶部栏
+  &__head {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 20rpx;
-  }
-
-  &__task-icon {
-    width: 88rpx;
-    height: 88rpx;
-    border-radius: 20rpx;
-    background: rgba(59, 130, 246, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    justify-content: space-between;
+    width: 100%;
+    height: 96rpx;
     flex-shrink: 0;
   }
 
-  &__task-info {
-    flex: 1;
+  &__back,
+  &__gear {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: 999rpx;
+    background: rgba(255, 255, 255, 0.7);
     display: flex;
-    flex-direction: column;
-    gap: 8rpx;
-    min-width: 0;
+    align-items: center;
+    justify-content: center;
+
+    &:active {
+      opacity: 0.7;
+    }
   }
 
-  &__task-name {
-    font-size: 30rpx;
-    font-weight: 600;
+  &__gear {
+    color: #4b5563;
+    box-shadow: $shadow-sm;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: 34rpx;
+    font-weight: $font-semibold;
     color: #1a1a1a;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    line-height: 1;
   }
 
-  &__task-duration {
-    font-size: 24rpx;
-    color: #94a3b8;
-  }
-
-  &__task-meta {
+  &__stack {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
-    gap: 8rpx;
+    width: 100%;
+    margin-top: 16rpx;
+    gap: 32rpx;
   }
 
-  &__task-round {
-    font-size: 26rpx;
-    font-weight: 700;
-    color: #3b82f6;
+  // 计时主卡片
+  &__card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 16rpx;
+    padding: 32rpx;
+    box-sizing: border-box;
+    border-radius: 56rpx;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: $shadow-md;
   }
 
-  &__task-min {
+  &__card-head {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0 8rpx;
+    box-sizing: border-box;
+  }
+
+  &__phase {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12rpx;
+    padding: 8rpx 20rpx;
+    border-radius: 999rpx;
+    transition: color 0.3s ease, background-color 0.3s ease;
+  }
+
+  &__phase-dot {
+    width: 12rpx;
+    height: 12rpx;
+    border-radius: 999rpx;
+    flex-shrink: 0;
+  }
+
+  &__phase-text {
+    font-family: $font-body;
+    font-size: 22rpx;
+    font-weight: $font-semibold;
+    line-height: 1.2;
+  }
+
+  &__round-text {
+    font-family: $font-body;
     font-size: 22rpx;
     color: #94a3b8;
   }
 
-  // 计时环
-  &__ring {
+  // 倒计时环
+  &__ring-wrap {
     position: relative;
-    width: 480rpx;
-    height: 480rpx;
-    margin-top: 80rpx;
+    width: 74vw;
+    height: 74vw;
+    max-width: 568rpx;
+    max-height: 568rpx;
+    margin: 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
   }
 
-  &__ring-track {
+  &__ring-glow {
     position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    background: conic-gradient(#0062ff 0%, #a9c8ff 75%, #e5edff 75%, #e5edff 100%);
-    box-shadow: 0 12rpx 40rpx rgba(0, 98, 255, 0.18);
+    top: 16rpx;
+    right: 16rpx;
+    bottom: 16rpx;
+    left: 16rpx;
+    border-radius: 999rpx;
+    opacity: 0.6;
+
+    &.is-running {
+      animation: pomodoro-breathe 3.2s ease-in-out infinite;
+    }
   }
 
-  &__ring-info {
-    width: 380rpx;
-    height: 380rpx;
-    border-radius: 50%;
-    background: #ffffff;
+  &__ring {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    border-radius: 999rpx;
+    transition: background 0.5s linear;
+  }
+
+  &__ring-inner {
+    position: absolute;
+    top: 32rpx;
+    right: 32rpx;
+    bottom: 32rpx;
+    left: 32rpx;
+    border-radius: 999rpx;
+  }
+
+  &__ring-body {
+    position: relative;
+    z-index: 10;
+    width: 78%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 20rpx;
-    position: relative;
-    z-index: 1;
-    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+    gap: 16rpx;
   }
 
   &__timer {
-    font-size: 96rpx;
-    font-weight: 700;
-    color: #1a1a1a;
+    font-family: $font-data;
+    font-size: clamp(76rpx, 24vw, 104rpx);
+    font-weight: $font-bold;
+    line-height: 1;
+    letter-spacing: -1rpx;
+    color: #1e293b;
     font-variant-numeric: tabular-nums;
+    transition: opacity 0.2s ease;
   }
 
-  &__round-info {
-    font-size: 28rpx;
-    font-weight: 600;
-    color: #3b82f6;
-  }
-
-  &__tip {
-    font-size: 24rpx;
-    color: #94a3b8;
-  }
-
-  &__set-time {
-    margin-top: 8rpx;
-    padding: 8rpx 24rpx;
-    border-radius: 999rpx;
-    background: rgba(0, 98, 255, 0.06);
-  }
-
-  &__set-time-label {
-    font-size: 24rpx;
-    color: #0062ff;
-  }
-
-  // 控制按钮
-  &__controls {
-    margin-top: 80rpx;
-    display: flex;
+  &__task-pill {
+    display: inline-flex;
     flex-direction: row;
     align-items: center;
-    gap: 48rpx;
+    gap: 8rpx;
+    max-width: 100%;
+    padding: 8rpx 20rpx;
+    border-radius: 999rpx;
+    box-sizing: border-box;
+    font-family: $font-body;
+    font-size: 22rpx;
+
+    &:active {
+      opacity: 0.8;
+    }
   }
 
-  &__ctrl {
-    width: 144rpx;
-    height: 144rpx;
-    border-radius: 50%;
-    background: #0062ff;
-    box-shadow: 0 12rpx 32rpx rgba(0, 98, 255, 0.35);
+  &__task-pill-text {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 22rpx;
+  }
+
+  // 完成一轮的扩散光效
+  &__celebrate {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    pointer-events: none;
   }
 
-  &__ctrl-text {
-    font-size: 48rpx;
+  &__ripple {
+    position: absolute;
+    width: 72%;
+    height: 72%;
+    border-radius: 999rpx;
+    border: 4rpx solid transparent;
+    animation: pomodoro-ripple 1.1s ease-out forwards;
+
+    &--2 {
+      animation-delay: 0.18s;
+    }
+
+    &--3 {
+      animation-delay: 0.36s;
+    }
+  }
+
+  // 轮次进度
+  &__rounds {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    gap: 16rpx;
+  }
+
+  &__round-dot {
+    width: 20rpx;
+    height: 20rpx;
+    border-radius: 999rpx;
+    transition: background-color 0.3s ease;
+  }
+
+  &__rounds-hint {
+    margin-left: 8rpx;
+    font-family: $font-body;
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  // 操作区
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 16rpx;
+  }
+
+  &__btn-main {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    width: 100%;
+    height: 112rpx;
+    border-radius: 999rpx;
+    transition: transform 0.12s ease;
+
+    &:active {
+      transform: scale(0.97);
+    }
+  }
+
+  &__btn-main--flex {
+    flex: 1;
+    width: auto;
+  }
+
+  &__btn-main-text {
+    font-family: $font-body;
+    font-size: 30rpx;
+    font-weight: $font-semibold;
     color: #ffffff;
     line-height: 1;
   }
 
-  // 设置弹层
-  &__opts {
-    width: 100%;
+  &__btn-row {
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap;
-    gap: 20rpx;
-  }
-
-  &__opt {
-    flex: 1 1 auto;
-    min-width: 180rpx;
-    padding: 24rpx;
-    border-radius: 16rpx;
-    background: #f1f5f9;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &--active {
-      background: #0062ff;
-    }
-  }
-
-  &__opt-text {
-    font-size: 28rpx;
-    font-weight: 600;
-    color: #64748b;
-
-    &--active {
-      color: #ffffff;
-    }
-  }
-
-  // 编辑任务弹层
-  &__task-form {
     width: 100%;
-    display: flex;
-    flex-direction: column;
     gap: 24rpx;
   }
 
-  &__task-field {
+  &__btn-ghost {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
     gap: 12rpx;
+    height: 112rpx;
+    padding: 0 40rpx;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    border: 1rpx solid #e5eaf2;
+    border-radius: 999rpx;
+    background: #ffffff;
+    transition: transform 0.12s ease;
+
+    &:active {
+      background: #f8fafc;
+      transform: scale(0.97);
+    }
   }
 
-  &__task-label {
-    font-size: 26rpx;
+  &__btn-ghost-text {
+    font-family: $font-body;
+    font-size: 28rpx;
+    font-weight: $font-semibold;
+    color: #4b5563;
+    line-height: 1;
+  }
+
+  &__helper {
+    text-align: center;
+    font-family: $font-body;
+    font-size: 22rpx;
+    line-height: 1.6;
+    color: #8a97a8;
+  }
+
+  // 今日统计
+  &__stats {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    width: 100%;
+    padding: 28rpx 40rpx;
+    box-sizing: border-box;
+    border-radius: 32rpx;
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: $shadow-sm;
+  }
+
+  &__stat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+  }
+
+  &__stat-value {
+    font-family: $font-data;
+    font-size: 40rpx;
+    font-weight: $font-bold;
+    line-height: 1;
+  }
+
+  &__stat-label {
+    font-family: $font-body;
+    font-size: 22rpx;
+    color: #8a97a8;
+  }
+
+  &__divider {
+    width: 1rpx;
+    background: #edf1f7;
+    margin: 8rpx 0;
+    flex-shrink: 0;
+  }
+
+  // 弹层内容
+  &__sheet-body {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 16rpx;
+  }
+
+  &__sheet-label {
+    font-family: $font-body;
+    font-size: 24rpx;
+    font-weight: $font-medium;
     color: #4b5563;
   }
 
-  &__task-input {
+  &__sheet-label--gap {
+    margin-top: 32rpx;
+  }
+
+  &__opts {
+    display: flex;
+    flex-direction: row;
+    gap: 16rpx;
+    margin-top: 16rpx;
+  }
+
+  &__opt {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 80rpx;
+    border-radius: 28rpx;
+    font-family: $font-body;
+    font-size: 26rpx;
+    font-weight: $font-semibold;
+    transition: background-color 0.2s ease, color 0.2s ease;
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  &__sheet-note {
+    margin-top: 32rpx;
+    font-family: $font-body;
+    font-size: 22rpx;
+    line-height: 1.6;
+    color: #8a97a8;
+  }
+
+  &__sheet-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 96rpx;
     width: 100%;
-    height: 88rpx;
+    border-radius: 28rpx;
+    font-family: $font-body;
+    font-size: 30rpx;
+    font-weight: $font-semibold;
+    color: #ffffff;
+    box-shadow: 0 20rpx 40rpx rgba(75, 114, 224, 0.24);
+    transition: transform 0.12s ease;
+
+    &:active {
+      transform: scale(0.98);
+    }
+  }
+
+  &__input {
+    width: 100%;
+    height: 96rpx;
     padding: 0 24rpx;
     box-sizing: border-box;
-    background: #f8fafc;
-    border-radius: 12rpx;
+    border: 1rpx solid #e5eaf2;
+    border-radius: 28rpx;
+    font-family: $font-body;
     font-size: 28rpx;
     color: #1a1a1a;
   }
 
-  &__ph {
+  &__input-ph {
     color: #cbd5e1;
   }
 }
 
-// 重置 nvue/taro 原生导航背景（配合 transparent）
-page {
-  background: linear-gradient(
-    180deg,
-    #dfefff 0%,
-    #f4f9ff 45%,
-    #f8fafc 100%
-  );
+@keyframes pomodoro-breathe {
+  0% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.025);
+  }
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+}
+
+@keyframes pomodoro-ripple {
+  from {
+    opacity: 0.4;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.5);
+  }
 }

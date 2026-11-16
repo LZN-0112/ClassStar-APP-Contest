@@ -31,9 +31,41 @@ function toggleAgreement(container: HTMLElement) {
   fireEvent.click(checkbox);
 }
 
-function fillForm(phone: string, password: string, confirmPassword: string) {
+/** 第一步：填写账号信息 */
+function fillAccountStep(
+  overrides: { phone?: string; email?: string; code?: string } = {}
+) {
+  const {
+    phone = '13800138000',
+    email = 'zhangsan@example.com',
+    code = '123456',
+  } = overrides;
   fireEvent.change(screen.getByPlaceholderText('请输入手机号'), {
     target: { value: phone },
+  });
+  fireEvent.change(screen.getByPlaceholderText('请输入邮箱（用于接收验证码）'), {
+    target: { value: email },
+  });
+  fireEvent.change(screen.getByPlaceholderText('请输入邮箱验证码'), {
+    target: { value: code },
+  });
+}
+
+function goNext() {
+  fireEvent.click(screen.getByText('下一步'));
+}
+
+/** 第二步：填写资料 */
+function fillProfileStep(
+  overrides: { name?: string; password?: string; confirmPassword?: string } = {}
+) {
+  const {
+    name = '张三',
+    password = 'Test1234',
+    confirmPassword = 'Test1234',
+  } = overrides;
+  fireEvent.change(screen.getByPlaceholderText('请输入真实姓名（用于班级实名）'), {
+    target: { value: name },
   });
   fireEvent.change(screen.getByPlaceholderText('请输入密码'), {
     target: { value: password },
@@ -43,15 +75,66 @@ function fillForm(phone: string, password: string, confirmPassword: string) {
   });
 }
 
+/** 完整走完两步 */
+function fillAll() {
+  fillAccountStep();
+  goNext();
+  fillProfileStep();
+}
+
 describe('Register 注册页', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
   });
 
+  it('第一步手机号格式非法时提示且不进入第二步', () => {
+    renderRegister();
+    fillAccountStep({ phone: '123456' });
+
+    goNext();
+
+    expect(toast.error).toHaveBeenCalledWith('请输入正确的 11 位手机号');
+    expect(api.post).not.toHaveBeenCalled();
+    expect(screen.queryByPlaceholderText('请输入密码')).not.toBeInTheDocument();
+  });
+
+  it('第一步邮箱格式非法时提示且不进入第二步', () => {
+    renderRegister();
+    fillAccountStep({ email: 'not-an-email' });
+
+    goNext();
+
+    expect(toast.error).toHaveBeenCalledWith('请输入正确的邮箱');
+    expect(api.post).not.toHaveBeenCalled();
+    expect(screen.queryByPlaceholderText('请输入密码')).not.toBeInTheDocument();
+  });
+
+  it('第一步验证码缺失时提示且不进入第二步', () => {
+    renderRegister();
+    fillAccountStep({ code: '' });
+
+    goNext();
+
+    expect(toast.error).toHaveBeenCalledWith('请输入 6 位邮箱验证码');
+    expect(api.post).not.toHaveBeenCalled();
+    expect(screen.queryByPlaceholderText('请输入密码')).not.toBeInTheDocument();
+  });
+
+  it('第一步通过后进入第二步展示姓名和密码表单', () => {
+    renderRegister();
+    fillAccountStep();
+
+    goNext();
+
+    expect(screen.getByPlaceholderText('请输入真实姓名（用于班级实名）')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('请输入密码')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('请输入手机号')).not.toBeInTheDocument();
+  });
+
   it('未勾选协议时点击注册仅提示，不发起请求', () => {
     renderRegister();
-    fillForm('13800138000', 'Test1234', 'Test1234');
+    fillAll();
 
     fireEvent.click(screen.getByText('注册'));
 
@@ -59,21 +142,11 @@ describe('Register 注册页', () => {
     expect(api.post).not.toHaveBeenCalled();
   });
 
-  it('手机号格式非法时提示且不发起请求', () => {
-    const { container } = renderRegister();
-    toggleAgreement(container);
-    fillForm('123456', 'Test1234', 'Test1234');
-
-    fireEvent.click(screen.getByText('注册'));
-
-    expect(toast.error).toHaveBeenCalledWith('请输入正确的 11 位手机号');
-    expect(api.post).not.toHaveBeenCalled();
-  });
-
   it('密码不符合规则时提示', () => {
     const { container } = renderRegister();
     toggleAgreement(container);
-    fillForm('13800138000', 'abcdefgh', 'abcdefgh');
+    fillAll();
+    fillProfileStep({ password: 'abcdefgh', confirmPassword: 'abcdefgh' });
 
     fireEvent.click(screen.getByText('注册'));
 
@@ -84,7 +157,8 @@ describe('Register 注册页', () => {
   it('两次密码不一致时提示', () => {
     const { container } = renderRegister();
     toggleAgreement(container);
-    fillForm('13800138000', 'Test1234', 'Test5678');
+    fillAll();
+    fillProfileStep({ password: 'Test1234', confirmPassword: 'Test5678' });
 
     fireEvent.click(screen.getByText('注册'));
 
@@ -97,14 +171,16 @@ describe('Register 注册页', () => {
 
     const { container } = renderRegister();
     toggleAgreement(container);
-    fillForm('13800138000', 'Test1234', 'Test1234');
+    fillAll();
 
     fireEvent.click(screen.getByText('注册'));
 
     expect(await screen.findByText('LOGIN_PAGE')).toBeInTheDocument();
     expect(api.post).toHaveBeenCalledWith('/auth/register', {
       phone: '13800138000',
-      name: '13800138000',
+      email: 'zhangsan@example.com',
+      code: '123456',
+      name: '张三',
       password: 'Test1234',
       confirmPassword: 'Test1234',
     });
@@ -116,7 +192,7 @@ describe('Register 注册页', () => {
 
     const { container } = renderRegister();
     toggleAgreement(container);
-    fillForm('13800138000', 'Test1234', 'Test1234');
+    fillAll();
 
     fireEvent.click(screen.getByText('注册'));
 

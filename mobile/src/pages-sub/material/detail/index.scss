@@ -1,92 +1,343 @@
+// ============================================================
+// 资料文件详情样式（1:1 对齐 front/src/pages/tools/MaterialDetail.tsx）
+// ============================================================
 .matdetail {
   min-height: 100vh;
-  background: $bg;
-  box-sizing: border-box;
-  padding-bottom: env(safe-area-inset-bottom);
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
 
   &__body {
-    padding: 24rpx $page-padding-x $page-padding-bottom;
-  }
-
-  &__empty {
-    padding: 160rpx 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16rpx;
-  }
-
-  &__empty-text {
-    font-size: $text-sm;
-    color: $text-secondary;
-  }
-
-  &__content {
+    flex: 1;
     display: flex;
     flex-direction: column;
     gap: 32rpx;
+    padding: 32rpx 40rpx calc(240rpx + env(safe-area-inset-bottom));
   }
 
-  &__head {
-    padding: 40rpx 0;
+  // ---------- 文件名片 ----------
+  &__card {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16rpx;
+    gap: 20rpx;
+    padding: 40rpx 32rpx;
+    border-radius: 24rpx;
+    background: #ffffff;
+    box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.05);
   }
 
   &__file-icon {
     width: 128rpx;
     height: 128rpx;
+    border-radius: 32rpx;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
-  &__title {
-    font-size: $text-xl;
-    font-weight: 700;
-    color: $text-primary;
-    text-align: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  &__file-name {
     max-width: 100%;
+    font-size: 32rpx;
+    font-weight: 700;
+    line-height: 48rpx;
+    color: #1a1a1a;
+    text-align: center;
+    font-family: $font-heading;
+    word-break: break-all;
+  }
+
+  &__file-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12rpx;
+  }
+
+  &__type-pill {
+    padding: 4rpx 16rpx;
+    border-radius: 999rpx;
+    font-size: 20rpx;
+    font-weight: 600;
   }
 
   &__meta {
-    font-size: $text-sm;
-    color: $text-secondary;
+    font-size: 22rpx;
+    color: #64748b;
   }
 
-  &__rows {
+  &__meta-dot {
+    font-size: 22rpx;
+    color: #cbd5e1;
+  }
+
+  &__new-pill {
+    padding: 4rpx 16rpx;
+    border-radius: 999rpx;
+    background: #fef2f2;
+    font-size: 20rpx;
+    font-weight: 600;
+    color: #dc2626;
+  }
+
+  // ---------- 预览 ----------
+  &__preview {
     display: flex;
     flex-direction: column;
-    gap: 16rpx;
+    gap: 20rpx;
+    padding: 28rpx;
+    border-radius: 24rpx;
+    background: #ffffff;
+    box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.05);
   }
 
-  &__row {
-    background: $surface;
-    border-radius: $radius-lg;
-    padding: 0 28rpx;
-    height: 104rpx;
+  &__preview-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: $shadow-sm;
   }
 
-  &__row-label {
-    font-size: $text-base;
-    color: $text-secondary;
+  &__preview-title {
+    font-size: 26rpx;
+    font-weight: 600;
+    color: #1a1a1a;
   }
 
-  &__row-value {
-    font-size: $text-base;
-    color: $text-primary;
-    max-width: 60%;
+  &__preview-hint {
+    font-size: 20rpx;
+    color: #94a3b8;
+  }
+
+  &__image-wrap {
+    width: 100%;
+    height: 560rpx;
+    border-radius: 24rpx;
+    background: #f8fafc;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  }
+
+  &__image {
+    width: 100%;
+    height: 100%;
+  }
+
+  &__video {
+    width: 100%;
+    height: 560rpx;
+    border-radius: 24rpx;
+    background: #000000;
+  }
+
+  &__audio {
+    display: flex;
+    align-items: center;
+    gap: 20rpx;
+    padding: 24rpx;
+    border-radius: 24rpx;
+    background: #f8fafc;
+  }
+
+  &__audio-icon {
+    width: 88rpx;
+    height: 88rpx;
+    flex-shrink: 0;
+    border-radius: 24rpx;
+    background: #fdf2f8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__audio-player {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__text {
+    padding: 24rpx;
+    border-radius: 24rpx;
+    background: #f8fafc;
+  }
+
+  &__text-content {
+    display: block;
+    max-height: 520rpx;
+    overflow: hidden;
+    font-size: 24rpx;
+    line-height: 40rpx;
+    color: #475569;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  &__text-tip {
+    display: block;
+    margin-top: 16rpx;
+    font-size: 20rpx;
+    color: #94a3b8;
+  }
+
+  &__text-empty {
+    padding: 32rpx 0;
+    text-align: center;
+    font-size: 22rpx;
+    color: #94a3b8;
+  }
+
+  // ---------- 提示 ----------
+  &__tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 24rpx;
+    padding: 28rpx;
+    border-radius: 24rpx;
+    background: #f0f7ff;
+  }
+
+  &__tip-text {
+    flex: 1;
+    font-size: 22rpx;
+    line-height: 40rpx;
+    color: #475569;
+  }
+
+  // ---------- 文件信息 ----------
+  &__info {
+    display: flex;
+    flex-direction: column;
+    border-radius: 24rpx;
+    background: #ffffff;
+    box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+
+  &__info-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24rpx 32rpx;
+
+    &--border {
+      border-bottom: 2rpx solid #f1f5f9;
+    }
+  }
+
+  &__info-label {
+    font-size: 24rpx;
+    color: #64748b;
+  }
+
+  &__info-value {
+    font-size: 26rpx;
+    font-weight: 500;
+    color: #1a1a1a;
+  }
+
+  // ---------- 骨架 / 状态 ----------
+  &__skeleton {
+    border-radius: 24rpx;
+    background: #e9eef5;
+    animation: matdetail-pulse 1.4s ease-in-out infinite;
+
+    &--lg {
+      height: 288rpx;
+    }
+
+    &--md {
+      height: 192rpx;
+    }
+  }
+
+  &__state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24rpx;
+    padding: 96rpx 48rpx;
+    border-radius: 24rpx;
+    background: #ffffff;
+  }
+
+  &__state-icon {
+    width: 128rpx;
+    height: 128rpx;
+    border-radius: 50%;
+    background: #fef2f2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__state-title {
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  &__state-btn {
+    padding: 16rpx 40rpx;
+    border-radius: 999rpx;
+    background: #0062ff;
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #ffffff;
+
+    &--hover {
+      opacity: 0.85;
+    }
+  }
+
+  // ---------- 吸底下载 ----------
+  &__footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    padding: 24rpx 40rpx calc(20rpx + max(env(safe-area-inset-bottom), 0px));
+    border-top: 2rpx solid #e2e8f0;
+    background: #ffffff;
+  }
+
+  &__download {
+    height: 96rpx;
+    border-radius: 24rpx;
+    background: linear-gradient(-98.571deg, #0062ff 14.645%, #3b82f6 85.355%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #ffffff;
+    box-shadow: 0 8rpx 20rpx -8rpx rgba(0, 98, 255, 0.6);
+
+    &--hover {
+      opacity: 0.92;
+      transform: scale(0.99);
+    }
+
+    &--disabled {
+      opacity: 0.6;
+    }
+  }
+
+  &__footer-tip {
+    display: block;
+    margin-top: 16rpx;
+    text-align: center;
+    font-size: 20rpx;
+    color: #94a3b8;
+  }
+}
+
+@keyframes matdetail-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
   }
 }

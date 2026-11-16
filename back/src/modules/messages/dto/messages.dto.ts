@@ -7,6 +7,9 @@ import {
   IsDateString,
   IsInt,
   IsArray,
+  IsUUID,
+  ArrayNotEmpty,
+  ArrayMaxSize,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
@@ -82,6 +85,15 @@ export class CreateMessageDto {
   @IsOptional()
   @IsDateString()
   ackDeadline?: string;
+}
+
+export class MarkMessagesReadDto {
+  @ApiProperty({ description: '需要标记已读的消息 ID 列表', type: [String] })
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayMaxSize(200)
+  @IsUUID('4', { each: true })
+  ids: string[];
 }
 
 export class CreateReminderDto {

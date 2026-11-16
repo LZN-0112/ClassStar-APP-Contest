@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageLayout from '@/components/layout/PageLayout';
+import DateTimePickerSheet, { formatDateTimeLabel } from '@/components/ui/DateTimePickerSheet';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
@@ -9,6 +10,7 @@ import {
   Plus,
   Trash2,
   CalendarDays,
+  ChevronRight,
   CircleDot,
   ListChecks,
 } from 'lucide-react';
@@ -55,6 +57,7 @@ export default function PublishVote() {
   const [title, setTitle] = useState('');
   const [options, setOptions] = useState(['', '']);
   const [deadline, setDeadline] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [voteType, setVoteType] = useState<'single' | 'multiple'>('single');
 
   const classId = user?.classId;
@@ -137,6 +140,7 @@ export default function PublishVote() {
   };
 
   return (
+    <>
     <PageLayout
       title="发起投票"
       variant="a"
@@ -254,16 +258,17 @@ export default function PublishVote() {
             })}
           </div>
 
-          <div className="mt-3 flex items-center justify-between rounded-xl bg-[#F7F9FD] px-3 py-2.5">
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="mt-3 flex w-full items-center justify-between rounded-xl bg-[#F7F9FD] px-3 py-2.5 text-left active:opacity-80"
+          >
             <span className="font-body text-[12px] text-[#64748B]">自定义日期与时间</span>
-            <input
-              type="datetime-local"
-              value={deadline}
-              min={toLocalInput(new Date())}
-              onChange={(event) => setDeadline(event.target.value)}
-              className="bg-transparent font-data text-[12px] text-[#1E293B] outline-none"
-            />
-          </div>
+            <span className="flex items-center gap-1 font-data text-[12px] text-[#1E293B]">
+              {deadline ? formatDateTimeLabel(deadline) : '请选择'}
+              <ChevronRight className="h-3.5 w-3.5 text-[#94A3B8]" strokeWidth={2} />
+            </span>
+          </button>
         </div>
 
         {/* 投票类型 */}
@@ -335,5 +340,17 @@ export default function PublishVote() {
         </button>
       </div>
     </PageLayout>
+
+    {/* 自定义截止时间选择 */}
+    <DateTimePickerSheet
+      open={pickerOpen}
+      value={deadline}
+      onClose={() => setPickerOpen(false)}
+      onConfirm={(next) => {
+        setDeadline(next);
+        setPickerOpen(false);
+      }}
+    />
+    </>
   );
 }

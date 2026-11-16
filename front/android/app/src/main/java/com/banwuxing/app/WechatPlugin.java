@@ -24,16 +24,15 @@ public class WechatPlugin extends Plugin {
 
     private static PluginCall pendingCall;
 
-    @Override
-    public void load() {
-        IWXAPI api = WXAPIFactory.createWXAPI(getContext(), APP_ID, true);
-        api.registerApp(APP_ID);
-    }
-
+    /**
+     * 合规要求：不在 App 启动时初始化第三方 SDK。
+     * 微信 SDK 仅在用户主动点击「微信登录/绑定」时注册，见 {@link #login(PluginCall)}。
+     */
     @PluginMethod
     public void login(PluginCall call) {
         Context context = getContext();
         IWXAPI api = WXAPIFactory.createWXAPI(context, APP_ID, true);
+        api.registerApp(APP_ID);
 
         if (!api.isWXAppInstalled()) {
             call.reject("未安装微信，请先安装微信后再使用微信登录");

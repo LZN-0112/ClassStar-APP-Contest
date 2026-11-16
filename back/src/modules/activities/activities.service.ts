@@ -18,6 +18,7 @@ import {
   RegistrationStatus,
 } from './dto/activities.dto';
 import { computeActivityStatus, computeRegistrationOpen, getActivityStartTime } from './activity-status.utils';
+import { PushService } from '../push/push.service';
 
 @Injectable()
 export class ActivitiesService {
@@ -32,6 +33,7 @@ export class ActivitiesService {
     private readonly redisService: RedisService,
     private readonly minioService: MinioService,
     private readonly minioPresignedService: MinioPresignedService,
+    private readonly push: PushService,
   ) {}
 
   private validateImageBuffer(buffer: Buffer): { ext: string; mime: string } {
@@ -189,6 +191,7 @@ export class ActivitiesService {
       deadline: deadline ?? undefined,
       cover_url: dto.coverUrl,
       status: 'registering',
+      is_mandatory: dto.isMandatory ?? false,
     };
 
     try {
@@ -521,28 +524,31 @@ export class ActivitiesService {
     }
 
     const previousStatus = registration.status;
-    const updated = await this.prisma.$transaction(async (tx) => {
+    const { row: updated, notification } = await this.prisma.$transaction(async (tx) => {
       const row = await tx.activity_registrations.update({
         where: { id: registrationId },
         data: { status: dto.status },
       });
 
+      let notification: { messageId: string; title: string; content: string } | null = null;
       const isResult = dto.status === 'registered' || dto.status === 'rejected';
       if (previousStatus !== dto.status && isResult) {
         const activity = registration.activities;
         const approved = dto.status !== 'rejected';
         const startText = this.formatEventStart(activity.event_date, activity.event_time);
         const messageId = uuidv4();
+        const messageTitle = `【报名结果】${activity.title}`.slice(0, 200);
+        const messageContent = approved
+          ? `你报名的活动「${activity.title}」已审核通过，请于 ${startText} 到 ${activity.location || '活动地点'} 参加。`
+          : `很遗憾，你报名的活动「${activity.title}」未通过审核，如有疑问可联系班委了解。`;
         await tx.messages.create({
           data: {
             id: messageId,
             class_id: classId,
             publisher_id: userId,
             type: 'activity_result',
-            title: `【报名结果】${activity.title}`.slice(0, 200),
-            content: approved
-              ? `你报名的活动「${activity.title}」已审核通过，请于 ${startText} 到 ${activity.location || '活动地点'} 参加。`
-              : `很遗憾，你报名的活动「${activity.title}」未通过审核，如有疑问可联系班委了解。`,
+            title: messageTitle,
+            content: messageContent,
             event_time: getActivityStartTime(activity),
             location: activity.location ?? null,
             require_ack: false,
@@ -557,10 +563,20 @@ export class ActivitiesService {
             user_id: registration.student_id,
           },
         });
+        notification = { messageId, title: messageTitle, content: messageContent };
       }
 
-      return row;
+      return { row, notification };
     });
+
+    // 事务提交成功后再推送，避免回滚时误发通知
+    if (notification) {
+      void this.push.sendMessagePush([registration.student_id], {
+        ...notification,
+        classId,
+        type: 'activity_result',
+      });
+    }
 
     return {
       id: updated.id,
@@ -699,6 +715,7 @@ export class ActivitiesService {
       deadline: activity.deadline,
       coverUrl: activity.cover_url ?? activity.activity_images?.[0]?.image_url ?? null,
       status: activity.status,
+      isMandatory: !!activity.is_mandatory,
       displayStatus: computeActivityStatus(activity),
       registrationOpen: computeRegistrationOpen(activity),
       createdAt: activity.created_at,

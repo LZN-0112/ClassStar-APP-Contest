@@ -82,6 +82,15 @@ export class MaterialController {
     return this.materialService.getSummary(dto.classId, userId);
   }
 
+  @Post('viewed')
+  @ApiOperation({ summary: '标记资料库已查看（清除资料角标）' })
+  async markViewed(
+    @Query() dto: QueryMaterialDto,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.materialService.markViewed(dto.classId, userId);
+  }
+
   @Get(':fileId')
   @ApiOperation({ summary: '获取文件详情' })
   async getFileDetail(

@@ -1,0 +1,97 @@
+// ============================================================
+// 修改密码（1:1 对齐 front/src/pages/settings/ChangePassword.tsx）
+// ============================================================
+
+.chp {
+  min-height: 100vh;
+  background-color: #ffffff;
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    padding: 32rpx 40rpx 64rpx;
+    box-sizing: border-box;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 32rpx;
+  }
+
+  &__label {
+    margin-bottom: 16rpx;
+    font-family: $font-body;
+    font-size: 22rpx;
+    font-weight: $font-semibold;
+    line-height: 1;
+    color: #4b5563;
+  }
+
+  &__input-box {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 112rpx;
+    padding: 0 32rpx;
+    border-radius: 16rpx;
+    border: 1rpx solid #e5e7eb;
+    background-color: #ffffff;
+    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
+  }
+
+  &__input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    font-family: $font-body;
+    font-size: 28rpx;
+    color: #1a1a1a;
+  }
+
+  &__placeholder {
+    color: #9ca3af;
+  }
+
+  &__eye {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 88rpx;
+    height: 88rpx;
+    flex-shrink: 0;
+    margin-right: -16rpx;
+    border-radius: 50%;
+  }
+
+  &__hint {
+    font-family: $font-body;
+    font-size: 24rpx;
+    line-height: 1.5;
+    color: #9ca3af;
+  }
+
+  &__submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 104rpx;
+    margin-top: 48rpx;
+    border-radius: 16rpx;
+    background-color: #0062ff;
+    font-family: $font-body;
+    font-size: 32rpx;
+    font-weight: $font-semibold;
+    color: #ffffff;
+    box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.05);
+
+    &:active {
+      opacity: 0.8;
+    }
+
+    &--disabled {
+      background-color: #93c5fd;
+    }
+  }
+}

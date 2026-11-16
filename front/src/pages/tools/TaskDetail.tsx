@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Target, User, Clock, CalendarDays, CheckCircle2, MapPin, FileText, Flag } from 'lucide-react';
+import { Target, User, UserCheck, Clock, CalendarDays, CheckCircle2, MapPin, FileText, Flag } from 'lucide-react';
 import PageLayout from '@/components/layout/PageLayout';
 import { api } from '@/lib/api';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -15,6 +15,9 @@ interface TaskDetailData {
   title: string;
   ownerId: string;
   ownerName: string | null;
+  creatorId?: string;
+  creatorName?: string | null;
+  assignType?: 'self' | 'all' | 'member';
   deadline: string | null;
   location: string | null;
   content: string | null;
@@ -27,7 +30,7 @@ interface TaskDetailData {
 
 const STATUS_META: Record<BackendStatus, { label: string; text: string; bg: string }> = {
   todo: { label: '待完成', text: '#64748B', bg: '#F1F5F9' },
-  in_progress: { label: '进行中', text: '#076CAB', bg: '#E0F2FE' },
+  in_progress: { label: '进行中', text: '#0062FF', bg: '#E8F0FF' },
   done: { label: '已完成', text: '#16A34A', bg: '#DCFCE7' },
 };
 
@@ -71,8 +74,16 @@ export default function TaskDetail() {
     fetchTask();
   }, [fetchTask]);
 
+  const isCreator = !!task && !!user && task.creatorId === user.id;
+  // 发布者和班委可完整编辑；负责人和全班任务成员可更新进度
+  const canManage = !!task && !!user && (user.isCommittee || isCreator);
   const canEdit =
-    !!task && !!user && (user.isCommittee || task.ownerId === user.id);
+    !!task &&
+    !!user &&
+    (user.isCommittee ||
+      isCreator ||
+      task.ownerId === user.id ||
+      task.assignType === 'all');
 
   const saveProgress = async (nextProgress: number) => {
     if (!user?.classId || !task || saving) return;
@@ -106,6 +117,17 @@ export default function TaskDetail() {
       onBack={() => navigate(-1)}
       contentClassName="bg-[#F5F5F7]"
       decor={<Target className="h-[112px] w-[112px] text-white" strokeWidth={1.5} />}
+      right={
+        canManage ? (
+          <button
+            type="button"
+            onClick={() => task && navigate(`/publish-task/${task.id}`)}
+            className="flex h-[36px] items-center justify-center rounded-full bg-[#0062FF] px-4 text-[13px] font-semibold text-white shadow-[0px_2px_8px_0px_#0000001A] active:opacity-80"
+          >
+            编辑
+          </button>
+        ) : undefined
+      }
     >
       {loading ? (
         <div className="py-16 text-center text-[13px] text-[#94A3B8]">加载中...</div>
@@ -115,7 +137,7 @@ export default function TaskDetail() {
           <button
             type="button"
             onClick={fetchTask}
-            className="rounded-full bg-[#076CAB] px-5 py-2 text-[13px] font-semibold text-white"
+            className="rounded-full bg-[#0062FF] px-5 py-2 text-[13px] font-semibold text-white"
           >
             重新加载
           </button>
@@ -140,13 +162,13 @@ export default function TaskDetail() {
             <div className="flex w-full flex-col gap-2">
               <div className="flex w-full items-end justify-between">
                 <span className="text-[11px] font-semibold text-[#6B7280]">任务进度</span>
-                <span className="text-[24px] font-heading font-bold text-[#076CAB]">
+                <span className="text-[24px] font-heading font-bold text-[#0062FF]">
                   {task.progress}%
                 </span>
               </div>
-              <div className="flex h-[6px] w-full flex-col justify-start rounded-full bg-[#E2E8F0]">
+              <div className="flex h-[6px] w-full flex-col justify-start overflow-hidden rounded-full bg-[#E8F0FF]">
                 <div
-                  className="h-[6px] shrink-0 rounded-full bg-[#076CAB] transition-[width] duration-300"
+                  className="h-[6px] shrink-0 rounded-full bg-[linear-gradient(90deg,#6EA8FF_0%,#2E7DFF_45%,#0B4FD6_100%)] transition-[width] duration-300"
                   style={{ width: `${Math.min(Math.max(task.progress, 0), 100)}%` }}
                 />
               </div>
@@ -157,9 +179,20 @@ export default function TaskDetail() {
                 <User className="h-[16px] w-[16px] text-[#94A3B8]" strokeWidth={2} />
                 <span className="text-[#94A3B8]">负责人</span>
                 <span className="ml-auto font-medium text-[#1E293B]">
-                  {task.ownerName || '未指定'}
+                  {task.assignType === 'all'
+                    ? '全班成员'
+                    : task.assignType === 'self'
+                      ? '仅自己'
+                      : task.ownerName || '未指定'}
                 </span>
               </div>
+              {task.creatorName && (
+                <div className="flex items-center gap-2 text-[13px] text-[#475569]">
+                  <UserCheck className="h-[16px] w-[16px] text-[#94A3B8]" strokeWidth={2} />
+                  <span className="text-[#94A3B8]">发布人</span>
+                  <span className="ml-auto font-medium text-[#1E293B]">{task.creatorName}</span>
+                </div>
+              )}
               <div className="flex items-center gap-2 text-[13px] text-[#475569]">
                 <Clock className="h-[16px] w-[16px] text-[#94A3B8]" strokeWidth={2} />
                 <span className="text-[#94A3B8]">截止时间</span>
@@ -223,9 +256,9 @@ export default function TaskDetail() {
                     value={progress}
                     disabled={saving}
                     onChange={(e) => setProgress(Number(e.target.value))}
-                    className="h-[6px] w-full accent-[#076CAB]"
+                    className="h-[6px] w-full accent-[#0062FF]"
                   />
-                  <span className="w-[42px] shrink-0 text-right text-[14px] font-semibold text-[#076CAB]">
+                  <span className="w-[42px] shrink-0 text-right text-[14px] font-semibold text-[#0062FF]">
                     {progress}%
                   </span>
                 </div>
@@ -234,7 +267,7 @@ export default function TaskDetail() {
                     type="button"
                     disabled={saving || progress === task.progress}
                     onClick={() => saveProgress(progress)}
-                    className="flex-1 rounded-full bg-[#076CAB] py-[10px] text-[13px] font-semibold text-white disabled:opacity-50"
+                    className="flex-1 rounded-full bg-[#0062FF] py-[10px] text-[13px] font-semibold text-white shadow-[0_6px_16px_rgba(0,98,255,0.24)] disabled:opacity-50"
                   >
                     {saving ? '保存中...' : '保存进度'}
                   </button>
@@ -253,7 +286,7 @@ export default function TaskDetail() {
                 </div>
               </>
             ) : (
-              <div className="text-[12px] text-[#94A3B8]">仅任务负责人或班委可更新进度</div>
+              <div className="text-[12px] text-[#94A3B8]">仅任务负责人、发布者或班委可更新进度</div>
             )}
           </div>
         </div>

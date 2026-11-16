@@ -4,7 +4,7 @@ import Taro, { useLoad } from '@tarojs/taro'
 
 import { NavBar } from '@/components/business'
 import { Icon } from '@/components/ui'
-import { archiveApi } from '@/services'
+import { API_BASE_URL } from '@/constants/config'
 import { useUserStore } from '@/stores'
 import { useAuth, downloadFile } from '@/utils'
 import './index.scss'
@@ -26,6 +26,7 @@ const FORMATS: OptionItem[] = [
 
 export default function ExportArchive() {
   const currentClassId = useUserStore((s) => s.currentClassId)
+  const accessToken = useUserStore((s) => s.accessToken)
   const { requireAuth } = useAuth()
 
   const [archiveId, setArchiveId] = useState('')
@@ -47,21 +48,19 @@ export default function ExportArchive() {
     setExporting(true)
     Taro.showLoading({ title: '正在导出…' })
     try {
-      const res: any = await archiveApi.exportArchive(currentClassId, archiveId, format)
-      let url = ''
-      if (typeof res === 'string') url = res
-      else if (res) url = res?.url || res?.downloadUrl || res?.fileUrl || ''
-      if (!url) {
-        // 兜底：后端若直接返回文件数据无法处理，提示成功
-        Taro.showToast({ title: '导出成功', icon: 'success' })
-        return
-      }
-      await downloadFile(url)
+      // 后端该接口返回文件二进制流，需直接下载，不能走 JSON 请求层
+      const url = `${API_BASE_URL}/classes/${currentClassId}/archives/${archiveId}/export?format=${format}`
+      await downloadFile(url, {
+        header: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        fileName: `archive-${archiveId}.${format}`,
+        fileType: format
+      })
+      Taro.hideLoading()
       Taro.showToast({ title: '导出成功', icon: 'success' })
     } catch {
+      Taro.hideLoading()
       Taro.showToast({ title: '导出失败，请重试', icon: 'none' })
     } finally {
-      Taro.hideLoading()
       setExporting(false)
     }
   }

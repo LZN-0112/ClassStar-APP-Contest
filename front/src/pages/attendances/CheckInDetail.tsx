@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   MapPin,
@@ -12,12 +12,18 @@ import {
   StopCircle,
   CalendarClock,
   Users,
+  Download,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Image as ImageIcon,
 } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import PageLayout from '@/components/layout/PageLayout';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { api } from '@/lib/api';
+import { saveImageToGallery } from '@/lib/save-file';
 import { toast } from 'sonner';
 import GpsCheckIn from './GpsCheckIn';
 import QrCheckIn from './QrCheckIn';
@@ -144,6 +150,14 @@ export default function CheckInDetail() {
   const [loadError, setLoadError] = useState('');
   const [confirmClose, setConfirmClose] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const [savingQr, setSavingQr] = useState(false);
+  const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [selfieViewer, setSelfieViewer] = useState<{
+    userId: string;
+    name: string;
+    url: string;
+  } | null>(null);
+  const [selfieLoading, setSelfieLoading] = useState(false);
 
   // 实时倒计时
   useEffect(() => {
@@ -152,6 +166,8 @@ export default function CheckInDetail() {
   }, []);
 
   const isManager = Boolean(user?.isCommittee || (detail && user?.id === detail.publisher?.id));
+  // 拍照签到的成员（按签到时间倒序），用于照片预览的上一张 / 下一张
+  const faceList = (stats?.presentList ?? []).filter((p) => p.method === 'face');
 
   const fetchDetail = useCallback(async () => {
     if (!classId || !attendanceId) return;
@@ -272,6 +288,57 @@ export default function CheckInDetail() {
     }
   };
 
+  const handleSaveQr = async () => {
+    const canvas = qrCanvasRef.current;
+    if (!canvas || savingQr) return;
+    setSavingQr(true);
+    try {
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) throw new Error('二维码生成失败');
+      const d = new Date();
+      const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}`;
+      const res = await saveImageToGallery(`签到二维码-${detail?.title || '考勤'}-${stamp}.png`, blob);
+      if (!res.ok) {
+        toast.error('保存失败，请重试');
+      } else if (res.gallery) {
+        toast.success('二维码已保存到相册');
+      } else {
+        toast.success('二维码已保存到下载目录');
+      }
+    } catch {
+      toast.error('保存失败，请重试');
+    } finally {
+      setSavingQr(false);
+    }
+  };
+
+  const openSelfie = async (userId: string, name: string) => {
+    if (!classId || !attendanceId || selfieLoading) return;
+    setSelfieViewer({ userId, name, url: '' });
+    setSelfieLoading(true);
+    try {
+      const res = await api.get(`/classes/${classId}/attendances/${attendanceId}/selfies/${userId}`);
+      const data = res.data.data || res.data;
+      if (!data?.selfieUrl) throw new Error('该成员没有照片');
+      setSelfieViewer({ userId, name, url: data.selfieUrl });
+    } catch (err) {
+      setSelfieViewer(null);
+      toast.error(err instanceof Error ? err.message : '照片加载失败');
+    } finally {
+      setSelfieLoading(false);
+    }
+  };
+
+  const stepSelfie = (delta: number) => {
+    if (!selfieViewer || faceList.length < 2) return;
+    const index = faceList.findIndex((p) => p.userId === selfieViewer.userId);
+    if (index < 0) return;
+    const next = faceList[(index + delta + faceList.length) % faceList.length];
+    if (next && next.userId !== selfieViewer.userId) {
+      void openSelfie(next.userId, next.name);
+    }
+  };
+
   if (loading) {
     return (
       <PageLayout title="签到详情" onBack={() => navigate(-1)}>
@@ -358,10 +425,15 @@ export default function CheckInDetail() {
 
   const boardItems =
     boardTab === 'present'
-      ? (stats?.presentList ?? []).map((p) => ({ id: p.userId, name: p.name, meta: formatClock(p.checkInAt) }))
+      ? (stats?.presentList ?? []).map((p) => ({
+          id: p.userId,
+          name: p.name,
+          meta: formatClock(p.checkInAt),
+          selfie: p.method === 'face',
+        }))
       : boardTab === 'absent'
-        ? (stats?.absentList ?? []).map((a) => ({ id: a.userId, name: a.name, meta: '未签到' }))
-        : (stats?.leaveList ?? []).map((l) => ({ id: l.userId, name: l.name, meta: '请假' }));
+        ? (stats?.absentList ?? []).map((a) => ({ id: a.userId, name: a.name, meta: '未签到', selfie: false }))
+        : (stats?.leaveList ?? []).map((l) => ({ id: l.userId, name: l.name, meta: '请假', selfie: false }));
 
   return (
     <PageLayout
@@ -630,18 +702,48 @@ export default function CheckInDetail() {
             </div>
 
             {detail.method === 'qr' && timeState !== 'ended' && (
-              <div className="mt-3 flex flex-col items-center gap-2 rounded-xl bg-[#F8FAFC] px-4 py-4">
-                <div className="rounded-xl bg-white p-2 shadow-soft">
-                  <QRCodeSVG
-                    value={`attendance:${classId}:${attendanceId}`}
-                    size={168}
-                    level="H"
-                    marginSize={1}
-                    fgColor="#000000"
-                    bgColor="#FFFFFF"
-                  />
+              <div className="mt-3 rounded-xl bg-[#F8FAFC] p-3">
+                <div className="flex items-center gap-3">
+                  <div className="shrink-0 rounded-xl bg-white p-2 shadow-soft">
+                    <QRCodeSVG
+                      value={`attendance:${classId}:${attendanceId}`}
+                      size={148}
+                      level="H"
+                      marginSize={1}
+                      fgColor="#000000"
+                      bgColor="#FFFFFF"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[12px] font-semibold text-[#1A1A1A]">扫码签到</div>
+                    <div className="mt-1 text-[11px] leading-[16px] text-[#64748B]">
+                      同学使用「扫一扫」扫描左侧二维码完成签到
+                    </div>
+                    <div className="mt-1 text-[10px] leading-[14px] text-[#94A3B8]">
+                      保存到相册后可放大展示
+                    </div>
+                  </div>
                 </div>
-                <div className="text-[11px] text-[#64748B]">请同学使用「扫一扫」扫描此二维码签到</div>
+                <button
+                  type="button"
+                  onClick={() => void handleSaveQr()}
+                  disabled={savingQr}
+                  className="mt-3 flex h-[38px] w-full items-center justify-center gap-1.5 rounded-xl bg-[#0062FF] text-[13px] font-semibold text-white shadow-[0_8px_18px_-10px_#0062FFCC] transition-transform active:scale-[0.99] disabled:opacity-60"
+                >
+                  <Download className="h-4 w-4" />
+                  {savingQr ? '保存中...' : '保存二维码到相册'}
+                </button>
+                {/* 高清导出用画布，不参与布局 */}
+                <QRCodeCanvas
+                  ref={qrCanvasRef}
+                  value={`attendance:${classId}:${attendanceId}`}
+                  size={720}
+                  level="H"
+                  marginSize={2}
+                  fgColor="#000000"
+                  bgColor="#FFFFFF"
+                  className="hidden"
+                />
               </div>
             )}
 
@@ -803,7 +905,21 @@ export default function CheckInDetail() {
                           {item.name.slice(0, 1)}
                         </span>
                         <span className="text-[12px] text-[#1A1A1A]">{item.name}</span>
-                        <span className="ml-auto text-[11px] text-[#94A3B8]">{item.meta}</span>
+                        {isManager && item.selfie ? (
+                          <button
+                            type="button"
+                            onClick={() => void openSelfie(item.id, item.name)}
+                            className="ml-auto flex items-center gap-1 rounded-full bg-[#ECFDF5] px-2 py-1 text-[10px] font-medium text-[#059669] active:opacity-70"
+                          >
+                            <ImageIcon className="h-3 w-3" />
+                            照片
+                          </button>
+                        ) : null}
+                        <span
+                          className={`text-[11px] text-[#94A3B8] ${isManager && item.selfie ? '' : 'ml-auto'}`}
+                        >
+                          {item.meta}
+                        </span>
                       </div>
                     ))
                   )}
@@ -819,6 +935,65 @@ export default function CheckInDetail() {
           </div>
         )}
       </div>
+
+      {selfieViewer && (
+        <div className="fixed inset-0 z-[60] flex flex-col bg-black">
+          <div className="flex items-center gap-3 px-4 pb-2 pt-[calc(env(safe-area-inset-top)+12px)] text-white">
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[14px] font-medium">{selfieViewer.name}</div>
+              <div className="text-[11px] text-white/60">拍照签到照片</div>
+            </div>
+            {faceList.length > 1 && (
+              <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[11px] text-white/70">
+                {Math.max(faceList.findIndex((p) => p.userId === selfieViewer.userId), 0) + 1} /{' '}
+                {faceList.length}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => setSelfieViewer(null)}
+              aria-label="关闭"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 active:opacity-70"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="relative flex flex-1 items-center justify-center overflow-hidden px-3 pb-[calc(env(safe-area-inset-bottom)+16px)]">
+            {selfieViewer.url ? (
+              <img
+                src={selfieViewer.url}
+                alt={`${selfieViewer.name}的签到照片`}
+                className="max-h-full max-w-full object-contain"
+              />
+            ) : null}
+            {faceList.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => stepSelfie(-1)}
+                  aria-label="上一张"
+                  className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white active:opacity-70"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => stepSelfie(1)}
+                  aria-label="下一张"
+                  className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white active:opacity-70"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              </>
+            )}
+            {selfieLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-[12px] text-white">
+                加载中...
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <ConfirmDialog
         open={confirmClose}

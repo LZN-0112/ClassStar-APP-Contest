@@ -4,7 +4,7 @@ import PageLayout from '@/components/layout/PageLayout';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { api } from '@/lib/api';
 
-type FilterStatus = '全部' | '待提交' | '已提交' | '已逾期';
+type FilterStatus = '全部' | '待提交' | '待批改' | '已通过' | '已驳回' | '已逾期';
 
 interface HomeworkItem {
   id: string;
@@ -18,12 +18,20 @@ interface HomeworkItem {
 
 const statusColors: Record<string, { bg: string; text: string }> = {
   待提交: { bg: 'bg-[#EF44441A]', text: 'text-[#EF4444]' },
-  已提交: { bg: 'bg-[#22C55E1A]', text: 'text-[#22C55E]' },
+  待批改: { bg: 'bg-[#F59E0B1A]', text: 'text-[#B45309]' },
+  已通过: { bg: 'bg-[#22C55E1A]', text: 'text-[#16A34A]' },
+  已驳回: { bg: 'bg-[#DC26261A]', text: 'text-[#DC2626]' },
   已逾期: { bg: 'bg-[#9CA3AF1A]', text: 'text-[#6B7280]' },
+  延时审核中: { bg: 'bg-[#F59E0B1A]', text: 'text-[#B45309]' },
 };
 
 function getHomeworkStatus(item: any): string {
-  if (item.submitted) return '已提交';
+  if (item.submitted) {
+    if (item.mySubmissionStatus === 'approved') return '已通过';
+    if (item.mySubmissionStatus === 'rejected') return '已驳回';
+    return '待批改';
+  }
+  if (item.myDelayStatus === 'pending') return '延时审核中';
   const deadline = new Date(item.deadline);
   if (new Date() > deadline) return '已逾期';
   return '待提交';
@@ -75,7 +83,7 @@ export default function MyHomework() {
       });
   }, [user?.classId]);
 
-  const tabs: FilterStatus[] = ['全部', '待提交', '已提交', '已逾期'];
+  const tabs: FilterStatus[] = ['全部', '待提交', '待批改', '已通过', '已驳回', '已逾期'];
 
   const filtered =
     filter === '全部' ? homeworks : homeworks.filter((h) => h.status === filter);
@@ -84,7 +92,7 @@ export default function MyHomework() {
     <PageLayout title="我的作业" variant="a">
       <div
         data-pencil-name="Filter Tabs"
-        className="box-border w-full h-fit shrink-0 flex flex-row gap-2 justify-start items-start bg-[#00000000]"
+        className="box-border w-full h-fit shrink-0 flex flex-row gap-2 justify-start items-start bg-[#00000000] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {tabs.map((tab) => {
           const active = filter === tab;
@@ -183,7 +191,6 @@ export default function MyHomework() {
                       className="text-[11px]/[normal] box-border text-[#4B5563] font-body font-medium text-left [white-space:nowrap]"
                     >
                       {item.subject} · {item.deadline}截止
-                      {item.delayStatus === 'pending' && !item.submitted ? ' · 延时审核中' : ''}
                     </div>
                     <div
                       data-pencil-name="Tag"

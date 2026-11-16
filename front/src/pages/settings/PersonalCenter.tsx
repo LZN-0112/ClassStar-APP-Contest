@@ -599,7 +599,8 @@ export default function PersonalCenter() {
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setEditingField('avatar');
+                    // 打开「编辑资料」菜单（头像/背景图入口都在菜单内）
+                    setEditingField(null);
                     setShowEditModal(true);
                   }}
                   className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-white shadow-md transition-opacity active:opacity-70"
@@ -834,8 +835,8 @@ export default function PersonalCenter() {
               <Headphones className="h-5 w-5 text-white" strokeWidth={2} />
             </span>
             <span className="flex min-w-0 flex-1 flex-col">
-              <span className="text-[13px] font-bold text-[#0B3B8F]">帮助与反馈</span>
-              <span className="mt-0.5 truncate text-[10.5px] text-[#5B7BB0]">
+              <span className="text-[13px] font-bold text-[#0062FF]">帮助与反馈</span>
+              <span className="mt-0.5 truncate text-[10.5px] text-[#64748B]">
                 问题反馈 · 使用指南 · 常见问题
               </span>
             </span>

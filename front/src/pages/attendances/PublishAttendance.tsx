@@ -7,6 +7,7 @@ import {
   KeyRound,
   Navigation,
   Check,
+  ChevronRight,
   Loader2,
   Clock,
   ShieldCheck,
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 import PageLayout from '@/components/layout/PageLayout';
 import PhoneFrame from '@/components/layout/PhoneFrame';
+import DateTimePickerSheet, { formatDateTimeLabel } from '@/components/ui/DateTimePickerSheet';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -35,7 +37,7 @@ const TITLE_PRESETS = ['班会签到', '课堂签到', '活动签到', '晚自�
 const DURATIONS = [5, 10, 30, 60];
 const RADIUS_OPTIONS = [100, 200, 500, 1000];
 
-/** Date → datetime-local 输入框所需的本地时间字符串 */
+/** Date → 时间选择器所需的本地时间字符串 */
 function toDateTimeInput(d: Date) {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -84,6 +86,7 @@ export default function PublishAttendance() {
   const [duration, setDuration] = useState<Duration>(10);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [picker, setPicker] = useState<'start' | 'end' | null>(null);
   const [code, setCode] = useState('');
   const [checkRadius, setCheckRadius] = useState(500);
   const [gpsLat, setGpsLat] = useState<number | null>(null);
@@ -245,6 +248,7 @@ export default function PublishAttendance() {
   }
 
   return (
+    <>
     <PageLayout title="发起签到" onBack={() => navigate(-1)} contentClassName="bg-[#F5F7FA] px-0 pb-0 pt-4">
       <div className="flex min-h-full flex-col">
         <div className="flex flex-1 flex-col gap-3 px-4 pb-4">
@@ -468,22 +472,29 @@ export default function PublishAttendance() {
               <div className="mt-3 flex flex-col gap-2.5">
                 <label className="flex items-center gap-2">
                   <span className="w-12 shrink-0 text-[12px] text-[#64748B]">开始</span>
-                  <input
-                    type="datetime-local"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="h-11 min-w-0 flex-1 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 text-[13px] text-[#0F172A] outline-none focus:border-[#0062FF] focus:bg-white"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setPicker('start')}
+                    className="flex h-11 min-w-0 flex-1 items-center justify-between rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 text-left active:opacity-70"
+                  >
+                    <span className={`text-[13px] ${startTime ? 'text-[#0F172A]' : 'text-[#94A3B8]'}`}>
+                      {startTime ? formatDateTimeLabel(startTime) : '选择开始时间'}
+                    </span>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-[#CBD5E1]" strokeWidth={2} />
+                  </button>
                 </label>
                 <label className="flex items-center gap-2">
                   <span className="w-12 shrink-0 text-[12px] text-[#64748B]">结束</span>
-                  <input
-                    type="datetime-local"
-                    value={endTime}
-                    min={startTime || undefined}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="h-11 min-w-0 flex-1 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 text-[13px] text-[#0F172A] outline-none focus:border-[#0062FF] focus:bg-white"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setPicker('end')}
+                    className="flex h-11 min-w-0 flex-1 items-center justify-between rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 text-left active:opacity-70"
+                  >
+                    <span className={`text-[13px] ${endTime ? 'text-[#0F172A]' : 'text-[#94A3B8]'}`}>
+                      {endTime ? formatDateTimeLabel(endTime) : '选择结束时间'}
+                    </span>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-[#CBD5E1]" strokeWidth={2} />
+                  </button>
                 </label>
               </div>
             ) : (
@@ -500,10 +511,10 @@ export default function PublishAttendance() {
           {/* 签到规则说明 */}
           <div className="rounded-2xl border border-[#DBEAFE] bg-[#EFF6FF] p-4">
             <div className="flex items-center gap-1.5">
-              <ShieldCheck className="h-4 w-4 text-[#1E40AF]" strokeWidth={2.2} />
-              <span className="text-[13px] font-semibold text-[#1E40AF]">签到规则</span>
+              <ShieldCheck className="h-4 w-4 text-[#0062FF]" strokeWidth={2.2} />
+              <span className="text-[13px] font-semibold text-[#0062FF]">签到规则</span>
             </div>
-            <ul className="mt-2 space-y-1.5 text-[12px] leading-relaxed text-[#1E3A8A]">
+            <ul className="mt-2 space-y-1.5 text-[12px] leading-relaxed text-[#334155]">
               <li>· 签到期间可在详情页一键提醒未签到同学</li>
               <li>· 无法到场的同学可在签到结束前提交请假申请</li>
               <li>· 签到结果自动计入班级出勤统计</li>
@@ -546,5 +557,22 @@ export default function PublishAttendance() {
         </div>
       </div>
     </PageLayout>
+
+    {/* 自定义签到起止时间选择 */}
+    <DateTimePickerSheet
+      open={picker !== null}
+      value={picker === 'end' ? endTime : startTime}
+      title={picker === 'end' ? '选择结束时间' : '选择开始时间'}
+      onClose={() => setPicker(null)}
+      onConfirm={(next) => {
+        if (picker === 'end') {
+          setEndTime(next);
+        } else {
+          setStartTime(next);
+        }
+        setPicker(null);
+      }}
+    />
+    </>
   );
 }

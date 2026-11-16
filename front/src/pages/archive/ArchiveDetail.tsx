@@ -250,7 +250,7 @@ export default function ArchiveDetail() {
                   data-pencil-name="Text"
                   className="text-[14px]/[normal] box-border w-fit text-[#4B5563] font-body font-medium text-left"
                 >
-                  包含班级成员名单、活动记录、考勤统计、班费收支等完整数据。
+                  本档案由系统按学期快照生成，包含班级概况与成员名单，可直接下载附件留存。
                 </div>
               </div>
               <div

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException 
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../../common/database/prisma.service';
 import { PrivacyService } from '@/common/privacy/privacy.service';
+import { PushService } from '../push/push.service';
 import {
   CreateAttendanceDto,
   CheckInDto,
@@ -14,6 +15,7 @@ export class AttendancesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly privacyService: PrivacyService,
+    private readonly push: PushService,
   ) {}
 
   async create(classId: string, dto: CreateAttendanceDto, publisherId: string) {
@@ -28,6 +30,12 @@ export class AttendancesService {
     if (endTime <= startTime) {
       throw new BadRequestException('结束时间必须晚于开始时间');
     }
+    if (endTime <= new Date()) {
+      throw new BadRequestException('签到结束时间需晚于当前时间');
+    }
+    if (!dto.title?.trim()) {
+      throw new BadRequestException('签到标题不能为空');
+    }
 
     if (dto.method === 'code' && !dto.code) {
       throw new BadRequestException('口令签到需设置签到口令');
@@ -41,7 +49,7 @@ export class AttendancesService {
         id: attendanceId,
         class_id: classId,
         publisher_id: publisherId,
-        title: dto.title,
+        title: dto.title.trim(),
         type: dto.type,
         start_time: startTime,
         end_time: endTime,
@@ -369,6 +377,44 @@ export class AttendancesService {
     };
   }
 
+  /**
+   * 班委查看某个成员的拍照签到照片。
+   * 单独接口按需拉取，避免统计接口一次性返回全班照片导致响应体过大。
+   */
+  async getSelfie(classId: string, id: string, studentId: string, viewerId: string) {
+    await this.assertCommittee(classId, viewerId, '仅班委可查看签到照片');
+
+    const attendance = await this.prisma.attendances.findFirst({
+      where: { id, class_id: classId },
+      select: { id: true },
+    });
+    if (!attendance) {
+      throw new NotFoundException('签到不存在');
+    }
+
+    const record = await this.prisma.attendance_records.findFirst({
+      where: { attendance_id: id, student_id: studentId },
+      select: {
+        selfie_url: true,
+        check_in_at: true,
+        users: { select: { name: true } },
+      },
+    });
+    if (!record) {
+      throw new NotFoundException('该成员没有签到记录');
+    }
+    if (!record.selfie_url) {
+      throw new NotFoundException('该成员没有上传照片');
+    }
+
+    return {
+      userId: studentId,
+      name: record.users.name,
+      checkInAt: record.check_in_at,
+      selfieUrl: record.selfie_url,
+    };
+  }
+
   async applyLeave(
     classId: string,
     id: string,
@@ -493,7 +539,7 @@ export class AttendancesService {
       return { reminded: 0 };
     }
 
-    // 为每个未签到人员创建催签通知
+    // 为每个未签到人员创建催签通知，带上签到时间地点并关联来源，便于详情页直接跳转签到
     const messageId = uuidv4();
     await this.prisma.messages.create({
       data: {
@@ -503,6 +549,10 @@ export class AttendancesService {
         type: 'notice',
         title: `【催签】${attendance.title}`,
         content: `您尚未完成「${attendance.title}」的签到，请尽快完成签到。`,
+        event_time: attendance.start_time,
+        location: attendance.location,
+        source_type: 'attendance',
+        source_id: attendance.id,
         status: 'published',
       },
     });
@@ -514,6 +564,15 @@ export class AttendancesService {
         message_id: messageId,
         user_id: uid,
       })),
+    });
+
+    // 催签通知只推给未签到学生
+    void this.push.sendMessagePush(absentUserIds, {
+      title: `【催签】${attendance.title}`,
+      content: `您尚未完成「${attendance.title}」的签到，请尽快完成签到。`,
+      messageId,
+      classId,
+      type: 'notice',
     });
 
     return { reminded: absentUserIds.length };
