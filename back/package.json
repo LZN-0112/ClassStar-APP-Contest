@@ -4,7 +4,7 @@
   "description": "校园班级事务智能管理助手后端 API",
   "author": "",
   "private": true,
-  "license": "MIT",
+  "license": "AGPL-3.0",
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
