@@ -37,8 +37,11 @@ front/     前端 SPA（Capacitor 打包 Android）
              ├─ android/                        Capacitor Android 容器工程
              └─ .env.template                  配置模板
 mobile/     Taro 微信小程序（87 个页面）
+sql/        补充 SQL 脚本（班级档案初始数据等）
 tools/      图标与设计资源脚本
 docs/       架构、Prompt 链证据集、23 页技术文档、测试与自检报告
+.github/    CI 工作流（ci.yml：后端构建 + Prisma Client 生成 + Web 构建）
+LICENSE     AGPL-3.0
 ```
 
 > 资质材料：班务星 app V1.0 已于 2026 年 11 月 3 日取得计算机软件著作权登记证书（登记号 2026SR1123477，证书号软著登字第 18337758 号），著作权人为黎仲楠与佛山智慧寻觅科技有限公司，由双方以合作开发协议约定权属；App 亦通过微信开放平台移动应用审核，支持微信登录。证书扫描件与协议按评审要求单独随参赛材料提交，不放入公开仓库。
