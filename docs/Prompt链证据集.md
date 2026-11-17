@@ -627,3 +627,31 @@ _示范"删除型任务"如何用 9 条红线 + 验证清单 + 回滚预案把�
 > 2. 对照第 2 节某条 Prompt 链的时间线表，按"轮次"顺序阅读用户提示词与 AI 响应，即可复现该功能的演进路径。
 > 3. 参照第 3 节的提示词范式与样本，用同样的七小节结构撰写新功能的提示词，即可复用本项目的方法论。
 > 4. 若关注 11 月增量，按第五章的文件路径、提交号与测试报告直接核对，不依赖会话链接。
+
+---
+
+## 附录：19 条会话完整链接（便于复制）
+
+> 顺序与 1.1 节 #1–#19 一一对应，每条独占一行、无断行。1.1 节表格列宽较窄，链接在 PDF 中会折行；若复制出现残缺，请以本附录为准。
+
+```
+https://share.traecontent.cn/share/9V963EBMT93Z2H
+https://share.traecontent.cn/share/8LE8L7VQDF3_DD
+https://share.traecontent.cn/share/O0E.LZ.O-_YQXE
+https://share.traecontent.cn/share/PR3_QM6_2_PK_1
+https://share.traecontent.cn/share/ON-QQ5TWMAGCMY
+https://share.traecontent.cn/share/IKV.G83EOADX_V
+https://share.traecontent.cn/share/P786F4SL9GYJPU
+https://share.traecontent.cn/share/P5HWXS3Z-TA.9B
+https://share.traecontent.cn/share/2TAYAQQDSXDHAR
+https://share.traecontent.cn/share/E-2X613X-SMO4R
+https://share.traecontent.cn/share/73TPE.GPW.XQP0
+https://share.traecontent.cn/share/W76.U8U7I.ZO10
+https://share.traecontent.cn/share/4XLOZQ.EO.5OH5
+https://share.traecontent.cn/share/QXZFI3ZSKIZ13-
+https://share.traecontent.cn/share/1QROE_B7IDUQ_7
+https://share.traecontent.cn/share/_F3UEDB6PWM5.S
+https://share.traecontent.cn/share/L.3EUAGY-K2BQR
+https://share.traecontent.cn/share/VLCVL3WK85F33B
+https://share.traecontent.cn/share/X_K191XL1SBSBC
+```
