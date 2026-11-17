@@ -16,6 +16,7 @@ SET @student_id = '22222222-2222-2222-2222-222222222222';
 SET @teacher_id = '44444444-4444-4444-4444-444444444444';
 SET @class_id   = '33333333-3333-3333-3333-333333333333';
 SET @member_id  = '55555555-5555-5555-5555-555555555555';
+SET @teacher_member_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 SET @msg_id     = '66666666-6666-6666-6666-666666666666';
 SET @atd_id     = '77777777-7777-7777-7777-777777777777';
 SET @hw_id      = '88888888-8888-8888-8888-888888888888';
@@ -41,8 +42,9 @@ ON DUPLICATE KEY UPDATE id = id;
 -- ------------------------------------------------------------
 -- 3. 班级成员表 class_members
 -- ------------------------------------------------------------
-INSERT INTO class_members (id, class_id, user_id, role, is_committee, joined_at, created_at, updated_at) VALUES
-(@member_id, @class_id, @student_id, '学生', false, NOW(), NOW(), NOW())
+INSERT INTO class_members (id, class_id, user_id, role, role_level, is_committee, verify_status, joined_at, created_at, updated_at) VALUES
+(@member_id, @class_id, @student_id, '学生', 'member', false, 'UNVERIFIED', NOW(), NOW(), NOW()),
+(@teacher_member_id, @class_id, @teacher_id, '班委', 'admin', true, 'CONFIRMED', NOW(), NOW(), NOW())
 ON DUPLICATE KEY UPDATE id = id;
 
 -- ------------------------------------------------------------

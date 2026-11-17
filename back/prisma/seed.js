@@ -8,6 +8,7 @@ const STUDENT_ID = '22222222-2222-2222-2222-222222222222';
 const TEACHER_ID = '44444444-4444-4444-4444-444444444444';
 const CLASS_ID = '33333333-3333-3333-3333-333333333333';
 const MEMBER_ID = '55555555-5555-5555-5555-555555555555';
+const TEACHER_MEMBER_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 const MSG_ID = '66666666-6666-6666-6666-666666666666';
 const ATD_ID = '77777777-7777-7777-7777-777777777777';
 const HW_ID = '88888888-8888-8888-8888-888888888888';
@@ -38,6 +39,7 @@ async function main() {
   await prisma.class_members.createMany({
     data: [
       { id: MEMBER_ID, class_id: CLASS_ID, user_id: STUDENT_ID, role: '学生', is_committee: false },
+      { id: TEACHER_MEMBER_ID, class_id: CLASS_ID, user_id: TEACHER_ID, role: '班委', role_level: 'admin', is_committee: true, verify_status: 'CONFIRMED' },
     ],
     skipDuplicates: true,
   });
