@@ -1,5 +1,8 @@
 # 班务星 APP · 校园班级事务智能管理助手
 
+[![CI](https://github.com/LZN-0112/ClassStar-APP-Contest/actions/workflows/ci.yml/badge.svg)](https://github.com/LZN-0112/ClassStar-APP-Contest/actions/workflows/ci.yml)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
+
 > 面向高校班级与学生组织的「通知 / 签到 / 作业 / 请假 / 活动 / 投票 / 班费 / 资料 / 档案」一体化事务管理应用，
 > 内置 **AI 班务助手**（一句话发布、班级数据问答、作业催交、语音转写）与 **极光离线推送**，
 > 支持账号密码与微信登录。三端形态：**App 为主**（Capacitor 打包的 Android 应用）、**Web 端**、**微信小程序为辅**（Taro）。
@@ -21,9 +24,10 @@
 
 <img src="docs/design/references/screenshots/page_5_发起签到页.png" width="300" alt="发起签到：五种签到方式">
 
-1. **看功能**：上方为 Android 端实机截图（学生首页 / 发起签到），更多界面见 `docs/design/references/screenshots/`。
-2. **看 AI 链路**：`docs/Prompt链证据集.md` 第五章是 4 条完整 Prompt 链，每条按「需求 → Prompt → AI 产出 → 人工纠偏 → 验收」排列。
-3. **跑起来**：按第四节执行；只想验收后端可用第五节 Docker 方式（`back/docker/compose.yaml`）。启动后用 `13800138003 / test1234`（班委）或 `13800138001 / test1234`（学生）登录。
+1. **看视频**：[B 站 5–8 分钟全流程演示](https://www.bilibili.com/video/BV1kKsC6sERM)，从登录、发通知、签到到 AI 一句话发布作业。
+2. **看功能**：上方为 Android 端实机截图（学生首页 / 发起签到），更多界面见 `docs/design/references/screenshots/`。
+3. **看文档**：[技术文档 PDF](docs/技术文档-班务星app.pdf)（22 页）；AI 过程证据见 `docs/Prompt链证据集.md` 第五章，4 条完整 Prompt 链按「需求 → Prompt → AI 产出 → 人工纠偏 → 验收」排列。
+4. **跑起来**：按第四节执行；只想验收后端可用第五节 Docker 方式（`back/docker/compose.yaml`）。启动后用 `13800138003 / test1234`（班委）或 `13800138001 / test1234`（学生）登录。
 
 ---
 
@@ -213,7 +217,7 @@ AI_MODEL=qwen-plus
 | Web 端 | 96 个页面组件 / 92 条路由 |
 | 小程序 | 87 个页面（主包 15 + 9 个分包 72） |
 | Web 端 + 小程序 + Android | 一套后端，三端共用 |
-| 本交付仓提交 | 近 30 条（按模块重组 + 两轮文档更新） |
+| 本交付仓提交 | 32 条（按模块重组的细粒度提交 + 两轮文档更新） |
 | 开发仓过程提交 | 185 条（真实时间线见 Prompt 链证据集） |
 
 关键提交（便于定向查阅，`git show <hash>`）：
