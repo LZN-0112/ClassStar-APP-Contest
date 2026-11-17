@@ -15,6 +15,18 @@
 
 ---
 
+## 评委 3 分钟快速验收（不想跑环境也能看效果）
+
+<img src="docs/design/references/screenshots/page_1_学生首页.png" width="300" alt="学生首页：今日待办聚合">
+
+<img src="docs/design/references/screenshots/page_5_发起签到页.png" width="300" alt="发起签到：五种签到方式">
+
+1. **看功能**：上方为 Android 端实机截图（学生首页 / 发起签到），更多界面见 `docs/design/references/screenshots/`。
+2. **看 AI 链路**：`docs/Prompt链证据集.md` 第五章是 4 条完整 Prompt 链，每条按「需求 → Prompt → AI 产出 → 人工纠偏 → 验收」排列。
+3. **跑起来**：按第四节执行；只想验收后端可用第五节 Docker 方式（`back/docker/compose.yaml`）。启动后用 `13800138003 / test1234`（班委）或 `13800138001 / test1234`（学生）登录。
+
+---
+
 ## 一、系统构成
 
 | 端 | 目录 | 技术栈 | 说明 |
@@ -39,7 +51,7 @@ front/     前端 SPA（Capacitor 打包 Android）
 mobile/     Taro 微信小程序（87 个页面）
 sql/        补充 SQL 脚本（班级档案初始数据等）
 tools/      图标与设计资源脚本
-docs/       架构、Prompt 链证据集、23 页技术文档、测试与自检报告
+docs/       架构、Prompt 链证据集、22 页技术文档、测试与自检报告
 .github/    CI 工作流（ci.yml：后端构建 + Prisma Client 生成 + Web 构建）
 LICENSE     AGPL-3.0
 ```
